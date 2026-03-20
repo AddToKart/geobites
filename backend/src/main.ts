@@ -1,0 +1,62 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+import cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { ensureDatabaseExists } from './database/create-db';
+
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8081',
+  'http://localhost:19006',
+];
+
+function parseCorsOrigins(): string[] {
+  const rawOrigins = process.env.CORS_ORIGIN;
+  if (!rawOrigins) {
+    return defaultOrigins;
+  }
+
+  const parsedOrigins = rawOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return parsedOrigins.length > 0 ? parsedOrigins : defaultOrigins;
+}
+
+async function bootstrap() {
+  // Ensure the database exists before initializing TypeORM and Auth
+  await ensureDatabaseExists();
+
+  // Dynamically import modules so they only initialize AFTER DB creation
+  const { AppModule } = await import('./app.module.js');
+  const { auth } = await import('./auth/auth.js');
+  const { toNodeHandler } = await import('better-auth/node');
+
+  const app = await NestFactory.create(AppModule);
+
+  app.use(cookieParser());
+  app.enableCors({
+    origin: parseCorsOrigins(),
+    credentials: true,
+  });
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  app.use('/api/auth', toNodeHandler(auth));
+
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port, '0.0.0.0');
+  console.log(`Backend server running on http://localhost:${port}/api`);
+  console.log(`Local network access: http://192.168.100.116:${port}/api`);
+}
+
+void bootstrap();

@@ -1,0 +1,9 @@
+.agent/
+.gemini/
+.github/
+.opencode/
+node_modules/
+.env
+.env.local
+openspec
+
