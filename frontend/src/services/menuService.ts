@@ -1,7 +1,12 @@
 import api from './api';
+import { getDemoVendorMenu, isDemoVendorId } from '../data/demoVendors';
 import { MenuItem } from '../types';
 
 export async function getVendorMenu(vendorId: string): Promise<MenuItem[]> {
+  if (isDemoVendorId(vendorId)) {
+    return getDemoVendorMenu(vendorId);
+  }
+
   const response = await api.get<MenuItem[]>(`/vendors/${vendorId}/menu`);
   return response.data;
 }

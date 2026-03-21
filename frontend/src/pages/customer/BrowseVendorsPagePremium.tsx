@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, List, MapIcon, Search, SlidersHorizontal } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import {
+  ArrowRight,
+  Clock3,
+  Compass,
+  List,
+  MapIcon,
+  MapPin,
+  Search,
+  Sparkles,
+  Star,
+  Store,
+  Truck,
+} from 'lucide-react';
+import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter, type DemoVendor } from '@/data/demoVendors';
 import { MapStyleSelect } from '@/components/maps/MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from '@/components/maps/map-styles';
 import { Button } from '@/components/ui/button';
@@ -18,21 +30,42 @@ import {
 } from '@/components/ui/map';
 import { VendorCardPremium } from '@/components/custom/VendorCardPremium';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useApi } from '@/hooks/useApi';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
+import { cn } from '@/lib/utils';
 import { Order, Vendor } from '@/types';
 import { toast } from 'sonner';
 
-const defaultCenter: [number, number] = [104.9282, 11.5564]; // Phnom Penh [lng, lat]
+type BrowseVendor = Vendor & Partial<Pick<DemoVendor, 'etaMinutes' | 'neighborhood' | 'specialties' | 'priceBand' | 'spotlight'>>;
+
+function toBrowseVendor(vendor: Vendor): BrowseVendor | null {
+  if (
+    typeof vendor.latitude !== 'number' ||
+    typeof vendor.longitude !== 'number' ||
+    !Number.isFinite(vendor.latitude) ||
+    !Number.isFinite(vendor.longitude) ||
+    !isNearSantaMariaBulacan(vendor.latitude, vendor.longitude)
+  ) {
+    return null;
+  }
+
+  return {
+    ...vendor,
+    etaMinutes: '22-34 min',
+    neighborhood: 'Santa Maria',
+    specialties: ['Local meals', 'Delivery ready'],
+    priceBand: '₱₱',
+    spotlight: 'Live shop',
+  };
+}
 
 function BrowseMapViewport({
   vendorPoints,
-  userPoint,
+  centerPoint,
   is3D,
 }: {
-  vendorPoints: Array<Pick<Vendor, 'id' | 'name' | 'address' | 'latitude' | 'longitude'>>;
-  userPoint: { lat: number; lng: number } | null;
+  vendorPoints: BrowseVendor[];
+  centerPoint: { lat: number; lng: number };
   is3D: boolean;
 }) {
   const { map, isLoaded } = useMap();
@@ -42,27 +75,15 @@ function BrowseMapViewport({
       return;
     }
 
-    const points = [
-      ...vendorPoints.map((vendor) => ({ lat: vendor.latitude, lng: vendor.longitude })),
-      ...(userPoint ? [userPoint] : []),
-    ];
-
-    if (points.length === 0) {
-      map.easeTo({
-        center: defaultCenter,
-        zoom: 12.5,
-        bearing: is3D ? -16 : 0,
-        pitch: is3D ? 60 : 0,
-        duration: 900,
-      });
-      return;
-    }
+    const points = vendorPoints.length
+      ? vendorPoints.map((vendor) => ({ lat: vendor.latitude, lng: vendor.longitude }))
+      : [centerPoint];
 
     if (points.length === 1) {
       map.easeTo({
         center: [points[0].lng, points[0].lat],
-        zoom: 14.6,
-        bearing: is3D ? -16 : 0,
+        zoom: 14.3,
+        bearing: is3D ? -18 : 0,
         pitch: is3D ? 60 : 0,
         duration: 900,
       });
@@ -78,75 +99,169 @@ function BrowseMapViewport({
         [Math.max(...lngs), Math.max(...lats)],
       ],
       {
-        padding: 80,
+        padding: 88,
         duration: 900,
-        maxZoom: 14.8,
+        maxZoom: 14.7,
       },
     );
 
     const frameId = window.requestAnimationFrame(() => {
       map.easeTo({
-        bearing: is3D ? -16 : 0,
+        bearing: is3D ? -18 : 0,
         pitch: is3D ? 60 : 0,
-        duration: 500,
+        duration: 450,
       });
     });
 
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [is3D, isLoaded, map, userPoint, vendorPoints]);
+  }, [centerPoint, is3D, isLoaded, map, vendorPoints]);
 
   return null;
 }
 
+function formatDistanceLabel(distanceKm: number | null) {
+  if (distanceKm === null) {
+    return 'Santa Maria area';
+  }
+
+  return distanceKm < 1
+    ? `${Math.round(distanceKm * 1000)} m away`
+    : `${distanceKm.toFixed(1)} km away`;
+}
+
+function BrowseListItem({
+  vendor,
+  distanceKm,
+  isSelected,
+  onSelect,
+}: {
+  vendor: BrowseVendor;
+  distanceKm: number | null;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
+      <article
+        className={cn(
+          'grid overflow-hidden rounded-[28px] border border-white/80 bg-white/92 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)] xl:grid-cols-[260px_minmax(0,1fr)_220px]',
+          isSelected && 'border-[color:var(--color-primary)] shadow-[0_22px_46px_rgba(235,106,45,0.18)]',
+        )}
+      >
+        <div className="relative min-h-[220px] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.38),transparent_36%),linear-gradient(135deg,#ef7c42,#f6b372)] p-6 text-white">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={vendor.isActive ? 'success' : 'warning'}>
+              {vendor.isActive ? 'Open now' : 'Closed'}
+            </Badge>
+            <Badge>{vendor.spotlight || 'Nearby'}</Badge>
+          </div>
+          <div className="mt-10 max-w-[14rem]">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/75">
+              {vendor.neighborhood || 'Santa Maria'}
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold leading-tight">{vendor.name}</h2>
+            <p className="mt-3 text-sm leading-6 text-white/85">
+              {vendor.description || 'Local food and reliable delivery around Santa Maria, Bulacan.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-5 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[color:var(--color-text)]">{vendor.name}</p>
+              <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                {vendor.description || 'Prepared fast and pinned close to Santa Maria for easier ordering.'}
+              </p>
+            </div>
+            <ArrowRight className="mt-1 h-5 w-5 text-[color:var(--color-text-light)]" />
+          </div>
+
+          <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
+            <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+            <span>{vendor.address}</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(vendor.specialties || []).slice(0, 3).map((specialty) => (
+              <span
+                key={specialty}
+                className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+              >
+                {specialty}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-4 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-6 xl:border-l xl:border-t-0">
+          <div className="grid gap-3">
+            <div className="panel-muted flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-[color:var(--color-text-soft)]">Rating</span>
+              <span className="flex items-center gap-1 text-sm font-semibold text-[color:var(--color-text)]">
+                <Star className="h-4 w-4 fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />
+                {vendor.rating.toFixed(1)}
+              </span>
+            </div>
+            <div className="panel-muted flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-[color:var(--color-text-soft)]">Distance</span>
+              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+                {formatDistanceLabel(distanceKm)}
+              </span>
+            </div>
+            <div className="panel-muted flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-[color:var(--color-text-soft)]">ETA</span>
+              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+                {vendor.etaMinutes || '20-35 min'}
+              </span>
+            </div>
+          </div>
+
+          <Button asChild className="w-full">
+            <span>
+              Open menu
+              <ArrowRight className="h-4 w-4" />
+            </span>
+          </Button>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
 export function BrowseVendorsPagePremium() {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'rating' | 'distance' | 'name'>('rating');
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [sortBy, setSortBy] = useState<'rating' | 'distance' | 'name'>('distance');
+  const [coords, setCoords] = useState(santaMariaBulacanCenter);
   const [viewMode, setViewMode] = useState<'map' | 'list' | 'grid'>('grid');
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
 
-  const { execute, isLoading } = useApi(getVendors);
   const selectedStyle = mapStyles[style];
   const is3D = style === 'openstreetmap3d';
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setCoords({ lat: defaultCenter[1], lng: defaultCenter[0] });
-      return;
-    }
+    const loadBrowseData = async () => {
+      setIsLoading(true);
 
-    navigator.geolocation.getCurrentPosition(
-      ({ coords: position }) => {
-        setCoords({ lat: position.latitude, lng: position.longitude });
-      },
-      () => {
-        setCoords({ lat: defaultCenter[1], lng: defaultCenter[0] });
-      },
-      { enableHighAccuracy: false, timeout: 5000 },
-    );
-  }, []);
-
-  useEffect(() => {
-    void (async () => {
       try {
-        const response = await execute({
-          search,
-          sortBy,
-          lat: sortBy === 'distance' ? coords?.lat : undefined,
-          lng: sortBy === 'distance' ? coords?.lng : undefined,
-          page: 1,
-          limit: 50,
-        });
-        setVendors(response.data);
+        const response = await getVendors({ page: 1, limit: 100 });
+        setLiveVendors(response.data);
       } catch {
-        toast.error('Failed to load restaurants');
+        setLiveVendors([]);
+        toast.error('Live shops could not be loaded. Showing Santa Maria demos instead.');
+      } finally {
+        setIsLoading(false);
       }
-    })();
-  }, [coords?.lat, coords?.lng, execute, search, sortBy]);
+    };
+
+    void loadBrowseData();
+  }, []);
 
   useEffect(() => {
     const loadActiveOrder = async () => {
@@ -175,33 +290,73 @@ export function BrowseVendorsPagePremium() {
     };
   }, []);
 
-  const activeVendors = useMemo(
-    () => vendors.filter((vendor) => vendor.isActive),
-    [vendors],
+  const browseVendors = useMemo(() => {
+    const merged = [
+      ...demoVendors,
+      ...liveVendors
+        .map((vendor) => toBrowseVendor(vendor))
+        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
+        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
+    ];
+
+    const normalizedSearch = search.trim().toLowerCase();
+
+    const filtered = merged.filter((vendor) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(normalizedSearch));
+    });
+
+    return filtered.sort((firstVendor, secondVendor) => {
+      if (sortBy === 'name') {
+        return firstVendor.name.localeCompare(secondVendor.name);
+      }
+
+      if (sortBy === 'distance') {
+        return (
+          getVendorDistanceKm(coords, { lat: firstVendor.latitude, lng: firstVendor.longitude }) -
+          getVendorDistanceKm(coords, { lat: secondVendor.latitude, lng: secondVendor.longitude })
+        );
+      }
+
+      return secondVendor.rating - firstVendor.rating;
+    });
+  }, [coords, liveVendors, search, sortBy]);
+
+  const selectedVendor = useMemo(
+    () => browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? browseVendors[0] ?? null,
+    [browseVendors, selectedVendorId],
   );
+
+  useEffect(() => {
+    if (!browseVendors.length) {
+      setSelectedVendorId(null);
+      return;
+    }
+
+    if (!selectedVendorId || !browseVendors.some((vendor) => vendor.id === selectedVendorId)) {
+      setSelectedVendorId(browseVendors[0].id);
+    }
+  }, [browseVendors, selectedVendorId]);
 
   const topRatedCount = useMemo(
-    () => activeVendors.filter((vendor) => vendor.rating >= 4.5).length,
-    [activeVendors],
+    () => browseVendors.filter((vendor) => vendor.rating >= 4.7).length,
+    [browseVendors],
   );
 
-  const center: [number, number] = coords ? [coords.lng, coords.lat] : defaultCenter;
-  const vendorMapPoints = useMemo(
-    () =>
-      activeVendors.filter(
-        (vendor) =>
-          typeof vendor.latitude === 'number' && Number.isFinite(vendor.latitude) &&
-          typeof vendor.longitude === 'number' && Number.isFinite(vendor.longitude),
-      ),
-    [activeVendors],
-  );
+  const featuredCount = demoVendors.length;
+  const center: [number, number] = [coords.lng, coords.lat];
 
   return (
     <div className="page-stack">
       <PageHeader
         eyebrow="Customer"
-        title="Browse restaurants"
-        description="A quieter browse flow with clear filters, cleaner cards, and a focused map when you switch to map mode."
+        title="Browse Santa Maria"
+        description="Grid, list, and map now behave like separate views, with everything centered around Santa Maria, Bulacan instead of a dead generic layout."
         actions={
           <>
             <Button
@@ -209,7 +364,7 @@ export function BrowseVendorsPagePremium() {
               size="sm"
               onClick={() => setViewMode('grid')}
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <Store className="h-4 w-4" />
               Grid
             </Button>
             <Button
@@ -232,18 +387,25 @@ export function BrowseVendorsPagePremium() {
         }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="panel-card p-4 md:p-5">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_330px]">
+        <div className="panel-card space-y-5 p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge>Santa Maria, Bulacan</Badge>
+            <Badge variant="success">{featuredCount} demo shops pinned</Badge>
+            <Badge variant="warning">Map-first local radius</Badge>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]">
             <label className="relative block">
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-light)]" />
               <Input
-                placeholder="Search restaurants or cuisines"
+                placeholder="Search shops, food types, or neighborhoods"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 className="pl-11"
               />
             </label>
+
             <select
               value={sortBy}
               onChange={(event) =>
@@ -251,223 +413,354 @@ export function BrowseVendorsPagePremium() {
               }
               className="h-11 rounded-2xl border border-[color:var(--color-border)] bg-white/85 px-4 text-sm text-[color:var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
             >
+              <option value="distance">Closest to Santa Maria</option>
               <option value="rating">Top rated first</option>
-              <option value="distance">Closest first</option>
               <option value="name">A to Z</option>
             </select>
-          </div>
-        </div>
 
-        <div className="panel-card flex flex-wrap gap-3 p-4 md:flex-col md:gap-4 md:p-5">
-          <div>
-            <p className="eyebrow">Overview</p>
-            <p className="mt-2 text-3xl font-semibold text-[color:var(--color-text)]">
-              {activeVendors.length}
-            </p>
-            <p className="subtle-copy">Available restaurants</p>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setCoords(santaMariaBulacanCenter);
+                toast.success('Centered back on Santa Maria, Bulacan');
+              }}
+            >
+              <Compass className="h-4 w-4" />
+              Reset area
+            </Button>
           </div>
-          <div className="panel-muted flex items-center gap-3 px-4 py-3">
-            <Compass className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-            <div>
-              <p className="text-sm font-medium text-[color:var(--color-text)]">
-                {coords ? 'Location ready' : 'Using fallback area'}
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="panel-muted px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
+                Nearby now
               </p>
-              <p className="text-xs text-[color:var(--color-text-soft)]">
-                Distance sorting works better with location enabled
+              <p className="mt-2 text-3xl font-semibold text-[color:var(--color-text)]">
+                {browseVendors.length}
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
+                Visible shops inside the Santa Maria browse radius
+              </p>
+            </div>
+            <div className="panel-muted px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
+                Top rated
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-[color:var(--color-text)]">
+                {topRatedCount}
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
+                Local picks rated 4.7 and above
+              </p>
+            </div>
+            <div className="panel-muted px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
+                Browse anchor
+              </p>
+              <p className="mt-2 text-lg font-semibold text-[color:var(--color-text)]">
+                Santa Maria town center
+              </p>
+              <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
+                Use locate on the map if you want your exact current spot
               </p>
             </div>
           </div>
-          <div className="panel-muted px-4 py-3">
-            <p className="text-sm font-medium text-[color:var(--color-text)]">
-              {topRatedCount} top rated
+        </div>
+
+        <div className="panel-card flex h-full flex-col gap-4 p-5">
+          <div>
+            <p className="eyebrow">Selected area</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[color:var(--color-text)]">
+              Santa Maria, Bulacan
+            </h2>
+            <p className="mt-2 subtle-copy">
+              The browse flow now stays focused on one usable service zone instead of a vague empty map.
             </p>
-            <p className="text-xs text-[color:var(--color-text-soft)]">Rated 4.5 and above</p>
           </div>
+          <div className="panel-muted space-y-3 px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+              <p className="text-sm text-[color:var(--color-text)]">
+                Demo vendors are mixed in so the page always looks populated while you build real seller data.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Truck className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+              <p className="text-sm text-[color:var(--color-text)]">
+                Distance sorting uses the Santa Maria anchor unless you hit locate from the map view.
+              </p>
+            </div>
+          </div>
+          {selectedVendor ? (
+            <div className="rounded-[24px] bg-[linear-gradient(135deg,#223547,#314b61)] p-5 text-white">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">
+                Currently highlighted
+              </p>
+              <h3 className="mt-3 text-xl font-semibold">{selectedVendor.name}</h3>
+              <p className="mt-2 text-sm leading-6 text-white/82">
+                {selectedVendor.description}
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-sm text-white/85">
+                <MapPin className="h-4 w-4" />
+                <span>{selectedVendor.neighborhood || 'Santa Maria'}</span>
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 
       {activeOrder ? (
-        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_280px]">
-          <OrderRouteMap
-            order={activeOrder}
-            title={`Active order #${activeOrder.id.slice(0, 8)}`}
-            description="Your current order stays visible here so you can jump straight into delivery progress without leaving browse."
-            compact
-          />
-          <div className="panel-card p-5">
+        <section className="panel-card flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
             <p className="eyebrow">Current delivery</p>
             <h2 className="mt-2 text-2xl font-semibold capitalize">
               {activeOrder.status.replaceAll('_', ' ')}
             </h2>
-            <p className="mt-3 subtle-copy">
-              Shop, rider progress, and your drop-off pin stay linked on the same map.
+            <p className="mt-2 subtle-copy">
+              Browse stays clean here. Open the live tracking page when you want the detailed delivery map.
             </p>
-            <div className="mt-5">
-              <Button asChild>
-                <Link to={`/orders/${activeOrder.id}`}>Open live tracking</Link>
-              </Button>
-            </div>
           </div>
+          <Button asChild>
+            <Link to={`/orders/${activeOrder.id}`}>
+              Open live tracking
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </section>
       ) : null}
 
-      {viewMode === 'map' ? (
-        <section className="panel-card p-4 md:p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold">Restaurant map</h2>
-              <p className="subtle-copy">
-                Click the selector for a custom map style, then keep the 3D view active.
-              </p>
+      {isLoading ? (
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-80 rounded-[28px]" />
+          ))}
+        </section>
+      ) : browseVendors.length === 0 ? (
+        <section className="panel-card py-16 text-center">
+          <p className="text-lg font-semibold text-[color:var(--color-text)]">No shops found</p>
+          <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+            Try a different search term or reset back to the Santa Maria anchor.
+          </p>
+        </section>
+      ) : viewMode === 'map' ? (
+        <section className="space-y-5">
+          <div className="panel-card p-4 md:p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">Santa Maria shop map</h2>
+                <p className="subtle-copy">
+                  A bigger map view with local pins, 3D mode, and a live selected-shop panel.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge>{browseVendors.length} pins</Badge>
+                <Badge variant="success">{formatDistanceLabel(0)}</Badge>
+              </div>
             </div>
-            <Badge>{activeVendors.length} pins</Badge>
-          </div>
 
-          <div className="relative h-[460px] overflow-hidden rounded-[24px] border border-[color:var(--color-border)]">
-            <Map
-              center={center}
-              zoom={13.5}
-              className="h-full w-full"
-              styles={
-                selectedStyle
-                  ? { light: selectedStyle, dark: selectedStyle }
-                  : undefined
-              }
-            >
-              <BrowseMapViewport vendorPoints={vendorMapPoints} userPoint={coords} is3D={is3D} />
+            <div className="relative min-h-[560px] overflow-hidden rounded-[28px] border border-[color:var(--color-border)] h-[min(76vh,760px)]">
+              <Map
+                center={center}
+                zoom={14.2}
+                className="h-full w-full"
+                styles={
+                  selectedStyle
+                    ? { light: selectedStyle, dark: selectedStyle }
+                    : undefined
+                }
+              >
+                <BrowseMapViewport vendorPoints={browseVendors} centerPoint={coords} is3D={is3D} />
 
-              {coords ? (
-                <MapMarker
-                  longitude={coords.lng}
-                  latitude={coords.lat}
-                  anchor="bottom"
-                  offset={[0, 6]}
-                >
+                <MapMarker longitude={coords.lng} latitude={coords.lat} anchor="bottom" offset={[0, 6]}>
                   <MarkerContent>
                     <div className="pointer-events-none flex items-center gap-2">
                       <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#223547] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
                       <span className="inline-flex rounded-full border border-white/85 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                        You
+                        Anchor
                       </span>
                     </div>
                   </MarkerContent>
                   <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-white/70 p-4">
                     <div className="space-y-1">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                        Your location
+                        Browse center
                       </p>
                       <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                        Distance-aware browsing
+                        Santa Maria, Bulacan
                       </p>
                       <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                        Nearby restaurants sort more accurately once your location is available.
+                        This is the default local anchor for distance sorting and browse focus.
                       </p>
                     </div>
                   </MarkerPopup>
                 </MapMarker>
+
+                {browseVendors.map((vendor) => {
+                  const isSelected = vendor.id === selectedVendor?.id;
+
+                  return (
+                    <MapMarker
+                      key={vendor.id}
+                      longitude={vendor.longitude}
+                      latitude={vendor.latitude}
+                      anchor="bottom"
+                      offset={[0, 4]}
+                      onClick={() => setSelectedVendorId(vendor.id)}
+                    >
+                      <MarkerContent>
+                        <div className="pointer-events-none flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'relative inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#eb6a2d] shadow-[0_12px_22px_rgba(15,23,42,0.22)] transition duration-200',
+                              isSelected && 'scale-125 bg-[#223547]',
+                            )}
+                          />
+                          {isSelected ? (
+                            <span className="inline-flex rounded-full border border-white/85 bg-white/94 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+                              {vendor.name}
+                            </span>
+                          ) : null}
+                        </div>
+                      </MarkerContent>
+                      <MarkerPopup closeButton className="min-w-[260px] rounded-2xl border-white/70 p-4">
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+                              {vendor.neighborhood || 'Santa Maria'}
+                            </p>
+                            <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                              {vendor.name}
+                            </p>
+                            <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
+                              {vendor.address}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {(vendor.specialties || []).slice(0, 3).map((specialty) => (
+                              <span
+                                key={specialty}
+                                className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                              >
+                                {specialty}
+                              </span>
+                            ))}
+                          </div>
+                          <Button asChild size="sm" className="w-full">
+                            <Link to={`/vendor/${vendor.id}`}>Open menu</Link>
+                          </Button>
+                        </div>
+                      </MarkerPopup>
+                    </MapMarker>
+                  );
+                })}
+
+                <MapControls
+                  position="bottom-right"
+                  showZoom
+                  showCompass
+                  showLocate
+                  showFullscreen
+                  onLocate={({ latitude, longitude }) => {
+                    setCoords({ lat: latitude, lng: longitude });
+                    toast.success('Using your current location for nearby sorting');
+                  }}
+                />
+              </Map>
+
+              <div className="absolute right-3 top-3 z-10">
+                <MapStyleSelect value={style} onChange={setStyle} />
+              </div>
+
+              {selectedVendor ? (
+                <div className="absolute bottom-4 left-4 z-10 hidden max-w-sm rounded-[24px] border border-white/80 bg-white/94 p-4 shadow-[0_20px_40px_rgba(15,23,42,0.18)] backdrop-blur-sm md:block">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+                        Highlighted shop
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-[color:var(--color-text)]">
+                        {selectedVendor.name}
+                      </h3>
+                    </div>
+                    <Badge>{selectedVendor.spotlight || 'Nearby'}</Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                    {selectedVendor.description}
+                  </p>
+                  <div className="mt-4 grid gap-2 text-sm text-[color:var(--color-text-soft)]">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <span>{selectedVendor.address}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <span>{selectedVendor.etaMinutes || '20-35 min'}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Button asChild size="sm">
+                      <Link to={`/vendor/${selectedVendor.id}`}>Open menu</Link>
+                    </Button>
+                  </div>
+                </div>
               ) : null}
-
-              {vendorMapPoints.map((vendor) => (
-                <MapMarker
-                  key={vendor.id}
-                  longitude={vendor.longitude}
-                  latitude={vendor.latitude}
-                  anchor="bottom"
-                  offset={[0, 4]}
-                >
-                  <MarkerContent>
-                    <div className="pointer-events-none relative">
-                      <span className="absolute -inset-1 rounded-full bg-[#eb6a2d]/25 blur-sm" />
-                      <span className="relative inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#eb6a2d] shadow-[0_12px_22px_rgba(15,23,42,0.22)]" />
-                    </div>
-                  </MarkerContent>
-                  <MarkerPopup closeButton className="min-w-[240px] rounded-2xl border-white/70 p-4">
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                          Restaurant
-                        </p>
-                        <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                          {vendor.name}
-                        </p>
-                        <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                          {vendor.address}
-                        </p>
-                      </div>
-                      <Button asChild size="sm" className="w-full">
-                        <Link to={`/vendors/${vendor.id}`}>Open menu</Link>
-                      </Button>
-                    </div>
-                  </MarkerPopup>
-                </MapMarker>
-              ))}
-
-              <MapControls
-                position="bottom-right"
-                showZoom
-                showCompass
-                showLocate
-                showFullscreen
-                onLocate={({ latitude, longitude }) => {
-                  setCoords({ lat: latitude, lng: longitude });
-                }}
-              />
-            </Map>
-
-            <div className="absolute right-3 top-3 z-10">
-              <MapStyleSelect value={style} onChange={setStyle} />
             </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {browseVendors.map((vendor) => (
+              <VendorCardPremium key={vendor.id} vendor={vendor} />
+            ))}
           </div>
         </section>
       ) : viewMode === 'list' ? (
         <section className="space-y-4">
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-80 rounded-[24px]" />
-              ))}
-            </div>
-          ) : activeVendors.length === 0 ? (
-            <div className="panel-card py-16 text-center">
-              <p className="text-lg font-semibold text-[color:var(--color-text)]">
-                No restaurants found
-              </p>
-              <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                Try a different search or sort order.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {activeVendors.map((vendor) => (
-                <VendorCardPremium key={vendor.id} vendor={vendor} />
-              ))}
-            </div>
-          )}
+          {browseVendors.map((vendor) => (
+            <BrowseListItem
+              key={vendor.id}
+              vendor={vendor}
+              distanceKm={getVendorDistanceKm(coords, {
+                lat: vendor.latitude,
+                lng: vendor.longitude,
+              })}
+              isSelected={vendor.id === selectedVendor?.id}
+              onSelect={() => setSelectedVendorId(vendor.id)}
+            />
+          ))}
         </section>
       ) : (
-        <section className="space-y-4">
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Skeleton key={index} className="h-80 rounded-[24px]" />
-              ))}
-            </div>
-          ) : activeVendors.length === 0 ? (
-            <div className="panel-card py-16 text-center">
-              <p className="text-lg font-semibold text-[color:var(--color-text)]">
-                No restaurants found
-              </p>
-              <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                Try a different search or sort order.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {activeVendors.map((vendor) => (
-                <VendorCardPremium key={vendor.id} vendor={vendor} />
-              ))}
-            </div>
-          )}
+        <section className="space-y-5">
+          <div className="grid gap-4 md:grid-cols-3">
+            {browseVendors.slice(0, 3).map((vendor) => (
+              <div key={`${vendor.id}-feature`} className="panel-card p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+                  {vendor.spotlight || 'Featured nearby'}
+                </p>
+                <h2 className="mt-3 text-xl font-semibold text-[color:var(--color-text)]">
+                  {vendor.name}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                  {vendor.description}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(vendor.specialties || []).slice(0, 3).map((specialty) => (
+                    <span
+                      key={specialty}
+                      className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                    >
+                      {specialty}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {browseVendors.map((vendor) => (
+              <VendorCardPremium key={vendor.id} vendor={vendor} />
+            ))}
+          </div>
         </section>
       )}
     </div>

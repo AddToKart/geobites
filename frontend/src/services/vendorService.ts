@@ -1,4 +1,5 @@
 import api from './api';
+import { getDemoVendorById, isDemoVendorId } from '../data/demoVendors';
 import { Vendor } from '../types';
 
 export interface VendorListResponse {
@@ -25,6 +26,16 @@ export async function getVendors(query?: VendorQuery): Promise<VendorListRespons
 }
 
 export async function getVendorById(id: string): Promise<Vendor> {
+  if (isDemoVendorId(id)) {
+    const demoVendor = getDemoVendorById(id);
+
+    if (!demoVendor) {
+      throw new Error('Vendor not found');
+    }
+
+    return demoVendor;
+  }
+
   const response = await api.get<Vendor>(`/vendors/${id}`);
   return response.data;
 }

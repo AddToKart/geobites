@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { MapMouseEvent } from 'maplibre-gl';
+import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import {
   Map,
   MapControls,
@@ -13,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MapStyleSelect } from './MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from './map-styles';
 
-const fallbackCenter = { lat: 11.5564, lng: 104.9282 };
+const fallbackCenter = santaMariaBulacanCenter;
 
 function DeliveryPickerInteractions({
   center,
@@ -65,9 +66,30 @@ function DeliveryPickerInteractions({
 export function DeliveryLocationPicker({
   value,
   onChange,
+  title = 'Delivery pin',
+  description = 'Click the map or drag the pin to set the exact drop-off point.',
+  actionLabel = 'Use my location',
+  markerLabel = 'Delivery pin',
+  popupEyebrow = 'Delivery point',
+  popupTitle = 'Exact drop-off location',
+  popupDescription = 'Drag this pin to fine-tune the address the rider should follow.',
+  selectedText = (coords) =>
+    `Pin set at ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`,
+  emptyText = 'No delivery pin selected yet.',
+  initialCenter = fallbackCenter,
 }: {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
+  title?: string;
+  description?: string;
+  actionLabel?: string;
+  markerLabel?: string;
+  popupEyebrow?: string;
+  popupTitle?: string;
+  popupDescription?: string;
+  selectedText?: (coords: { lat: number; lng: number }) => string;
+  emptyText?: string;
+  initialCenter?: { lat: number; lng: number };
 }) {
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(value);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
@@ -79,7 +101,7 @@ export function DeliveryLocationPicker({
     }
 
     if (!navigator.geolocation) {
-      setCenter(fallbackCenter);
+      setCenter(initialCenter);
       return;
     }
 
@@ -91,14 +113,14 @@ export function DeliveryLocationPicker({
         });
       },
       () => {
-        setCenter(fallbackCenter);
+        setCenter(initialCenter);
       },
       {
         enableHighAccuracy: true,
         timeout: 8000,
       },
     );
-  }, [value]);
+  }, [initialCenter, value]);
 
   const applyCoords = (coords: { lat: number; lng: number }) => {
     setCenter(coords);
@@ -125,7 +147,7 @@ export function DeliveryLocationPicker({
     );
   };
 
-  const mapCenter = center ?? fallbackCenter;
+  const mapCenter = center ?? initialCenter;
   const selectedStyle = mapStyles[style];
   const is3D = style === 'openstreetmap3d';
 
@@ -134,13 +156,11 @@ export function DeliveryLocationPicker({
       <CardContent className="space-y-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold">Delivery pin</h3>
-            <p className="text-sm text-[color:var(--color-text-soft)]">
-              Click the map or drag the pin to set the exact drop-off point.
-            </p>
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <p className="text-sm text-[color:var(--color-text-soft)]">{description}</p>
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={useMyLocation}>
-            Use my location
+            {actionLabel}
           </Button>
         </div>
 
@@ -170,20 +190,20 @@ export function DeliveryLocationPicker({
                   <div className="pointer-events-none flex items-center gap-2">
                     <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[color:var(--color-primary-dark)] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
                     <span className="inline-flex rounded-full border border-white/85 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                      Delivery pin
+                      {markerLabel}
                     </span>
                   </div>
                 </MarkerContent>
                 <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-white/70 p-4">
                   <div className="space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                      Delivery point
+                      {popupEyebrow}
                     </p>
                     <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                      Exact drop-off location
+                      {popupTitle}
                     </p>
                     <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                      Drag this pin to fine-tune the address the rider should follow.
+                      {popupDescription}
                     </p>
                   </div>
                 </MarkerPopup>
@@ -199,13 +219,9 @@ export function DeliveryLocationPicker({
         </div>
 
         {value ? (
-          <p className="text-xs text-[color:var(--color-text-muted)]">
-            Pin set at {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
-          </p>
+          <p className="text-xs text-[color:var(--color-text-muted)]">{selectedText(value)}</p>
         ) : (
-          <p className="text-xs text-[color:var(--color-text-muted)]">
-            No delivery pin selected yet.
-          </p>
+          <p className="text-xs text-[color:var(--color-text-muted)]">{emptyText}</p>
         )}
       </CardContent>
     </Card>
