@@ -1,7 +1,13 @@
 export const mapStyles = {
-  default: undefined,
-  openstreetmap: 'https://tiles.openfreemap.org/styles/bright',
-  openstreetmap3d: 'https://tiles.openfreemap.org/styles/liberty',
+  default: {},
+  openstreetmap: {
+    light: 'https://tiles.openfreemap.org/styles/bright',
+    dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  },
+  openstreetmap3d: {
+    light: 'https://tiles.openfreemap.org/styles/liberty',
+    dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  },
 } as const;
 
 export type MapStyleKey = keyof typeof mapStyles;

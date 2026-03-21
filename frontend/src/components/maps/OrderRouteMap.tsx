@@ -144,12 +144,12 @@ function RouteMarker({ point }: { point: RoutePoint }) {
             className="inline-flex h-4 w-4 rounded-full border-[3px] border-white shadow-[0_12px_22px_rgba(15,23,42,0.26)]"
             style={{ backgroundColor: point.color }}
           />
-          <span className="inline-flex rounded-full border border-white/85 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+          <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
             {point.label}
           </span>
         </div>
       </MarkerContent>
-      <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-white/70 p-4">
+      <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
             {point.label}
@@ -297,11 +297,7 @@ export function OrderRouteMap({
             center={initialCenter}
             zoom={13.8}
             className="h-full w-full"
-            styles={
-              selectedStyle
-                ? { light: selectedStyle, dark: selectedStyle }
-                : undefined
-            }
+            styles={selectedStyle}
           >
             <RouteViewportController points={points} is3D={is3D} />
 

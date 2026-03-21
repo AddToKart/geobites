@@ -337,7 +337,7 @@ export function VendorMenuPage() {
                       'rounded-full border px-4 py-2 text-sm font-medium transition-colors',
                       activeCategory === category
                         ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]'
-                        : 'border-[color:var(--color-border)] bg-white text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
+                        : 'border-[color:var(--color-border)] bg-[color:var(--color-surface)] text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
                     )}
                   >
                     {category === 'all' ? 'All items' : category}
@@ -502,23 +502,19 @@ export function VendorMenuPage() {
                   center={[vendor.longitude, vendor.latitude]}
                   zoom={15}
                   className="h-full w-full"
-                  styles={
-                    selectedStyle
-                      ? { light: selectedStyle, dark: selectedStyle }
-                      : undefined
-                  }
+                  styles={selectedStyle}
                 >
                   <VendorMapCamera vendor={vendor} is3D={is3D} />
                   <MapMarker longitude={vendor.longitude} latitude={vendor.latitude} anchor="bottom" offset={[0, 6]}>
                     <MarkerContent>
                       <div className="pointer-events-none flex items-center gap-2">
                         <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#eb6a2d] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
-                        <span className="inline-flex rounded-full border border-white/85 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+                        <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
                           Shop
                         </span>
                       </div>
                     </MarkerContent>
-                    <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-white/70 p-4">
+                    <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
                       <div className="space-y-1">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
                           Pickup point

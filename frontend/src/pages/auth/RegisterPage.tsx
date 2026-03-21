@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import {
   Select,
   SelectContent,
@@ -71,6 +72,9 @@ export function RegisterPage() {
   return (
     <div className="min-h-screen bg-[color:var(--color-background)] px-4 py-8 md:px-6">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="flex justify-end lg:col-span-2">
+          <ThemeToggle />
+        </div>
         <Card className="self-center order-2 lg:order-1">
           <CardContent className="space-y-6 p-6 md:p-8">
             <div className="space-y-2">

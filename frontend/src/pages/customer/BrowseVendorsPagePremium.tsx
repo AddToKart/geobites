@@ -146,7 +146,7 @@ function BrowseListItem({
     <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
       <article
         className={cn(
-          'grid overflow-hidden rounded-[28px] border border-white/80 bg-white/92 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)] xl:grid-cols-[260px_minmax(0,1fr)_220px]',
+          'grid overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)] xl:grid-cols-[260px_minmax(0,1fr)_220px]',
           isSelected && 'border-[color:var(--color-primary)] shadow-[0_22px_46px_rgba(235,106,45,0.18)]',
         )}
       >
@@ -411,7 +411,7 @@ export function BrowseVendorsPagePremium() {
               onChange={(event) =>
                 setSortBy(event.target.value as 'rating' | 'distance' | 'name')
               }
-              className="h-11 rounded-2xl border border-[color:var(--color-border)] bg-white/85 px-4 text-sm text-[color:var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+              className="h-11 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)]/88 px-4 text-sm text-[color:var(--color-text)] shadow-[var(--shadow-inset-soft)]"
             >
               <option value="distance">Closest to Santa Maria</option>
               <option value="rating">Top rated first</option>
@@ -563,11 +563,7 @@ export function BrowseVendorsPagePremium() {
                 center={center}
                 zoom={14.2}
                 className="h-full w-full"
-                styles={
-                  selectedStyle
-                    ? { light: selectedStyle, dark: selectedStyle }
-                    : undefined
-                }
+                styles={selectedStyle}
               >
                 <BrowseMapViewport vendorPoints={browseVendors} centerPoint={coords} is3D={is3D} />
 
@@ -575,12 +571,12 @@ export function BrowseVendorsPagePremium() {
                   <MarkerContent>
                     <div className="pointer-events-none flex items-center gap-2">
                       <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#223547] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
-                      <span className="inline-flex rounded-full border border-white/85 bg-white/92 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+                      <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
                         Anchor
                       </span>
                     </div>
                   </MarkerContent>
-                  <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-white/70 p-4">
+                  <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
                     <div className="space-y-1">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
                         Browse center
@@ -616,13 +612,13 @@ export function BrowseVendorsPagePremium() {
                             )}
                           />
                           {isSelected ? (
-                            <span className="inline-flex rounded-full border border-white/85 bg-white/94 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+                            <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
                               {vendor.name}
                             </span>
                           ) : null}
                         </div>
                       </MarkerContent>
-                      <MarkerPopup closeButton className="min-w-[260px] rounded-2xl border-white/70 p-4">
+                      <MarkerPopup closeButton className="min-w-[260px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
                         <div className="space-y-3">
                           <div className="space-y-1">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
@@ -672,7 +668,7 @@ export function BrowseVendorsPagePremium() {
               </div>
 
               {selectedVendor ? (
-                <div className="absolute bottom-4 left-4 z-10 hidden max-w-sm rounded-[24px] border border-white/80 bg-white/94 p-4 shadow-[0_20px_40px_rgba(15,23,42,0.18)] backdrop-blur-sm md:block">
+                <div className="absolute bottom-4 left-4 z-10 hidden max-w-sm rounded-[24px] border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] p-4 shadow-[0_20px_40px_rgba(15,23,42,0.18)] backdrop-blur-sm md:block">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">

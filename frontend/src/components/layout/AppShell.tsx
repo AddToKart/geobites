@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import {
   Bell,
   History,
@@ -105,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-screen flex-col md:ml-80">
-        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-white/70 bg-[rgba(246,240,232,0.86)] px-4 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-header)] px-4 backdrop-blur-md md:hidden">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[color:var(--color-primary)] text-sm font-semibold text-white">
               {initials}
@@ -115,24 +116,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <p className="text-xs capitalize text-[color:var(--color-text-soft)]">{user.role}</p>
             </div>
           </div>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="w-5 h-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 border-none bg-transparent p-3 shadow-none">
-              <NavContent
-                items={navItems}
-                onLogout={handleLogout}
-                onItemClick={() => setOpen(false)}
-                userName={user.name}
-                userRole={user.role}
-                initials={initials}
-              />
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2">
+            <ThemeToggle compact />
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="w-5 h-5" />
+                  <span className="sr-only">Toggle menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 border-none bg-transparent p-3 shadow-none">
+                <NavContent
+                  items={navItems}
+                  onLogout={handleLogout}
+                  onItemClick={() => setOpen(false)}
+                  userName={user.name}
+                  userRole={user.role}
+                  initials={initials}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
         </header>
 
         <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
@@ -173,7 +177,7 @@ function NavContent({
   initials: string;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white/92 shadow-[var(--shadow-panel)] backdrop-blur-md">
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-panel)] backdrop-blur-md">
       <div className="border-b border-[color:var(--color-border)] px-6 py-6">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[color:var(--color-primary)] text-lg font-semibold text-white">
@@ -213,6 +217,12 @@ function NavContent({
       </nav>
 
       <div className="space-y-2 border-t border-[color:var(--color-border)] p-4">
+        <div className="px-1 pb-1">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
+            Appearance
+          </p>
+          <ThemeToggle className="w-full justify-between" />
+        </div>
         <NavLink
           to="/notifications"
           onClick={onItemClick}
@@ -243,7 +253,7 @@ function NavContent({
 
 function MobileBottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-[rgba(246,240,232,0.94)] px-3 py-3 backdrop-blur-md md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-nav)] px-3 py-3 backdrop-blur-md md:hidden">
       <div
         className={cn(
           'mx-auto grid max-w-xl gap-2',
@@ -259,7 +269,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
                 'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all duration-200',
                 isActive
                   ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
-                  : 'text-[color:var(--color-text-soft)] hover:bg-white/70 hover:text-[color:var(--color-text)]',
+                  : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface)]/72 hover:text-[color:var(--color-text)]',
               )
             }
           >
