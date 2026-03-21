@@ -135,7 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Sheet>
         </header>
 
-        <main className="mx-auto flex w-full max-w-7xl flex-1 p-4 md:p-8">
+        <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -149,6 +149,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </motion.div>
           </AnimatePresence>
         </main>
+
+        <MobileBottomNav items={navItems} />
       </div>
       <Toaster />
     </div>
@@ -236,5 +238,36 @@ function NavContent({
         </Button>
       </div>
     </div>
+  );
+}
+
+function MobileBottomNav({ items }: { items: NavItem[] }) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-[rgba(246,240,232,0.94)] px-3 py-3 backdrop-blur-md md:hidden">
+      <div
+        className={cn(
+          'mx-auto grid max-w-xl gap-2',
+          items.length <= 3 ? 'grid-cols-3' : 'grid-cols-4',
+        )}
+      >
+        {items.slice(0, 4).map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            className={({ isActive }) =>
+              cn(
+                'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all duration-200',
+                isActive
+                  ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
+                  : 'text-[color:var(--color-text-soft)] hover:bg-white/70 hover:text-[color:var(--color-text)]',
+              )
+            }
+          >
+            {item.icon}
+            <span className="truncate">{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
   );
 }

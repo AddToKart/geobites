@@ -182,11 +182,11 @@
 }
 
 .page-stack {
-  @apply space-y-6 md:space-y-8;
+  @apply space-y-5 md:space-y-6;
 }
 
 .page-hero {
-  @apply relative overflow-hidden rounded-[28px] border border-white/80 px-6 py-6 shadow-[var(--shadow-panel)] backdrop-blur-sm md:px-8 md:py-8;
+  @apply relative overflow-hidden rounded-[28px] border border-white/80 px-5 py-5 shadow-[var(--shadow-panel)] backdrop-blur-sm md:px-7 md:py-6;
   background:
     radial-gradient(circle at top right, rgba(255, 212, 176, 0.55), transparent 18rem),
     linear-gradient(135deg, rgba(255, 252, 248, 0.98), rgba(251, 243, 231, 0.96));

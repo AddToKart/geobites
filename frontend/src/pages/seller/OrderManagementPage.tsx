@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle } from 'lucide-react';
+import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
+import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { getOrders, updateOrderStatus } from '../../services/orderService';
@@ -15,9 +17,86 @@ const sellerActions: Record<string, Array<'accepted' | 'rejected' | 'preparing' 
   preparing: ['ready_for_pickup'],
 };
 
+const actionStatuses = ['pending'];
+const kitchenStatuses = ['accepted', 'preparing', 'ready_for_pickup'];
+const closedStatuses = ['picked_up', 'delivering', 'delivered', 'rejected', 'cancelled'];
+
+function SellerOrderCard({
+  order,
+  isSelected,
+  onSelect,
+  onAction,
+}: {
+  order: Order;
+  isSelected: boolean;
+  onSelect: () => void;
+  onAction: (status: 'accepted' | 'rejected' | 'preparing' | 'ready_for_pickup') => void;
+}) {
+  const actions = sellerActions[order.status] ?? [];
+
+  return (
+    <div
+      className={
+        isSelected
+          ? 'space-y-4 rounded-[22px] border border-[rgba(235,106,45,0.18)] bg-[color:var(--color-primary-soft)] px-4 py-4'
+          : 'panel-muted space-y-4 px-4 py-4'
+      }
+      onClick={onSelect}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold">#{order.id.slice(0, 8)}</h3>
+            <StatusBadge status={order.status} />
+          </div>
+          <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
+            <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+            <span>{order.deliveryAddress}</span>
+          </div>
+        </div>
+        <p className="text-sm font-semibold text-[color:var(--color-text)]">
+          {formatCurrency(order.totalAmount)}
+        </p>
+      </div>
+
+      {actions.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {actions.map((status) => (
+            <Button
+              key={status}
+              size="sm"
+              variant={status === 'rejected' ? 'ghost' : 'default'}
+              className={
+                status === 'rejected'
+                  ? 'text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]'
+                  : ''
+              }
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction(status);
+              }}
+            >
+              {status === 'rejected' ? (
+                <XCircle className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              {ORDER_STATUS_LABELS[status]}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-[color:var(--color-text-soft)]">No seller action required right now.</p>
+      )}
+    </div>
+  );
+}
+
 export function OrderManagementPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const loadOrders = async () => {
     try {
@@ -45,17 +124,43 @@ export function OrderManagementPage() {
     }
   };
 
-  const pendingCount = useMemo(
-    () => orders.filter((order) => order.status === 'pending').length,
-    [orders],
-  );
+  const filteredOrders = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return orders.filter((order) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [order.id, order.deliveryAddress, order.vendor?.name]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(normalizedSearch));
+    });
+  }, [orders, search]);
+
+  const pendingOrders = filteredOrders.filter((order) => actionStatuses.includes(order.status));
+  const kitchenOrders = filteredOrders.filter((order) => kitchenStatuses.includes(order.status));
+  const closedOrders = filteredOrders.filter((order) => closedStatuses.includes(order.status));
+
+  useEffect(() => {
+    if (filteredOrders.length === 0) {
+      setSelectedOrderId(null);
+      return;
+    }
+
+    if (!selectedOrderId || !filteredOrders.some((order) => order.id === selectedOrderId)) {
+      setSelectedOrderId(filteredOrders[0].id);
+    }
+  }, [filteredOrders, selectedOrderId]);
+
+  const selectedOrder = filteredOrders.find((order) => order.id === selectedOrderId) ?? null;
 
   return (
     <div className="page-stack">
       <PageHeader
         eyebrow="Seller"
         title="Order management"
-        description="Every order card keeps the status visible and only exposes the actions that make sense next."
+        description="Orders are now grouped by what needs attention, what is moving through the kitchen, and what is already closed."
       />
 
       {error ? (
@@ -64,66 +169,173 @@ export function OrderManagementPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-2">
+      <section className="grid gap-5 md:grid-cols-3">
         <Card>
           <CardContent className="p-5">
-            <p className="text-sm text-[color:var(--color-text-soft)]">Total orders</p>
-            <p className="mt-2 text-3xl font-semibold">{orders.length}</p>
+            <p className="text-sm text-[color:var(--color-text-soft)]">Needs action</p>
+            <p className="mt-2 text-3xl font-semibold">{pendingOrders.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5">
-            <p className="text-sm text-[color:var(--color-text-soft)]">Awaiting action</p>
-            <p className="mt-2 text-3xl font-semibold">{pendingCount}</p>
+            <p className="text-sm text-[color:var(--color-text-soft)]">Kitchen flow</p>
+            <p className="mt-2 text-3xl font-semibold">{kitchenOrders.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-[color:var(--color-text-soft)]">Closed / handed off</p>
+            <p className="mt-2 text-3xl font-semibold">{closedOrders.length}</p>
           </CardContent>
         </Card>
       </section>
 
-      <div className="space-y-4">
-        {orders.map((order) => {
-          const actions = sellerActions[order.status] ?? [];
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold">Order lanes</h2>
+              <p className="subtle-copy">
+                Search the board and move orders forward without wasting the page on empty card gaps.
+              </p>
+            </div>
+          </div>
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-light)]" />
+            <Input
+              placeholder="Search by order or address"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="pl-11"
+            />
+          </label>
+        </CardContent>
+      </Card>
 
-          return (
-            <Card key={order.id}>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-5 lg:grid-cols-3">
+          {([
+            {
+              title: 'Needs action',
+              description: 'Pending orders waiting on an accept or reject decision.',
+              orders: pendingOrders,
+            },
+            {
+              title: 'Kitchen flow',
+              description: 'Accepted, preparing, and ready-for-pickup orders.',
+              orders: kitchenOrders,
+            },
+            {
+              title: 'Closed / handoff',
+              description: 'Picked up, delivered, or otherwise finished orders.',
+              orders: closedOrders,
+            },
+          ] as Array<{ title: string; description: string; orders: Order[] }>).map((column) => (
+            <Card key={column.title}>
               <CardContent className="space-y-4 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-semibold">#{order.id.slice(0, 8)}</h2>
-                      <StatusBadge status={order.status} />
-                    </div>
-                    <p className="text-sm text-[color:var(--color-text-soft)]">{order.deliveryAddress}</p>
-                    <p className="text-sm text-[color:var(--color-text-muted)]">
-                      {formatCurrency(order.totalAmount)}
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="text-xl font-semibold">{column.title}</h2>
+                  <p className="mt-2 subtle-copy">{column.description}</p>
                 </div>
 
-                {actions.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                    {actions.map((status) => (
-                      <Button
-                        key={status}
-                        size="sm"
-                        variant={status === 'rejected' ? 'ghost' : 'default'}
-                        className={status === 'rejected' ? 'text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]' : ''}
-                        onClick={() => void changeStatus(order, status)}
-                      >
-                        {status === 'rejected' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                        {ORDER_STATUS_LABELS[status]}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-[color:var(--color-text-soft)]">
-                    No seller action required right now.
-                  </p>
-                )}
+                <div className="space-y-4">
+                  {column.orders.length === 0 ? (
+                    <div className="rounded-[20px] border border-dashed border-[color:var(--color-border)] px-4 py-5 text-sm text-[color:var(--color-text-soft)]">
+                      No orders in this lane.
+                    </div>
+                  ) : (
+                    column.orders.map((order) => (
+                      <SellerOrderCard
+                        key={order.id}
+                        order={order}
+                        isSelected={order.id === selectedOrderId}
+                        onSelect={() => setSelectedOrderId(order.id)}
+                        onAction={(status) => void changeStatus(order, status)}
+                      />
+                    ))
+                  )}
+                </div>
               </CardContent>
             </Card>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          {selectedOrder ? (
+            <>
+              <OrderRouteMap
+                order={selectedOrder}
+                title={`Focused order #${selectedOrder.id.slice(0, 8)}`}
+                description="This rail keeps the selected order visible with route context instead of leaving the management page feeling hollow."
+                compact
+              />
+
+              <Card>
+                <CardContent className="space-y-4 p-5">
+                  <div>
+                    <p className="eyebrow">Order detail</p>
+                    <h2 className="mt-2 text-2xl font-semibold">#{selectedOrder.id.slice(0, 8)}</h2>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                      <PackageCheck className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                          Items
+                        </p>
+                        <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                          {selectedOrder.items.length} items
+                        </p>
+                      </div>
+                    </div>
+                    <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                      <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                          Status
+                        </p>
+                        <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                          {ORDER_STATUS_LABELS[selectedOrder.status]}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                      <CheckCircle2 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                          Amount
+                        </p>
+                        <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                          {formatCurrency(selectedOrder.totalAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="panel-muted space-y-3 px-4 py-4">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                      <p className="text-sm text-[color:var(--color-text-soft)]">
+                        {selectedOrder.deliveryAddress}
+                      </p>
+                    </div>
+                    <p className="text-sm text-[color:var(--color-text-soft)]">
+                      {selectedOrder.notes || 'No customer notes were added to this order.'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
+                Select an order to view its details.
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

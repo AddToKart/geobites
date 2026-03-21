@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Clock3, DollarSign, ShoppingBag } from 'lucide-react';
+import { Clock3, DollarSign, MapPin, PackageCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -83,6 +83,31 @@ export function SellerDashboard() {
   const selectedOrder =
     orders.find((order) => order.id === selectedOrderId) ?? null;
 
+  const nextCheckpoint = useMemo(() => {
+    if (!selectedOrder) {
+      return 'Select an order to inspect the next action.';
+    }
+
+    switch (selectedOrder.status) {
+      case 'pending':
+        return 'Review the order and accept or reject it.';
+      case 'accepted':
+        return 'Kitchen prep should be underway.';
+      case 'preparing':
+        return 'Move this order toward ready for pickup.';
+      case 'ready_for_pickup':
+        return 'A rider can claim this run now.';
+      case 'picked_up':
+        return 'The rider is on the way to the customer.';
+      case 'delivering':
+        return 'Keep an eye on the live rider progress.';
+      case 'delivered':
+        return 'This order is complete and reflected in revenue.';
+      default:
+        return 'No further action is needed right now.';
+    }
+  }, [selectedOrder]);
+
   return (
     <div className="page-stack">
       <PageHeader
@@ -118,7 +143,7 @@ export function SellerDashboard() {
         </Card>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
         <Card>
           <CardHeader>
             <CardTitle>Recent orders</CardTitle>
@@ -171,20 +196,85 @@ export function SellerDashboard() {
           </CardContent>
         </Card>
 
-        {selectedOrder ? (
-          <OrderRouteMap
-            order={selectedOrder}
-            title={`Order map #${selectedOrder.id.slice(0, 8)}`}
-            description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
-            compact
-          />
-        ) : (
-          <Card>
-            <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
-              Select an order to view its map.
-            </CardContent>
-          </Card>
-        )}
+        <div className="space-y-4">
+          {selectedOrder ? (
+            <OrderRouteMap
+              order={selectedOrder}
+              title={`Order map #${selectedOrder.id.slice(0, 8)}`}
+              description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
+              compact
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
+                Select an order to view its map.
+              </CardContent>
+            </Card>
+          )}
+
+          {selectedOrder ? (
+            <Card>
+              <CardContent className="space-y-4 p-5">
+                <div>
+                  <p className="eyebrow">Focused order</p>
+                  <h2 className="mt-2 text-2xl font-semibold">#{selectedOrder.id.slice(0, 8)}</h2>
+                  <p className="mt-2 subtle-copy">
+                    Keep the right side useful: this card surfaces the next checkpoint instead of leaving the map column empty.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <DollarSign className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Amount
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {formatCurrency(selectedOrder.totalAmount)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <PackageCheck className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Items
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {selectedOrder.items.length} items
+                      </p>
+                    </div>
+                  </div>
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Placed
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel-muted space-y-3 px-4 py-4">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <p className="text-sm text-[color:var(--color-text-soft)]">
+                      {selectedOrder.deliveryAddress}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <p className="text-sm text-[color:var(--color-text-soft)]">{nextCheckpoint}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </section>
     </div>
   );
