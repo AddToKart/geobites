@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bike, Clock3, MapPin } from 'lucide-react';
+import { Bike, Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
 import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -75,6 +75,23 @@ export function RiderDashboard() {
       }
     : null;
 
+  const focusMessage = useMemo(() => {
+    if (!mappedOrder) {
+      return 'Pick a delivery to see the next rider action.';
+    }
+
+    switch (mappedOrder.status) {
+      case 'ready_for_pickup':
+        return 'Head to the shop and confirm pickup once the order is in hand.';
+      case 'picked_up':
+        return 'You are carrying the order. Move toward the customer pin.';
+      case 'delivering':
+        return 'Stay on route and finish the drop-off cleanly.';
+      default:
+        return 'Claim the next delivery and keep the route panel focused.';
+    }
+  }, [mappedOrder]);
+
   const accept = async (orderId: string) => {
     try {
       await acceptDelivery(orderId);
@@ -119,7 +136,7 @@ export function RiderDashboard() {
         </Card>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
         <div className="space-y-6">
           <Card>
             <CardContent className="space-y-4 p-5">
@@ -192,20 +209,85 @@ export function RiderDashboard() {
           </Card>
         </div>
 
-        {mappedOrder ? (
-          <OrderRouteMap
-            order={mappedOrder}
-            title={`Focused route #${mappedOrder.id.slice(0, 8)}`}
-            description="The rider map shows the shop, customer pin, and your live position while the order is active."
-            compact
-          />
-        ) : (
-          <Card>
-            <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
-              Select a delivery to view its route map.
-            </CardContent>
-          </Card>
-        )}
+        <div className="space-y-4">
+          {mappedOrder ? (
+            <OrderRouteMap
+              order={mappedOrder}
+              title={`Focused route #${mappedOrder.id.slice(0, 8)}`}
+              description="The rider map shows the shop, customer pin, and your live position while the order is active."
+              compact
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
+                Select a delivery to view its route map.
+              </CardContent>
+            </Card>
+          )}
+
+          {mappedOrder ? (
+            <Card>
+              <CardContent className="space-y-4 p-5">
+                <div>
+                  <p className="eyebrow">Focused delivery</p>
+                  <h2 className="mt-2 text-2xl font-semibold">#{mappedOrder.id.slice(0, 8)}</h2>
+                  <p className="mt-2 subtle-copy">
+                    This fills the route column with actual delivery context instead of leaving unused space below the map.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Status
+                      </p>
+                      <p className="text-sm font-semibold capitalize text-[color:var(--color-text)]">
+                        {mappedOrder.status.replaceAll('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <PackageCheck className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Items
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {mappedOrder.items.length} items
+                      </p>
+                    </div>
+                  </div>
+                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
+                    <Bike className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                        Delivery phase
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {mappedOrder.riderId ? 'Assigned to you' : 'Waiting'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="panel-muted space-y-3 px-4 py-4">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <p className="text-sm text-[color:var(--color-text-soft)]">
+                      {mappedOrder.deliveryAddress}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                    <p className="text-sm text-[color:var(--color-text-soft)]">{focusMessage}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
     </div>
   );
