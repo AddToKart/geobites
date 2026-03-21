@@ -21,8 +21,8 @@ export function PageHeader({
   return (
     <section className={cn('page-hero', className)}>
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <ParallaxSection className="max-w-3xl" offset={14}>
-          <Reveal className="space-y-3" delay={0.02}>
+        <ParallaxSection className="max-w-3xl" offset={10}>
+          <Reveal className="space-y-3" delay={0.02} mode="immediate">
             {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
             <div className="space-y-2">
               <h1>{title}</h1>
@@ -31,8 +31,8 @@ export function PageHeader({
           </Reveal>
         </ParallaxSection>
         {actions ? (
-          <ParallaxSection offset={10} reverse>
-            <Reveal className="flex flex-wrap items-center gap-3" delay={0.12} y={12}>
+          <ParallaxSection offset={8} reverse>
+            <Reveal className="flex flex-wrap items-center gap-3" delay={0.12} y={12} mode="immediate">
               {actions}
             </Reveal>
           </ParallaxSection>

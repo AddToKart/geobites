@@ -112,7 +112,7 @@ export function RiderDashboard() {
         </Card>
       ) : null}
 
-      <ParallaxSection offset={12}>
+      <ParallaxSection offset={8}>
         <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
           <Card>
             <CardContent className="p-5">

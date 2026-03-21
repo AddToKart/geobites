@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from 'react';
-import { m, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { m, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export function ParallaxSection({
@@ -20,13 +20,11 @@ export function ParallaxSection({
     offset: ['start end', 'end start'],
   });
 
-  const outputRange = reverse ? [-offset, offset] : [offset, -offset];
-  const rawY = useTransform(scrollYProgress, [0, 1], outputRange);
-  const y = useSpring(rawY, {
-    stiffness: 90,
-    damping: 22,
-    mass: 0.2,
-  });
+  const y = useTransform(
+    scrollYProgress,
+    [0, 1],
+    reverse ? [-offset, offset] : [offset, -offset],
+  );
 
   if (shouldReduceMotion) {
     return (
@@ -42,8 +40,6 @@ export function ParallaxSection({
       className={cn(className)}
       style={{
         y,
-        willChange: 'transform',
-        transform: 'translateZ(0)',
       }}
     >
       {children}

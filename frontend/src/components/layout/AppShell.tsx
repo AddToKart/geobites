@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { m } from 'framer-motion';
 import { Stagger, StaggerItem } from '@/components/motion/Reveal';
+import { preloadRoute } from '@/routes/loaders';
 
 interface NavItem {
   label: string;
@@ -49,7 +49,6 @@ const RIDER_NAV: NavItem[] = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [open, setOpen] = React.useState(false);
 
   const navItems = React.useMemo(() => {
@@ -107,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-screen flex-col md:ml-80">
-        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-header)] px-4 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-header)] px-4 md:hidden">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[color:var(--color-primary)] text-sm font-semibold text-white">
               {initials}
@@ -141,25 +140,53 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
-          <m.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="h-full w-full"
-            style={{
-              willChange: 'transform, opacity',
-              transform: 'translateZ(0)',
-            }}
-          >
-            {children}
-          </m.div>
+          <div className="h-full w-full">{children}</div>
         </main>
 
         <MobileBottomNav items={navItems} />
       </div>
       <Toaster />
     </div>
+  );
+}
+
+function PrefetchNavLink({
+  to,
+  onFocus,
+  onMouseEnter,
+  onTouchStart,
+  ...props
+}: Omit<React.ComponentProps<typeof NavLink>, 'to'> & { to: string }) {
+  const handlePrefetch = React.useCallback(() => {
+    void preloadRoute(to);
+  }, [to]);
+
+  return (
+    <NavLink
+      to={to}
+      onFocus={(event) => {
+        onFocus?.(event);
+
+        if (!event.defaultPrevented) {
+          handlePrefetch();
+        }
+      }}
+      onMouseEnter={(event) => {
+        onMouseEnter?.(event);
+
+        if (!event.defaultPrevented) {
+          handlePrefetch();
+        }
+      }}
+      onTouchStart={(event) => {
+        onTouchStart?.(event);
+
+        if (!event.defaultPrevented) {
+          handlePrefetch();
+        }
+      }}
+      {...props}
+    />
   );
 }
 
@@ -179,7 +206,7 @@ function NavContent({
   initials: string;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-panel)] backdrop-blur-md">
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-panel)]">
       <div className="border-b border-[color:var(--color-border)] px-6 py-6">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[color:var(--color-primary)] text-lg font-semibold text-white">
@@ -200,7 +227,7 @@ function NavContent({
       <Stagger className="flex-1 space-y-2 overflow-y-auto px-4 py-6" delayChildren={0.02} stagger={0.05}>
         {items.map((item) => (
           <StaggerItem key={item.href} y={10}>
-            <NavLink
+            <PrefetchNavLink
               to={item.href}
               onClick={onItemClick}
               className={({ isActive }) =>
@@ -214,7 +241,7 @@ function NavContent({
             >
               {item.icon}
               {item.label}
-            </NavLink>
+            </PrefetchNavLink>
           </StaggerItem>
         ))}
       </Stagger>
@@ -226,7 +253,7 @@ function NavContent({
           </p>
           <ThemeToggle className="w-full justify-between" />
         </div>
-        <NavLink
+        <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
           className={({ isActive }) =>
@@ -240,7 +267,7 @@ function NavContent({
         >
           <Bell className="w-5 h-5" />
           Notifications
-        </NavLink>
+        </PrefetchNavLink>
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-danger-soft)] hover:text-[color:var(--color-danger)]"
@@ -256,7 +283,7 @@ function NavContent({
 
 function MobileBottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-nav)] px-3 py-3 backdrop-blur-md md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-nav)] px-3 py-3 md:hidden">
       <div
         className={cn(
           'mx-auto grid max-w-xl gap-2',
@@ -264,7 +291,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
         )}
       >
         {items.slice(0, 4).map((item) => (
-          <NavLink
+          <PrefetchNavLink
             key={item.href}
             to={item.href}
             className={({ isActive }) =>
@@ -278,7 +305,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
           >
             {item.icon}
             <span className="truncate">{item.label}</span>
-          </NavLink>
+          </PrefetchNavLink>
         ))}
       </div>
     </nav>

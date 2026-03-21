@@ -111,7 +111,7 @@ export function SellerDashboard() {
         description="Today’s order volume, active work, and recent tickets all sit on one surface so the next action is obvious."
       />
 
-      <ParallaxSection offset={12}>
+      <ParallaxSection offset={8}>
         <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
           <MetricCard
             label="Today's orders"
