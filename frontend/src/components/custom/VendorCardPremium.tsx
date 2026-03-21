@@ -13,7 +13,7 @@ export function VendorCardPremium({ vendor }: VendorCardProps) {
 
   return (
     <Link to={`/vendor/${vendor.id}`} className="group block h-full">
-      <article className="flex h-full flex-col overflow-hidden rounded-[26px] border border-white/80 bg-white/92 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)]">
+      <article className="flex h-full flex-col overflow-hidden rounded-[26px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)]">
         <div className="relative h-52 overflow-hidden bg-[linear-gradient(135deg,#ef7c42,#f6b372)]">
           {vendor.imageUrl ? (
             <img
@@ -37,7 +37,7 @@ export function VendorCardPremium({ vendor }: VendorCardProps) {
             {isPopular ? <Badge>Popular</Badge> : null}
           </div>
 
-          <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/94 px-3 py-2 text-sm font-medium text-[color:var(--color-text)] shadow-[var(--shadow-soft)]">
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-2 text-sm font-medium text-[color:var(--color-text)] shadow-[var(--shadow-soft)]">
             <Star className="h-4 w-4 fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />
             <span>{avgRating.toFixed(1)}</span>
             <span className="text-[color:var(--color-text-soft)]">({vendor.totalRatings})</span>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { toast } from 'sonner';
 
 export function LoginPage() {
@@ -39,6 +40,9 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-[color:var(--color-background)] px-4 py-8 md:px-6">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="flex justify-end lg:col-span-2">
+          <ThemeToggle />
+        </div>
         <section className="page-hero flex flex-col justify-between">
           <div className="space-y-4">
             <p className="eyebrow">Geobites</p>
