@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { Stagger, StaggerItem } from '@/components/motion/Reveal';
 
 interface NavItem {
   label: string;
@@ -140,17 +141,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
-          <AnimatePresence mode="wait">
-            <motion.div
+          <AnimatePresence initial={false} mode="wait">
+            <m.div
               key={location.pathname}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.18 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
               className="h-full w-full"
             >
               {children}
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </main>
 
@@ -195,26 +196,27 @@ function NavContent({
         </div>
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6">
+      <Stagger className="flex-1 space-y-2 overflow-y-auto px-4 py-6" delayChildren={0.02} stagger={0.05}>
         {items.map((item) => (
-          <NavLink
-            key={item.href}
-            to={item.href}
-            onClick={onItemClick}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
-                isActive
-                  ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
-                  : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
-              )
-            }
-          >
-            {item.icon}
-            {item.label}
-          </NavLink>
+          <StaggerItem key={item.href} y={10}>
+            <NavLink
+              to={item.href}
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
+                    : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
+                )
+              }
+            >
+              {item.icon}
+              {item.label}
+            </NavLink>
+          </StaggerItem>
         ))}
-      </nav>
+      </Stagger>
 
       <div className="space-y-2 border-t border-[color:var(--color-border)] p-4">
         <div className="px-1 pb-1">

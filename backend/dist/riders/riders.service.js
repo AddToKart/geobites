@@ -17,10 +17,13 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const order_entity_1 = require("../entities/order.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
 let RidersService = class RidersService {
     orderRepository;
-    constructor(orderRepository) {
+    notificationsService;
+    constructor(orderRepository, notificationsService) {
         this.orderRepository = orderRepository;
+        this.notificationsService = notificationsService;
     }
     async findDeliveries(riderId, query) {
         const type = query.type ?? 'available';
@@ -53,6 +56,9 @@ let RidersService = class RidersService {
     async acceptDelivery(orderId, riderId) {
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
+            relations: {
+                vendor: true,
+            },
         });
         if (!order) {
             throw new common_1.NotFoundException('Order not found');
@@ -64,11 +70,16 @@ let RidersService = class RidersService {
             throw new common_1.BadRequestException('Order has already been assigned to a rider');
         }
         order.riderId = riderId;
-        return this.orderRepository.save(order);
+        const updatedOrder = await this.orderRepository.save(order);
+        await this.notifyDeliveryAccepted(order);
+        return updatedOrder;
     }
     async updateDeliveryStatus(orderId, riderId, updateStatusDto) {
         const order = await this.orderRepository.findOne({
             where: { id: orderId },
+            relations: {
+                vendor: true,
+            },
         });
         if (!order) {
             throw new common_1.NotFoundException('Order not found');
@@ -86,7 +97,9 @@ let RidersService = class RidersService {
             throw new common_1.BadRequestException('Invalid status transition');
         }
         order.status = updateStatusDto.status;
-        return this.orderRepository.save(order);
+        const updatedOrder = await this.orderRepository.save(order);
+        await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
+        return updatedOrder;
     }
     async updateRiderLocation(orderId, riderId, updateLocationDto) {
         const order = await this.orderRepository.findOne({
@@ -105,11 +118,77 @@ let RidersService = class RidersService {
         order.riderLng = updateLocationDto.riderLng;
         return this.orderRepository.save(order);
     }
+    async notifyDeliveryAccepted(order) {
+        await this.notificationsService.create({
+            userId: order.customerId,
+            title: 'Rider Assigned',
+            message: 'A rider has accepted your delivery request',
+            type: 'order_update',
+            referenceId: order.id,
+        });
+        if (order.vendor?.userId) {
+            await this.notificationsService.create({
+                userId: order.vendor.userId,
+                title: 'Rider Assigned',
+                message: 'A rider is heading to pick up this order',
+                type: 'delivery_request',
+                referenceId: order.id,
+            });
+        }
+    }
+    async notifyDeliveryStatusUpdate(order, status) {
+        if (status === 'picked_up') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Picked Up',
+                message: 'Your order has been picked up and is moving to delivery',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+            if (order.vendor?.userId) {
+                await this.notificationsService.create({
+                    userId: order.vendor.userId,
+                    title: 'Order Picked Up',
+                    message: 'The rider has picked up the order from your shop',
+                    type: 'delivery_request',
+                    referenceId: order.id,
+                });
+            }
+            return;
+        }
+        if (status === 'delivering') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order On The Way',
+                message: 'Your rider is on the way to the delivery pin',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+            return;
+        }
+        await this.notificationsService.create({
+            userId: order.customerId,
+            title: 'Order Delivered',
+            message: 'Your rider marked the order as delivered',
+            type: 'order_update',
+            referenceId: order.id,
+        });
+        if (order.vendor?.userId) {
+            await this.notificationsService.create({
+                userId: order.vendor.userId,
+                title: 'Order Delivered',
+                message: 'The rider completed the delivery for this order',
+                type: 'delivery_request',
+                referenceId: order.id,
+            });
+        }
+    }
 };
 exports.RidersService = RidersService;
 exports.RidersService = RidersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], RidersService);
 //# sourceMappingURL=riders.service.js.map

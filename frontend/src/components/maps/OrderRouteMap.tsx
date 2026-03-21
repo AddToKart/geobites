@@ -82,25 +82,33 @@ function RouteViewportController({
   is3D: boolean;
 }) {
   const { map, isLoaded } = useMap();
+  const viewportKey = useMemo(() => {
+    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const focusPoints = structuralPoints.length ? structuralPoints : points;
+
+    return focusPoints
+      .map((point) => `${point.label}:${point.lat.toFixed(4)}:${point.lng.toFixed(4)}`)
+      .join('|');
+  }, [points]);
 
   useEffect(() => {
     if (!isLoaded || !map || points.length === 0) {
       return;
     }
 
-    if (points.length === 1) {
-      map.easeTo({
-        center: [points[0].lng, points[0].lat],
+    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const focusPoints = structuralPoints.length ? structuralPoints : points;
+
+    if (focusPoints.length === 1) {
+      map.jumpTo({
+        center: [focusPoints[0].lng, focusPoints[0].lat],
         zoom: 15.4,
-        bearing: is3D ? -18 : 0,
-        pitch: is3D ? 60 : 0,
-        duration: 900,
       });
       return;
     }
 
-    const lngs = points.map((point) => point.lng);
-    const lats = points.map((point) => point.lat);
+    const lngs = focusPoints.map((point) => point.lng);
+    const lats = focusPoints.map((point) => point.lat);
 
     map.fitBounds(
       [
@@ -109,23 +117,23 @@ function RouteViewportController({
       ],
       {
         padding: 72,
-        duration: 900,
+        duration: 0,
         maxZoom: 15.2,
       },
     );
+  }, [isLoaded, map, points, viewportKey]);
 
-    const frameId = window.requestAnimationFrame(() => {
-      map.easeTo({
-        bearing: is3D ? -18 : 0,
-        pitch: is3D ? 60 : 0,
-        duration: 500,
-      });
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return;
+    }
+
+    map.easeTo({
+      bearing: is3D ? -18 : 0,
+      pitch: is3D ? 60 : 0,
+      duration: 260,
     });
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [is3D, isLoaded, map, points]);
+  }, [is3D, isLoaded, map]);
 
   return null;
 }

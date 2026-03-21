@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { MapPin, PackageCheck, ShoppingBag } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrder, updateOrderStatus } from '../../services/orderService';
 import { Order } from '../../types';
 import { ORDER_STATUS_LABELS } from '../../utils/constants';
@@ -29,13 +31,12 @@ export function OrderTrackingPage() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
-    const refreshOrder = async (showLoading = false) => {
+    const refreshInitialOrder = async () => {
       if (!id) {
         return;
       }
-      if (showLoading) {
-        setIsLoading(true);
-      }
+
+      setIsLoading(true);
       try {
         const response = await getOrder(id);
         setOrder(response);
@@ -43,22 +44,30 @@ export function OrderTrackingPage() {
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load order');
       } finally {
-        if (showLoading) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
-    void refreshOrder(true);
-
-    const intervalId = window.setInterval(() => {
-      void refreshOrder();
-    }, 15000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
+    void refreshInitialOrder();
   }, [id]);
+
+  useVisiblePolling(
+    async () => {
+      if (!id) {
+        return;
+      }
+
+      try {
+        const response = await getOrder(id);
+        setOrder(response);
+        setError(null);
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load order');
+      }
+    },
+    15000,
+    { enabled: Boolean(id), runOnMount: false },
+  );
 
   const cancelOrder = async () => {
     if (!order) {
@@ -147,7 +156,7 @@ export function OrderTrackingPage() {
         </Card>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
         <Card>
           <CardContent className="flex items-center gap-4 p-5">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
@@ -181,16 +190,19 @@ export function OrderTrackingPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </Stagger>
 
-      <OrderRouteMap
-        order={order}
-        title="Live route"
-        description="This map shows the shop, your pinned drop-off point, and rider progress whenever rider coordinates are available."
-      />
+      <Reveal delay={0.08}>
+        <LazyOrderRouteMap
+          order={order}
+          title="Live route"
+          description="This map shows the shop, your pinned drop-off point, and rider progress whenever rider coordinates are available."
+        />
+      </Reveal>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
-        <Card>
+        <Reveal>
+          <Card>
           <CardContent className="space-y-4 p-5">
             <div>
               <h2 className="text-2xl font-semibold">Progress</h2>
@@ -236,9 +248,10 @@ export function OrderTrackingPage() {
               })}
             </ol>
           </CardContent>
-        </Card>
+          </Card>
+        </Reveal>
 
-        <div className="space-y-5">
+        <Reveal className="space-y-5" delay={0.1}>
           <Card>
             <CardContent className="space-y-4 p-5">
               <h2 className="text-2xl font-semibold">Order summary</h2>
@@ -265,7 +278,7 @@ export function OrderTrackingPage() {
               </p>
             </CardContent>
           </Card>
-        </div>
+        </Reveal>
       </section>
     </div>
   );

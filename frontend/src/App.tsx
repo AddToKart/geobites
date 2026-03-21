@@ -1,22 +1,74 @@
+import { Suspense, lazy } from 'react';
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { RouteLoadingScreen } from './components/layout/RouteLoadingScreen';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-import { NotificationsPage } from './pages/common/NotificationsPage';
-import { ProfilePage } from './pages/common/ProfilePage';
-import { BrowseVendorsPagePremium } from './pages/customer/BrowseVendorsPagePremium';
-import { CartPage } from './pages/customer/CartPage';
-import { OrderHistoryPage } from './pages/customer/OrderHistoryPage';
-import { OrderTrackingPage } from './pages/customer/OrderTrackingPage';
-import { VendorMenuPage } from './pages/customer/VendorMenuPage';
-import { ActiveDeliveryPage } from './pages/rider/ActiveDeliveryPage';
-import { RiderDashboard } from './pages/rider/RiderDashboard';
-import { MenuManagementPage } from './pages/seller/MenuManagementPage';
-import { OrderManagementPage } from './pages/seller/OrderManagementPage';
-import { SellerDashboard } from './pages/seller/SellerDashboard';
+
+const LoginPage = lazy(() =>
+  import('./pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import('./pages/auth/RegisterPage').then((module) => ({ default: module.RegisterPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('./pages/common/NotificationsPage').then((module) => ({
+    default: module.NotificationsPage,
+  })),
+);
+const ProfilePage = lazy(() =>
+  import('./pages/common/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const BrowseVendorsPagePremium = lazy(() =>
+  import('./pages/customer/BrowseVendorsPagePremium').then((module) => ({
+    default: module.BrowseVendorsPagePremium,
+  })),
+);
+const CartPage = lazy(() =>
+  import('./pages/customer/CartPage').then((module) => ({ default: module.CartPage })),
+);
+const OrderHistoryPage = lazy(() =>
+  import('./pages/customer/OrderHistoryPage').then((module) => ({
+    default: module.OrderHistoryPage,
+  })),
+);
+const OrderTrackingPage = lazy(() =>
+  import('./pages/customer/OrderTrackingPage').then((module) => ({
+    default: module.OrderTrackingPage,
+  })),
+);
+const VendorMenuPage = lazy(() =>
+  import('./pages/customer/VendorMenuPage').then((module) => ({
+    default: module.VendorMenuPage,
+  })),
+);
+const ActiveDeliveryPage = lazy(() =>
+  import('./pages/rider/ActiveDeliveryPage').then((module) => ({
+    default: module.ActiveDeliveryPage,
+  })),
+);
+const RiderDashboard = lazy(() =>
+  import('./pages/rider/RiderDashboard').then((module) => ({
+    default: module.RiderDashboard,
+  })),
+);
+const MenuManagementPage = lazy(() =>
+  import('./pages/seller/MenuManagementPage').then((module) => ({
+    default: module.MenuManagementPage,
+  })),
+);
+const OrderManagementPage = lazy(() =>
+  import('./pages/seller/OrderManagementPage').then((module) => ({
+    default: module.OrderManagementPage,
+  })),
+);
+const SellerDashboard = lazy(() =>
+  import('./pages/seller/SellerDashboard').then((module) => ({
+    default: module.SellerDashboard,
+  })),
+);
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
@@ -46,48 +98,54 @@ function HomeRedirect() {
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<HomeRedirect />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    <Suspense fallback={<RouteLoadingScreen />}>
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-      <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
-        <Route path="/browse" element={<BrowseVendorsPagePremium />} />
-        <Route path="/vendor/:id" element={<VendorMenuPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/orders" element={<OrderHistoryPage />} />
-        <Route path="/orders/:id" element={<OrderTrackingPage />} />
-      </Route>
+        <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
+          <Route path="/browse" element={<BrowseVendorsPagePremium />} />
+          <Route path="/vendor/:id" element={<VendorMenuPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/orders" element={<OrderHistoryPage />} />
+          <Route path="/orders/:id" element={<OrderTrackingPage />} />
+        </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
-        <Route path="/seller" element={<SellerDashboard />} />
-        <Route path="/seller/menu" element={<MenuManagementPage />} />
-        <Route path="/seller/orders" element={<OrderManagementPage />} />
-      </Route>
+        <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
+          <Route path="/seller" element={<SellerDashboard />} />
+          <Route path="/seller/menu" element={<MenuManagementPage />} />
+          <Route path="/seller/orders" element={<OrderManagementPage />} />
+        </Route>
 
-      <Route element={<ProtectedRoute allowedRoles={['rider']} />}>
-        <Route path="/rider" element={<RiderDashboard />} />
-        <Route path="/rider/deliveries" element={<RiderDashboard />} />
-        <Route path="/rider/delivery/:id" element={<ActiveDeliveryPage />} />
-      </Route>
+        <Route element={<ProtectedRoute allowedRoles={['rider']} />}>
+          <Route path="/rider" element={<RiderDashboard />} />
+          <Route path="/rider/deliveries" element={<RiderDashboard />} />
+          <Route path="/rider/delivery/:id" element={<ActiveDeliveryPage />} />
+        </Route>
 
-      <Route element={<ProtectedRoute />}>
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
+        <Route element={<ProtectedRoute />}>
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <AppRoutes />
-      </CartProvider>
-    </AuthProvider>
+    <LazyMotion features={domAnimation}>
+      <MotionConfig reducedMotion="user">
+        <AuthProvider>
+          <CartProvider>
+            <AppRoutes />
+          </CartProvider>
+        </AuthProvider>
+      </MotionConfig>
+    </LazyMotion>
   );
 }
 

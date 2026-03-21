@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, PencilLine, Save, Store, Trash2 } from 'lucide-react';
-import { DeliveryLocationPicker } from '@/components/maps/DeliveryLocationPicker';
+import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -364,7 +364,7 @@ export function MenuManagementPage() {
             </CardContent>
           </Card>
 
-          <DeliveryLocationPicker
+          <LazyDeliveryLocationPicker
             value={vendorCoordinates}
             onChange={({ lat, lng }) =>
               setVendorForm((current) => ({

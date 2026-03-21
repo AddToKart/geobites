@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
 import { UpdateRiderLocationDto } from './dto/update-rider-location.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
@@ -16,6 +17,7 @@ export class RidersService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
@@ -52,6 +54,9 @@ export class RidersService {
   async acceptDelivery(orderId: string, riderId: string) {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
+      relations: {
+        vendor: true,
+      },
     });
 
     if (!order) {
@@ -69,7 +74,9 @@ export class RidersService {
     }
 
     order.riderId = riderId;
-    return this.orderRepository.save(order);
+    const updatedOrder = await this.orderRepository.save(order);
+    await this.notifyDeliveryAccepted(order);
+    return updatedOrder;
   }
 
   async updateDeliveryStatus(
@@ -79,6 +86,9 @@ export class RidersService {
   ) {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },
+      relations: {
+        vendor: true,
+      },
     });
 
     if (!order) {
@@ -101,7 +111,9 @@ export class RidersService {
     }
 
     order.status = updateStatusDto.status;
-    return this.orderRepository.save(order);
+    const updatedOrder = await this.orderRepository.save(order);
+    await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
+    return updatedOrder;
   }
 
   async updateRiderLocation(
@@ -131,5 +143,82 @@ export class RidersService {
     order.riderLng = updateLocationDto.riderLng;
 
     return this.orderRepository.save(order);
+  }
+
+  private async notifyDeliveryAccepted(order: Order) {
+    await this.notificationsService.create({
+      userId: order.customerId,
+      title: 'Rider Assigned',
+      message: 'A rider has accepted your delivery request',
+      type: 'order_update',
+      referenceId: order.id,
+    });
+
+    if (order.vendor?.userId) {
+      await this.notificationsService.create({
+        userId: order.vendor.userId,
+        title: 'Rider Assigned',
+        message: 'A rider is heading to pick up this order',
+        type: 'delivery_request',
+        referenceId: order.id,
+      });
+    }
+  }
+
+  private async notifyDeliveryStatusUpdate(
+    order: Order,
+    status: UpdateDeliveryStatusDto['status'],
+  ) {
+    if (status === 'picked_up') {
+      await this.notificationsService.create({
+        userId: order.customerId,
+        title: 'Order Picked Up',
+        message: 'Your order has been picked up and is moving to delivery',
+        type: 'order_update',
+        referenceId: order.id,
+      });
+
+      if (order.vendor?.userId) {
+        await this.notificationsService.create({
+          userId: order.vendor.userId,
+          title: 'Order Picked Up',
+          message: 'The rider has picked up the order from your shop',
+          type: 'delivery_request',
+          referenceId: order.id,
+        });
+      }
+
+      return;
+    }
+
+    if (status === 'delivering') {
+      await this.notificationsService.create({
+        userId: order.customerId,
+        title: 'Order On The Way',
+        message: 'Your rider is on the way to the delivery pin',
+        type: 'order_update',
+        referenceId: order.id,
+      });
+
+      return;
+    }
+
+    await this.notificationsService.create({
+      userId: order.customerId,
+      title: 'Order Delivered',
+      message: 'Your rider marked the order as delivered',
+      type: 'order_update',
+      referenceId: order.id,
+    });
+
+    if (order.vendor?.userId) {
+      await this.notificationsService.create({
+        userId: order.vendor.userId,
+        title: 'Order Delivered',
+        message: 'The rider completed the delivery for this order',
+        type: 'delivery_request',
+        referenceId: order.id,
+      });
+    }
   }
 }

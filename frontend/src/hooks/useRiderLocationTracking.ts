@@ -4,6 +4,7 @@ import { updateDeliveryLocation } from '@/services/riderService';
 function hasMovedEnough(
   previous: { lat: number; lng: number } | null,
   next: { lat: number; lng: number },
+  minimumDelta = 0.00008,
 ) {
   if (!previous) {
     return true;
@@ -12,7 +13,7 @@ function hasMovedEnough(
   const latDelta = Math.abs(previous.lat - next.lat);
   const lngDelta = Math.abs(previous.lng - next.lng);
 
-  return latDelta > 0.00008 || lngDelta > 0.00008;
+  return latDelta > minimumDelta || lngDelta > minimumDelta;
 }
 
 export function useRiderLocationTracking({
@@ -25,6 +26,8 @@ export function useRiderLocationTracking({
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const lastSentRef = useRef<{ lat: number; lng: number } | null>(null);
   const lastSentAtRef = useRef<number>(0);
+  const lastUiRef = useRef<{ lat: number; lng: number } | null>(null);
+  const lastUiUpdateAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (!enabled || !orderId || !navigator.geolocation) {
@@ -38,9 +41,16 @@ export function useRiderLocationTracking({
           lng: position.longitude,
         };
 
-        setCoords(nextCoords);
-
         const now = Date.now();
+        const enoughUiMovement = hasMovedEnough(lastUiRef.current, nextCoords, 0.00003);
+        const enoughUiTimeElapsed = now - lastUiUpdateAtRef.current > 4000;
+
+        if (enoughUiMovement || enoughUiTimeElapsed) {
+          lastUiRef.current = nextCoords;
+          lastUiUpdateAtRef.current = now;
+          setCoords(nextCoords);
+        }
+
         const enoughTimeElapsed = now - lastSentAtRef.current > 15000;
 
         if (!hasMovedEnough(lastSentRef.current, nextCoords) && !enoughTimeElapsed) {

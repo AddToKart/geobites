@@ -10,6 +10,7 @@ exports.RidersModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const order_entity_1 = require("../entities/order.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 const riders_controller_1 = require("./riders.controller");
 const riders_service_1 = require("./riders.service");
 let RidersModule = class RidersModule {
@@ -17,7 +18,7 @@ let RidersModule = class RidersModule {
 exports.RidersModule = RidersModule;
 exports.RidersModule = RidersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order]), notifications_module_1.NotificationsModule],
         controllers: [riders_controller_1.RidersController],
         providers: [riders_service_1.RidersService],
         exports: [riders_service_1.RidersService],

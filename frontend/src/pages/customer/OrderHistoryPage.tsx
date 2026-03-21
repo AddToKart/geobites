@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock3, PackageCheck, Search, ShoppingBag, Sparkles } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { OrderCard } from '../../components/custom/OrderCard';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -232,7 +232,7 @@ export function OrderHistoryPage() {
 
           <div className="space-y-4">
             {spotlightOrder ? (
-              <OrderRouteMap
+              <LazyOrderRouteMap
                 order={spotlightOrder}
                 title={`Spotlight order #${spotlightOrder.id.slice(0, 8)}`}
                 description="This fills the history rail with live route context instead of leaving the right side underused."

@@ -46,15 +46,19 @@ __decorate([
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "deliveryAddress", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((object) => object.deliveryLng !== undefined),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(-90),
+    (0, class_validator_1.Max)(90),
     __metadata("design:type", Number)
 ], CreateOrderDto.prototype, "deliveryLat", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((object) => object.deliveryLat !== undefined),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Min)(-180),
+    (0, class_validator_1.Max)(180),
     __metadata("design:type", Number)
 ], CreateOrderDto.prototype, "deliveryLng", void 0);
 __decorate([

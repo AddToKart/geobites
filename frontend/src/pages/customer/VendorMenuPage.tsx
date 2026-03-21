@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Clock3,
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
 import {
   Map,
   MapControls,
@@ -49,14 +50,23 @@ function VendorMapCamera({
       return;
     }
 
-    map.easeTo({
+    map.jumpTo({
       center: [vendor.longitude, vendor.latitude],
       zoom: 15.1,
+    });
+  }, [isLoaded, map, vendor.latitude, vendor.longitude]);
+
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return;
+    }
+
+    map.easeTo({
       bearing: is3D ? -18 : 0,
       pitch: is3D ? 60 : 0,
-      duration: 900,
+      duration: 260,
     });
-  }, [is3D, isLoaded, map, vendor.latitude, vendor.longitude]);
+  }, [is3D, isLoaded, map]);
 
   return null;
 }
@@ -72,6 +82,7 @@ export function VendorMenuPage() {
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const deferredMenuSearch = useDeferredValue(menuSearch);
 
   useEffect(() => {
     if (!id) {
@@ -106,7 +117,7 @@ export function VendorMenuPage() {
   }, [id]);
 
   const filteredItems = useMemo(() => {
-    const normalizedSearch = menuSearch.trim().toLowerCase();
+    const normalizedSearch = deferredMenuSearch.trim().toLowerCase();
 
     return menuItems.filter((item) => {
       if (showAvailableOnly && !item.isAvailable) {
@@ -125,7 +136,7 @@ export function VendorMenuPage() {
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(normalizedSearch));
     });
-  }, [activeCategory, menuItems, menuSearch, showAvailableOnly]);
+  }, [activeCategory, deferredMenuSearch, menuItems, showAvailableOnly]);
 
   const groupedItems = useMemo(() => {
     return filteredItems.reduce<Record<string, MenuItem[]>>((accumulator, item) => {
@@ -227,7 +238,8 @@ export function VendorMenuPage() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          <Card className="overflow-hidden">
+          <Reveal delay={0.02}>
+            <Card className="overflow-hidden">
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_320px]">
               <div className="space-y-5 p-6 md:p-7">
                 <div className="flex flex-wrap gap-2">
@@ -294,9 +306,11 @@ export function VendorMenuPage() {
                 </p>
               </div>
             </div>
-          </Card>
+            </Card>
+          </Reveal>
 
-          <Card>
+          <Reveal delay={0.08}>
+            <Card>
             <CardContent className="space-y-5 p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -345,7 +359,8 @@ export function VendorMenuPage() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </Reveal>
 
           {filteredItems.length === 0 ? (
             <Card>
@@ -363,11 +378,13 @@ export function VendorMenuPage() {
                   </div>
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
+                  <Stagger delayChildren={0.02} stagger={0.05} className="contents">
                   {categoryItems.map((item) => {
                     const quantity = getItemQuantity(item.id);
 
                     return (
-                      <Card key={item.id} className="overflow-hidden">
+                      <StaggerItem key={item.id}>
+                        <Card className="overflow-hidden">
                         <div className="h-36 bg-[linear-gradient(135deg,#fff2e5,#f9d2b7)]">
                           {item.imageUrl ? (
                             <img
@@ -440,9 +457,11 @@ export function VendorMenuPage() {
                             )}
                           </div>
                         </CardContent>
-                      </Card>
+                        </Card>
+                      </StaggerItem>
                     );
                   })}
+                  </Stagger>
                 </div>
               </section>
             ))
