@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Clock3, DollarSign, MapPin, PackageCheck, ShoppingBag, Sparkles } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -14,7 +14,9 @@ import { Order } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
 import { MetricCard } from '@/components/layout/MetricCard';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 
 export function SellerDashboard() {
@@ -22,27 +24,15 @@ export function SellerDashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadOrders = async () => {
-      try {
-        const response = await getOrders({ page: 1, limit: 20 });
-        setOrders(response.data);
-        setError(null);
-      } catch (caughtError) {
-        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
-      }
-    };
-
-    void loadOrders();
-
-    const intervalId = window.setInterval(() => {
-      void loadOrders();
-    }, 15000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
+  useVisiblePolling(async () => {
+    try {
+      const response = await getOrders({ page: 1, limit: 20 });
+      setOrders(response.data);
+      setError(null);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
+    }
+  }, 15000);
 
   const metrics = useMemo(() => {
     const todaysOrders = orders.filter(
@@ -116,7 +106,7 @@ export function SellerDashboard() {
         description="Today’s order volume, active work, and recent tickets all sit on one surface so the next action is obvious."
       />
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
         <MetricCard
           label="Today's orders"
           value={metrics.todaysOrders}
@@ -135,7 +125,7 @@ export function SellerDashboard() {
           description="Completed order value"
           icon={<DollarSign className="h-5 w-5" />}
         />
-      </section>
+      </Stagger>
 
       {error ? (
         <Card>
@@ -144,7 +134,8 @@ export function SellerDashboard() {
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
-        <Card>
+        <Reveal>
+          <Card>
           <CardHeader>
             <CardTitle>Recent orders</CardTitle>
           </CardHeader>
@@ -194,11 +185,12 @@ export function SellerDashboard() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+          </Card>
+        </Reveal>
 
-        <div className="space-y-4">
+        <Reveal className="space-y-4" delay={0.1}>
           {selectedOrder ? (
-            <OrderRouteMap
+            <LazyOrderRouteMap
               order={selectedOrder}
               title={`Order map #${selectedOrder.id.slice(0, 8)}`}
               description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
@@ -274,7 +266,7 @@ export function SellerDashboard() {
               </CardContent>
             </Card>
           ) : null}
-        </div>
+        </Reveal>
       </section>
     </div>
   );

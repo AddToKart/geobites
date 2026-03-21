@@ -4,7 +4,7 @@ import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { DeliveryLocationPicker } from '@/components/maps/DeliveryLocationPicker';
+import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useCart } from '@/hooks/useCart';
 import { formatCurrency } from '@/utils/helpers';
@@ -243,7 +243,7 @@ export function CartPage() {
               </CardContent>
             </Card>
 
-            <DeliveryLocationPicker value={deliveryPin} onChange={setDeliveryPin} />
+            <LazyDeliveryLocationPicker value={deliveryPin} onChange={setDeliveryPin} />
           </div>
         </form>
       </div>

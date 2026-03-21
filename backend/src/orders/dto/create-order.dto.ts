@@ -8,6 +8,9 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  Max,
+  Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -29,14 +32,18 @@ export class CreateOrderDto {
   @IsNotEmpty()
   deliveryAddress!: string;
 
+  @ValidateIf((object) => object.deliveryLng !== undefined)
   @Type(() => Number)
   @IsNumber()
-  @IsOptional()
+  @Min(-90)
+  @Max(90)
   deliveryLat?: number;
 
+  @ValidateIf((object) => object.deliveryLat !== undefined)
   @Type(() => Number)
   @IsNumber()
-  @IsOptional()
+  @Min(-180)
+  @Max(180)
   deliveryLng?: number;
 
   @IsString()

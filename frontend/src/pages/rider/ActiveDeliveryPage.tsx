@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useRiderLocationTracking } from '@/hooks/useRiderLocationTracking';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Reveal } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrder } from '../../services/orderService';
 import { updateDeliveryStatus } from '../../services/riderService';
 import { Order } from '../../types';
@@ -26,8 +28,8 @@ export function ActiveDeliveryPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadOrder = async () => {
+  useVisiblePolling(
+    async () => {
       if (!id) {
         return;
       }
@@ -38,18 +40,10 @@ export function ActiveDeliveryPage() {
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load delivery');
       }
-    };
-
-    void loadOrder();
-
-    const intervalId = window.setInterval(() => {
-      void loadOrder();
-    }, 15000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [id]);
+    },
+    15000,
+    { enabled: Boolean(id) },
+  );
 
   const liveCoords = useRiderLocationTracking({
     orderId: order?.id,
@@ -128,8 +122,8 @@ export function ActiveDeliveryPage() {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          <OrderRouteMap
+        <Reveal className="space-y-6">
+          <LazyOrderRouteMap
             order={mappedOrder}
             title="Active route"
             description="This route updates with your location while the delivery is in progress."
@@ -179,9 +173,9 @@ export function ActiveDeliveryPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </Reveal>
 
-        <div className="space-y-4">
+        <Reveal className="space-y-4" delay={0.1}>
           <Card>
             <CardContent className="space-y-4 p-5">
               <div>
@@ -268,7 +262,7 @@ export function ActiveDeliveryPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </Reveal>
       </div>
     </div>
   );

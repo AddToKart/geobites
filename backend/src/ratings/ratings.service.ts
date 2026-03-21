@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { Rating } from '../entities/rating.entity';
 import { Vendor } from '../entities/vendor.entity';
@@ -22,59 +22,77 @@ export class RatingsService {
     @InjectRepository(Vendor)
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
     createRatingDto: CreateRatingDto,
     customerId: string,
   ): Promise<Rating> {
-    const order = await this.orderRepository.findOne({
-      where: { id: createRatingDto.orderId },
-    });
+    const { savedRating, vendorUserId, orderId } =
+      await this.dataSource.transaction(async (manager) => {
+        const orderRepository = manager.getRepository(Order);
+        const ratingRepository = manager.getRepository(Rating);
+        const vendorRepository = manager.getRepository(Vendor);
 
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
+        const order = await orderRepository.findOne({
+          where: { id: createRatingDto.orderId },
+        });
 
-    if (order.customerId !== customerId) {
-      throw new ForbiddenException('You can only rate your own orders');
-    }
+        if (!order) {
+          throw new NotFoundException('Order not found');
+        }
 
-    if (order.status !== 'delivered') {
-      throw new BadRequestException('Only delivered orders can be rated');
-    }
+        if (order.customerId !== customerId) {
+          throw new ForbiddenException('You can only rate your own orders');
+        }
 
-    const existingRating = await this.ratingRepository.findOne({
-      where: { orderId: order.id },
-    });
+        if (order.status !== 'delivered') {
+          throw new BadRequestException('Only delivered orders can be rated');
+        }
 
-    if (existingRating) {
-      throw new BadRequestException('Order already has a rating');
-    }
+        const existingRating = await ratingRepository.findOne({
+          where: { orderId: order.id },
+        });
 
-    const rating = this.ratingRepository.create({
-      orderId: order.id,
-      customerId,
-      vendorId: order.vendorId,
-      score: createRatingDto.score,
-      feedback: createRatingDto.feedback,
-    });
+        if (existingRating) {
+          throw new BadRequestException('Order already has a rating');
+        }
 
-    const savedRating = await this.ratingRepository.save(rating);
-    await this.recomputeVendorRating(order.vendorId);
+        const rating = ratingRepository.create({
+          orderId: order.id,
+          customerId,
+          vendorId: order.vendorId,
+          score: createRatingDto.score,
+          feedback: createRatingDto.feedback,
+        });
+
+        const savedRating = await ratingRepository.save(rating);
+        await this.recomputeVendorRating(
+          order.vendorId,
+          ratingRepository,
+          vendorRepository,
+        );
+
+        const vendor = await vendorRepository.findOne({
+          where: { id: order.vendorId },
+        });
+
+        return {
+          savedRating,
+          vendorUserId: vendor?.userId ?? null,
+          orderId: order.id,
+        };
+      });
 
     // Notify seller about the new rating
-    const vendor = await this.vendorRepository.findOne({
-      where: { id: order.vendorId },
-    });
-
-    if (vendor) {
+    if (vendorUserId) {
       await this.notificationsService.create({
-        userId: vendor.userId,
+        userId: vendorUserId,
         title: 'New Rating Received',
         message: `You received a ${createRatingDto.score}-star rating`,
         type: 'rating',
-        referenceId: order.id,
+        referenceId: orderId,
       });
     }
 
@@ -106,18 +124,22 @@ export class RatingsService {
     };
   }
 
-  private async recomputeVendorRating(vendorId: string) {
-    const ratings = await this.ratingRepository.find({
-      where: { vendorId },
-    });
+  private async recomputeVendorRating(
+    vendorId: string,
+    ratingRepository: Repository<Rating>,
+    vendorRepository: Repository<Vendor>,
+  ) {
+    const rawSummary = await ratingRepository
+      .createQueryBuilder('rating')
+      .select('COUNT(rating.id)', 'totalRatings')
+      .addSelect('AVG(rating.score)', 'averageScore')
+      .where('rating.vendorId = :vendorId', { vendorId })
+      .getRawOne<{ totalRatings: string; averageScore: string | null }>();
 
-    const totalRatings = ratings.length;
-    const average =
-      totalRatings === 0
-        ? 0
-        : ratings.reduce((sum, rating) => sum + rating.score, 0) / totalRatings;
+    const totalRatings = Number(rawSummary?.totalRatings ?? 0);
+    const average = Number(rawSummary?.averageScore ?? 0);
 
-    await this.vendorRepository.update(vendorId, {
+    await vendorRepository.update(vendorId, {
       rating: Number(average.toFixed(2)),
       totalRatings,
     });

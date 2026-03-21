@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { UserRole } from '../common/constants/roles';
 import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
@@ -14,7 +14,8 @@ export declare class OrdersService {
     private readonly menuItemRepository;
     private readonly vendorRepository;
     private readonly notificationsService;
-    constructor(orderRepository: Repository<Order>, orderItemRepository: Repository<OrderItem>, menuItemRepository: Repository<MenuItem>, vendorRepository: Repository<Vendor>, notificationsService: NotificationsService);
+    private readonly dataSource;
+    constructor(orderRepository: Repository<Order>, orderItemRepository: Repository<OrderItem>, menuItemRepository: Repository<MenuItem>, vendorRepository: Repository<Vendor>, notificationsService: NotificationsService, dataSource: DataSource);
     create(createOrderDto: CreateOrderDto, customerId: string): Promise<Order>;
     findAllForUser(userId: string, role: UserRole, query: QueryOrdersDto): Promise<{
         data: Order[];

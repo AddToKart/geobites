@@ -37,73 +37,91 @@ let OrdersService = class OrdersService {
     menuItemRepository;
     vendorRepository;
     notificationsService;
-    constructor(orderRepository, orderItemRepository, menuItemRepository, vendorRepository, notificationsService) {
+    dataSource;
+    constructor(orderRepository, orderItemRepository, menuItemRepository, vendorRepository, notificationsService, dataSource) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.menuItemRepository = menuItemRepository;
         this.vendorRepository = vendorRepository;
         this.notificationsService = notificationsService;
+        this.dataSource = dataSource;
     }
     async create(createOrderDto, customerId) {
-        const vendor = await this.vendorRepository.findOne({
-            where: { id: createOrderDto.vendorId },
-        });
-        if (!vendor) {
-            throw new common_1.NotFoundException('Vendor not found');
-        }
         const menuItemIds = createOrderDto.items.map((item) => item.menuItemId);
-        const menuItems = await this.menuItemRepository.find({
-            where: {
-                id: (0, typeorm_2.In)(menuItemIds),
-                vendorId: createOrderDto.vendorId,
-            },
-        });
-        if (menuItems.length !== menuItemIds.length) {
-            throw new common_1.BadRequestException('One or more menu items are invalid');
+        if (new Set(menuItemIds).size !== menuItemIds.length) {
+            throw new common_1.BadRequestException('Duplicate menu items are not allowed in a single order');
         }
-        const orderItems = createOrderDto.items.map((item) => {
-            const menuItem = menuItems.find((candidate) => candidate.id === item.menuItemId);
-            if (!menuItem) {
-                throw new common_1.BadRequestException('Menu item not found in vendor menu');
+        const { savedOrderId, sellerUserId } = await this.dataSource.transaction(async (manager) => {
+            const vendorRepository = manager.getRepository(vendor_entity_1.Vendor);
+            const menuItemRepository = manager.getRepository(menu_item_entity_1.MenuItem);
+            const orderRepository = manager.getRepository(order_entity_1.Order);
+            const orderItemRepository = manager.getRepository(order_item_entity_1.OrderItem);
+            const vendor = await vendorRepository.findOne({
+                where: { id: createOrderDto.vendorId },
+            });
+            if (!vendor) {
+                throw new common_1.NotFoundException('Vendor not found');
             }
-            if (!menuItem.isAvailable) {
-                throw new common_1.BadRequestException(`Menu item ${menuItem.name} is not available`);
+            if (!vendor.isActive) {
+                throw new common_1.BadRequestException('Vendor is not accepting orders right now');
             }
-            return {
-                menuItem,
+            const menuItems = await menuItemRepository.find({
+                where: {
+                    id: (0, typeorm_2.In)(menuItemIds),
+                    vendorId: createOrderDto.vendorId,
+                },
+            });
+            if (menuItems.length !== menuItemIds.length) {
+                throw new common_1.BadRequestException('One or more menu items are invalid');
+            }
+            const orderItems = createOrderDto.items.map((item) => {
+                const menuItem = menuItems.find((candidate) => candidate.id === item.menuItemId);
+                if (!menuItem) {
+                    throw new common_1.BadRequestException('Menu item not found in vendor menu');
+                }
+                if (!menuItem.isAvailable) {
+                    throw new common_1.BadRequestException(`Menu item ${menuItem.name} is not available`);
+                }
+                return {
+                    menuItem,
+                    quantity: item.quantity,
+                    price: Number(menuItem.price),
+                    name: menuItem.name,
+                };
+            });
+            const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const order = orderRepository.create({
+                customerId,
+                vendorId: createOrderDto.vendorId,
+                status: 'pending',
+                totalAmount,
+                deliveryAddress: createOrderDto.deliveryAddress,
+                deliveryLat: createOrderDto.deliveryLat,
+                deliveryLng: createOrderDto.deliveryLng,
+                notes: createOrderDto.notes,
+            });
+            const savedOrder = await orderRepository.save(order);
+            const snapshots = orderItems.map((item) => orderItemRepository.create({
+                orderId: savedOrder.id,
+                menuItemId: item.menuItem.id,
+                name: item.name,
                 quantity: item.quantity,
-                price: Number(menuItem.price),
-                name: menuItem.name,
+                price: item.price,
+            }));
+            await orderItemRepository.save(snapshots);
+            return {
+                savedOrderId: savedOrder.id,
+                sellerUserId: vendor.userId,
             };
         });
-        const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const order = this.orderRepository.create({
-            customerId,
-            vendorId: createOrderDto.vendorId,
-            status: 'pending',
-            totalAmount,
-            deliveryAddress: createOrderDto.deliveryAddress,
-            deliveryLat: createOrderDto.deliveryLat,
-            deliveryLng: createOrderDto.deliveryLng,
-            notes: createOrderDto.notes,
-        });
-        const savedOrder = await this.orderRepository.save(order);
-        const snapshots = orderItems.map((item) => this.orderItemRepository.create({
-            orderId: savedOrder.id,
-            menuItemId: item.menuItem.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-        }));
-        await this.orderItemRepository.save(snapshots);
         await this.notificationsService.create({
-            userId: vendor.userId,
+            userId: sellerUserId,
             title: 'New Order',
             message: 'You have received a new order',
             type: 'order_update',
-            referenceId: savedOrder.id,
+            referenceId: savedOrderId,
         });
-        return this.findOneForUser(savedOrder.id, customerId, 'customer');
+        return this.findOneForUser(savedOrderId, customerId, 'customer');
     }
     async findAllForUser(userId, role, query) {
         const page = query.page ?? 1;
@@ -288,6 +306,7 @@ exports.OrdersService = OrdersService = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        notifications_service_1.NotificationsService])
+        notifications_service_1.NotificationsService,
+        typeorm_2.DataSource])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

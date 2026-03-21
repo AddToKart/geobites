@@ -4,7 +4,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateVendorDto {
@@ -21,14 +24,18 @@ export class UpdateVendorDto {
   @IsOptional()
   address?: string;
 
+  @ValidateIf((object) => object.longitude !== undefined)
   @Type(() => Number)
   @IsNumber()
-  @IsOptional()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
+  @ValidateIf((object) => object.latitude !== undefined)
   @Type(() => Number)
   @IsNumber()
-  @IsOptional()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @IsString()

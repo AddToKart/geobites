@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bike, Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useRiderLocationTracking } from '@/hooks/useRiderLocationTracking';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { acceptDelivery, getDeliveries } from '../../services/riderService';
 import { Order } from '../../types';
 
@@ -30,17 +32,7 @@ export function RiderDashboard() {
     }
   };
 
-  useEffect(() => {
-    void loadData();
-
-    const intervalId = window.setInterval(() => {
-      void loadData();
-    }, 15000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
+  useVisiblePolling(loadData, 15000);
 
   useEffect(() => {
     const nextSelectedOrder =
@@ -115,7 +107,7 @@ export function RiderDashboard() {
         </Card>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
         <Card>
           <CardContent className="p-5">
             <p className="text-sm text-[color:var(--color-text-soft)]">Available</p>
@@ -134,10 +126,10 @@ export function RiderDashboard() {
             <p className="mt-2 text-lg font-semibold">Keep status moving</p>
           </CardContent>
         </Card>
-      </section>
+      </Stagger>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
-        <div className="space-y-6">
+        <Reveal className="space-y-6">
           <Card>
             <CardContent className="space-y-4 p-5">
               <div>
@@ -207,11 +199,11 @@ export function RiderDashboard() {
               ) : null}
             </CardContent>
           </Card>
-        </div>
+        </Reveal>
 
-        <div className="space-y-4">
+        <Reveal className="space-y-4" delay={0.1}>
           {mappedOrder ? (
-            <OrderRouteMap
+            <LazyOrderRouteMap
               order={mappedOrder}
               title={`Focused route #${mappedOrder.id.slice(0, 8)}`}
               description="The rider map shows the shop, customer pin, and your live position while the order is active."
@@ -287,7 +279,7 @@ export function RiderDashboard() {
               </CardContent>
             </Card>
           ) : null}
-        </div>
+        </Reveal>
       </div>
     </div>
   );

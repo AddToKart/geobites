@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle } from 'lucide-react';
-import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
+import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -263,7 +263,7 @@ export function OrderManagementPage() {
         <div className="space-y-4">
           {selectedOrder ? (
             <>
-              <OrderRouteMap
+              <LazyOrderRouteMap
                 order={selectedOrder}
                 title={`Focused order #${selectedOrder.id.slice(0, 8)}`}
                 description="This rail keeps the selected order visible with route context instead of leaving the management page feeling hollow."

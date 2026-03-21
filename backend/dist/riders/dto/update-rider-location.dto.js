@@ -20,11 +20,15 @@ exports.UpdateRiderLocationDto = UpdateRiderLocationDto;
 __decorate([
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-90),
+    (0, class_validator_1.Max)(90),
     __metadata("design:type", Number)
 ], UpdateRiderLocationDto.prototype, "riderLat", void 0);
 __decorate([
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(-180),
+    (0, class_validator_1.Max)(180),
     __metadata("design:type", Number)
 ], UpdateRiderLocationDto.prototype, "riderLng", void 0);
 //# sourceMappingURL=update-rider-location.dto.js.map

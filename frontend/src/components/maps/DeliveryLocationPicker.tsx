@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { MapMouseEvent } from 'maplibre-gl';
+import { CheckCircle2, Loader2, LocateFixed, MapPinned } from 'lucide-react';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import {
   Map,
@@ -9,8 +10,17 @@ import {
   MarkerPopup,
   useMap,
 } from '@/components/ui/map';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { MapStyleSelect } from './MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from './map-styles';
 
@@ -32,14 +42,23 @@ function DeliveryPickerInteractions({
       return;
     }
 
-    map.easeTo({
+    map.jumpTo({
       center: [center.lng, center.lat],
       zoom: Math.max(map.getZoom(), 15),
+    });
+  }, [center, isLoaded, map]);
+
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return;
+    }
+
+    map.easeTo({
       bearing: is3D ? -18 : 0,
       pitch: is3D ? 60 : 0,
-      duration: 900,
+      duration: 260,
     });
-  }, [center, is3D, isLoaded, map]);
+  }, [is3D, isLoaded, map]);
 
   useEffect(() => {
     if (!isLoaded || !map) {
@@ -67,7 +86,7 @@ export function DeliveryLocationPicker({
   value,
   onChange,
   title = 'Delivery pin',
-  description = 'Click the map or drag the pin to set the exact drop-off point.',
+  description = 'Open the map picker to place the exact drop-off point for the rider.',
   actionLabel = 'Use my location',
   markerLabel = 'Delivery pin',
   popupEyebrow = 'Delivery point',
@@ -91,13 +110,23 @@ export function DeliveryLocationPicker({
   emptyText?: string;
   initialCenter?: { lat: number; lng: number };
 }) {
-  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(value);
+  const [open, setOpen] = useState(false);
+  const [center, setCenter] = useState<{ lat: number; lng: number }>(value ?? initialCenter);
+  const [draftCoords, setDraftCoords] = useState<{ lat: number; lng: number } | null>(value);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
+  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     if (value) {
       setCenter(value);
+      if (!open) {
+        setDraftCoords(value);
+      }
       return;
+    }
+
+    if (open) {
+      setDraftCoords(null);
     }
 
     if (!navigator.geolocation) {
@@ -120,11 +149,23 @@ export function DeliveryLocationPicker({
         timeout: 8000,
       },
     );
-  }, [initialCenter, value]);
+  }, [initialCenter, open, value]);
 
-  const applyCoords = (coords: { lat: number; lng: number }) => {
+  useEffect(() => {
+    if (!open) {
+      setDraftCoords(value);
+      return;
+    }
+
+    if (value) {
+      setDraftCoords(value);
+      setCenter(value);
+    }
+  }, [open, value]);
+
+  const applyDraftCoords = (coords: { lat: number; lng: number }) => {
     setCenter(coords);
-    onChange(coords);
+    setDraftCoords(coords);
   };
 
   const useMyLocation = () => {
@@ -132,14 +173,19 @@ export function DeliveryLocationPicker({
       return;
     }
 
+    setIsLocating(true);
+
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        applyCoords({
+        applyDraftCoords({
           lat: coords.latitude,
           lng: coords.longitude,
         });
+        setIsLocating(false);
       },
-      () => undefined,
+      () => {
+        setIsLocating(false);
+      },
       {
         enableHighAccuracy: true,
         timeout: 8000,
@@ -147,79 +193,166 @@ export function DeliveryLocationPicker({
     );
   };
 
-  const mapCenter = center ?? initialCenter;
+  const confirmSelection = () => {
+    if (!draftCoords) {
+      return;
+    }
+
+    onChange(draftCoords);
+    setOpen(false);
+  };
+
   const selectedStyle = mapStyles[style];
   const is3D = style === 'openstreetmap3d';
 
   return (
-    <Card>
-      <CardContent className="space-y-4 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <p className="text-sm text-[color:var(--color-text-soft)]">{description}</p>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold">{title}</h3>
+              <p className="text-sm text-[color:var(--color-text-soft)]">{description}</p>
+            </div>
+            <Badge variant={value ? 'success' : 'warning'}>
+              {value ? 'Pin ready' : 'Pin needed'}
+            </Badge>
           </div>
-          <Button type="button" variant="ghost" size="sm" onClick={useMyLocation}>
-            {actionLabel}
-          </Button>
+
+          <div className="panel-muted space-y-2 px-4 py-4">
+            <p className="text-sm text-[color:var(--color-text)]">
+              {value ? selectedText(value) : emptyText}
+            </p>
+            <p className="text-xs text-[color:var(--color-text-muted)]">
+              The modal picker traps focus properly and keeps the full map accessible without stretching the page layout.
+            </p>
+          </div>
+
+          <DialogTrigger asChild>
+            <Button type="button">
+              <MapPinned className="h-4 w-4" />
+              {value ? 'Edit pin on map' : 'Open map picker'}
+            </Button>
+          </DialogTrigger>
+        </CardContent>
+      </Card>
+
+      <DialogContent className="max-w-[min(100vw-2rem,72rem)] gap-0 overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-card)] p-0 sm:max-w-[min(100vw-2rem,72rem)]">
+        <div className="space-y-5 p-5 md:p-6">
+          <DialogHeader className="space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-2">
+                <DialogTitle className="text-2xl font-semibold text-[color:var(--color-text)]">
+                  {title}
+                </DialogTitle>
+                <DialogDescription className="max-w-2xl text-sm leading-6 text-[color:var(--color-text-soft)]">
+                  Click anywhere on the map, drag the pin, or use your current location to set the exact point that shows up in tracking.
+                </DialogDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge>{draftCoords ? 'Draft pin ready' : 'Pick a point'}</Badge>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={useMyLocation}
+                  disabled={isLocating}
+                >
+                  {isLocating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LocateFixed className="h-4 w-4" />
+                  )}
+                  {actionLabel}
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="relative overflow-hidden rounded-[24px] border border-[color:var(--color-border)]">
+            <Map
+              center={[center.lng, center.lat]}
+              zoom={15}
+              className="h-[min(70vh,36rem)] w-full"
+              styles={selectedStyle}
+            >
+              <DeliveryPickerInteractions center={center} is3D={is3D} onPick={applyDraftCoords} />
+
+              {draftCoords ? (
+                <MapMarker
+                  longitude={draftCoords.lng}
+                  latitude={draftCoords.lat}
+                  anchor="bottom"
+                  draggable
+                  offset={[0, 6]}
+                  onDragEnd={({ lat, lng }) => applyDraftCoords({ lat, lng })}
+                >
+                  <MarkerContent>
+                    <div className="pointer-events-none flex items-center gap-2">
+                      <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[color:var(--color-primary-dark)] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
+                      <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+                        {markerLabel}
+                      </span>
+                    </div>
+                  </MarkerContent>
+                  <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+                        {popupEyebrow}
+                      </p>
+                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        {popupTitle}
+                      </p>
+                      <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
+                        {popupDescription}
+                      </p>
+                    </div>
+                  </MarkerPopup>
+                </MapMarker>
+              ) : null}
+
+              <MapControls
+                position="bottom-right"
+                showZoom
+                showCompass
+                showLocate
+                showFullscreen
+                onLocate={({ latitude, longitude }) =>
+                  applyDraftCoords({
+                    lat: latitude,
+                    lng: longitude,
+                  })
+                }
+              />
+            </Map>
+
+            <div className="absolute right-3 top-3 z-10">
+              <MapStyleSelect value={style} onChange={setStyle} />
+            </div>
+          </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[24px] border border-[color:var(--color-border)]">
-          <Map
-            center={[mapCenter.lng, mapCenter.lat]}
-            zoom={15}
-            className="h-72 w-full"
-            styles={selectedStyle}
-          >
-            <DeliveryPickerInteractions center={mapCenter} is3D={is3D} onPick={applyCoords} />
+        <div className="flex flex-col gap-3 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface-2)]/76 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[color:var(--color-text)]">
+              {draftCoords ? selectedText(draftCoords) : emptyText}
+            </p>
+            <p className="mt-1 text-xs text-[color:var(--color-text-muted)]">
+              The pin is only saved when you confirm it here.
+            </p>
+          </div>
 
-            {value ? (
-              <MapMarker
-                longitude={value.lng}
-                latitude={value.lat}
-                anchor="bottom"
-                draggable
-                offset={[0, 6]}
-                onDragEnd={({ lat, lng }) => applyCoords({ lat, lng })}
-              >
-                <MarkerContent>
-                  <div className="pointer-events-none flex items-center gap-2">
-                    <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[color:var(--color-primary-dark)] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
-                    <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                      {markerLabel}
-                    </span>
-                  </div>
-                </MarkerContent>
-                <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                      {popupEyebrow}
-                    </p>
-                    <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                      {popupTitle}
-                    </p>
-                    <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                      {popupDescription}
-                    </p>
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
-            ) : null}
-
-            <MapControls position="bottom-right" showZoom showCompass showFullscreen />
-          </Map>
-
-          <div className="absolute right-3 top-3 z-10">
-            <MapStyleSelect value={style} onChange={setStyle} />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={confirmSelection} disabled={!draftCoords}>
+              <CheckCircle2 className="h-4 w-4" />
+              Use this pin
+            </Button>
           </div>
         </div>
-
-        {value ? (
-          <p className="text-xs text-[color:var(--color-text-muted)]">{selectedText(value)}</p>
-        ) : (
-          <p className="text-xs text-[color:var(--color-text-muted)]">{emptyText}</p>
-        )}
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
