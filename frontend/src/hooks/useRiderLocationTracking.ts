@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { updateDeliveryLocation } from '@/services/riderService';
 
 function hasMovedEnough(
@@ -48,7 +48,9 @@ export function useRiderLocationTracking({
         if (enoughUiMovement || enoughUiTimeElapsed) {
           lastUiRef.current = nextCoords;
           lastUiUpdateAtRef.current = now;
-          setCoords(nextCoords);
+          startTransition(() => {
+            setCoords(nextCoords);
+          });
         }
 
         const enoughTimeElapsed = now - lastSentAtRef.current > 15000;

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { AnimatePresence, m } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Stagger, StaggerItem } from '@/components/motion/Reveal';
 
 interface NavItem {
@@ -141,18 +141,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
-          <AnimatePresence initial={false} mode="wait">
-            <m.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="h-full w-full"
-            >
-              {children}
-            </m.div>
-          </AnimatePresence>
+          <m.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            className="h-full w-full"
+            style={{
+              willChange: 'transform, opacity',
+              transform: 'translateZ(0)',
+            }}
+          >
+            {children}
+          </m.div>
         </main>
 
         <MobileBottomNav items={navItems} />

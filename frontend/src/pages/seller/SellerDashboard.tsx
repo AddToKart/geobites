@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { Clock3, DollarSign, MapPin, PackageCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { Order } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
 import { MetricCard } from '@/components/layout/MetricCard';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ParallaxSection } from '@/components/motion/Parallax';
 import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
@@ -27,10 +28,14 @@ export function SellerDashboard() {
   useVisiblePolling(async () => {
     try {
       const response = await getOrders({ page: 1, limit: 20 });
-      setOrders(response.data);
-      setError(null);
+      startTransition(() => {
+        setOrders(response.data);
+        setError(null);
+      });
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
+      startTransition(() => {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
+      });
     }
   }, 15000);
 
@@ -106,26 +111,28 @@ export function SellerDashboard() {
         description="Today’s order volume, active work, and recent tickets all sit on one surface so the next action is obvious."
       />
 
-      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
-        <MetricCard
-          label="Today's orders"
-          value={metrics.todaysOrders}
-          description="Orders placed since midnight"
-          icon={<ShoppingBag className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Active orders"
-          value={metrics.activeOrders}
-          description="Still in progress right now"
-          icon={<Clock3 className="h-5 w-5" />}
-        />
-        <MetricCard
-          label="Delivered revenue"
-          value={formatCurrency(metrics.revenue)}
-          description="Completed order value"
-          icon={<DollarSign className="h-5 w-5" />}
-        />
-      </Stagger>
+      <ParallaxSection offset={12}>
+        <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
+          <MetricCard
+            label="Today's orders"
+            value={metrics.todaysOrders}
+            description="Orders placed since midnight"
+            icon={<ShoppingBag className="h-5 w-5" />}
+          />
+          <MetricCard
+            label="Active orders"
+            value={metrics.activeOrders}
+            description="Still in progress right now"
+            icon={<Clock3 className="h-5 w-5" />}
+          />
+          <MetricCard
+            label="Delivered revenue"
+            value={formatCurrency(metrics.revenue)}
+            description="Completed order value"
+            icon={<DollarSign className="h-5 w-5" />}
+          />
+        </Stagger>
+      </ParallaxSection>
 
       {error ? (
         <Card>

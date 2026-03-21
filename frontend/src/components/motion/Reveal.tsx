@@ -27,6 +27,10 @@ export function Reveal({
       initial={{ opacity: 0, y }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, delay, ease: motionEase }}
+      style={{
+        willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
+      }}
     >
       {children}
     </m.div>
@@ -55,6 +59,10 @@ export function Stagger({
       className={className}
       initial="hidden"
       animate="visible"
+      style={{
+        willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
+      }}
       variants={{
         hidden: {},
         visible: {
@@ -88,6 +96,10 @@ export function StaggerItem({
   return (
     <m.div
       className={cn(className)}
+      style={{
+        willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
+      }}
       variants={{
         hidden: { opacity: 0, y },
         visible: {
