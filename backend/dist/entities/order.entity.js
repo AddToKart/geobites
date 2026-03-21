@@ -25,6 +25,8 @@ let Order = class Order {
     deliveryAddress;
     deliveryLat;
     deliveryLng;
+    riderLat;
+    riderLng;
     notes;
     createdAt;
     updatedAt;
@@ -100,6 +102,26 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], Order.prototype, "deliveryLng", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'decimal',
+        precision: 10,
+        scale: 8,
+        nullable: true,
+        transformer: decimal_number_transformer_1.decimalNumberTransformer,
+    }),
+    __metadata("design:type", Number)
+], Order.prototype, "riderLat", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'decimal',
+        precision: 11,
+        scale: 8,
+        nullable: true,
+        transformer: decimal_number_transformer_1.decimalNumberTransformer,
+    }),
+    __metadata("design:type", Number)
+], Order.prototype, "riderLng", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)

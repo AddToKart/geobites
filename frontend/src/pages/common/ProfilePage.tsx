@@ -1,74 +1,64 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Mail, Phone, Shield } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Mail, Phone, Shield, User } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export function ProfilePage() {
   const { user } = useAuth();
 
+  const fields = [
+    {
+      icon: <User className="h-5 w-5" />,
+      label: 'Full name',
+      value: user?.name || 'Not set',
+    },
+    {
+      icon: <Mail className="h-5 w-5" />,
+      label: 'Email address',
+      value: user?.email || 'Not set',
+    },
+    {
+      icon: <Shield className="h-5 w-5" />,
+      label: 'Account role',
+      value: user?.role ? user.role[0].toUpperCase() + user.role.slice(1) : 'Unknown',
+    },
+    {
+      icon: <Phone className="h-5 w-5" />,
+      label: 'Phone number',
+      value: user?.phone || 'Not set',
+    },
+  ];
+
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and preferences.
-        </p>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>Your contact details and role.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <User className="w-6 h-6 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-              <p className="font-medium">{user?.name}</p>
-            </div>
-          </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Account"
+        title="Profile"
+        description="Core account details live here. The goal is simple: make the important information easy to scan and nothing else."
+      />
 
-          <Separator />
-
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Mail className="w-6 h-6 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Email Address</p>
-              <p className="font-medium">{user?.email}</p>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Shield className="w-6 h-6 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Account Role</p>
-              <p className="font-medium capitalize">{user?.role}</p>
-            </div>
-          </div>
-
-          {user?.phone && (
-            <>
-              <Separator />
-              <div className="flex items-center gap-4">
-                <div className="bg-primary/10 p-3 rounded-full">
-                  <Phone className="w-6 h-6 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Phone Number</p>
-                  <p className="font-medium">{user.phone}</p>
-                </div>
+      <section className="grid gap-5 md:grid-cols-2">
+        {fields.map((field) => (
+          <Card key={field.label}>
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
+                {field.icon}
               </div>
-            </>
-          )}
+              <div>
+                <p className="text-sm text-[color:var(--color-text-soft)]">{field.label}</p>
+                <p className="mt-1 text-lg font-semibold text-[color:var(--color-text)]">{field.value}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      <Card className="max-w-3xl">
+        <CardContent className="space-y-3 p-5">
+          <h2 className="text-2xl font-semibold">Account notes</h2>
+          <p className="text-sm text-[color:var(--color-text-soft)]">
+            This screen is intentionally lightweight for now. If you want editable profile fields next, this page is already set up to become the account settings surface.
+          </p>
         </CardContent>
       </Card>
     </div>

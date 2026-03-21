@@ -73,9 +73,11 @@ export interface Order {
   deliveryAddress: string;
   deliveryLat?: number;
   deliveryLng?: number;
+  riderLat?: number;
+  riderLng?: number;
   notes?: string;
   items: OrderItem[];
-  vendor?: Pick<Vendor, 'id' | 'name'>;
+  vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
   createdAt: string;

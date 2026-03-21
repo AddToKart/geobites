@@ -20,13 +20,14 @@ const menu_item_entity_1 = require("../entities/menu-item.entity");
 const order_item_entity_1 = require("../entities/order-item.entity");
 const order_entity_1 = require("../entities/order.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
 const sellerTransitions = {
     pending: ['accepted', 'rejected'],
     accepted: ['preparing'],
     preparing: ['ready_for_pickup'],
 };
 const riderTransitions = {
-    ready_for_pickup: ['picked_up'],
+    ready_for_pickup: ['ready_for_pickup', 'picked_up'],
     picked_up: ['delivering'],
     delivering: ['delivered'],
 };
@@ -35,11 +36,13 @@ let OrdersService = class OrdersService {
     orderItemRepository;
     menuItemRepository;
     vendorRepository;
-    constructor(orderRepository, orderItemRepository, menuItemRepository, vendorRepository) {
+    notificationsService;
+    constructor(orderRepository, orderItemRepository, menuItemRepository, vendorRepository, notificationsService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.menuItemRepository = menuItemRepository;
         this.vendorRepository = vendorRepository;
+        this.notificationsService = notificationsService;
     }
     async create(createOrderDto, customerId) {
         const vendor = await this.vendorRepository.findOne({
@@ -93,44 +96,65 @@ let OrdersService = class OrdersService {
             price: item.price,
         }));
         await this.orderItemRepository.save(snapshots);
+        await this.notificationsService.create({
+            userId: vendor.userId,
+            title: 'New Order',
+            message: 'You have received a new order',
+            type: 'order_update',
+            referenceId: savedOrder.id,
+        });
         return this.findOneForUser(savedOrder.id, customerId, 'customer');
     }
     async findAllForUser(userId, role, query) {
         const page = query.page ?? 1;
         const limit = query.limit ?? 20;
         const skip = (page - 1) * limit;
-        const qb = this.orderRepository
-            .createQueryBuilder('order')
-            .leftJoinAndSelect('order.vendor', 'vendor')
-            .leftJoinAndSelect('order.items', 'items')
-            .orderBy('order.createdAt', 'DESC')
-            .skip(skip)
-            .take(limit);
-        if (role === 'customer') {
-            qb.where('order.customerId = :userId', { userId });
-        }
-        if (role === 'seller') {
-            const sellerVendor = await this.vendorRepository.findOne({
-                where: { userId },
-            });
-            if (!sellerVendor) {
-                return { data: [], total: 0, page, limit };
+        try {
+            const qb = this.orderRepository
+                .createQueryBuilder('order')
+                .leftJoinAndSelect('order.vendor', 'vendor')
+                .leftJoinAndSelect('order.items', 'items')
+                .orderBy('order.createdAt', 'DESC')
+                .skip(skip)
+                .take(limit);
+            if (role === 'customer') {
+                qb.where('order.customerId = :userId', { userId });
             }
-            qb.where('order.vendorId = :vendorId', { vendorId: sellerVendor.id });
+            else if (role === 'seller') {
+                const sellerVendor = await this.vendorRepository.findOne({
+                    where: { userId },
+                });
+                if (!sellerVendor) {
+                    return { data: [], total: 0, page, limit };
+                }
+                qb.where('order.vendorId = :vendorId', { vendorId: sellerVendor.id });
+            }
+            else if (role === 'rider') {
+                qb.where('order.riderId = :userId', { userId });
+            }
+            else {
+                throw new common_1.BadRequestException(`Invalid role: ${role}`);
+            }
+            if (query.status) {
+                qb.andWhere('order.status = :status', { status: query.status });
+            }
+            const [data, total] = await qb.getManyAndCount();
+            return {
+                data,
+                total,
+                page,
+                limit,
+            };
         }
-        if (role === 'rider') {
-            qb.where('order.riderId = :userId', { userId });
+        catch (error) {
+            console.error('findAllForUser error:', {
+                userId,
+                role,
+                query,
+                error: error instanceof Error ? error.message : error,
+            });
+            throw error;
         }
-        if (query.status) {
-            qb.andWhere('order.status = :status', { status: query.status });
-        }
-        const [data, total] = await qb.getManyAndCount();
-        return {
-            data,
-            total,
-            page,
-            limit,
-        };
     }
     async findOneForUser(id, userId, role) {
         const order = await this.orderRepository.findOne({
@@ -196,15 +220,61 @@ let OrdersService = class OrdersService {
             if (!allowed.includes(nextStatus)) {
                 throw new common_1.BadRequestException('Invalid rider status transition');
             }
-            if (order.riderId && order.riderId !== userId) {
-                throw new common_1.ForbiddenException('Order is assigned to another rider');
-            }
-            if (!order.riderId) {
+            if (nextStatus === 'ready_for_pickup' && !order.riderId) {
                 order.riderId = userId;
+            }
+            else if (order.riderId && order.riderId !== userId) {
+                throw new common_1.ForbiddenException('Order is already assigned to another rider');
             }
         }
         order.status = nextStatus;
-        return this.orderRepository.save(order);
+        const updatedOrder = await this.orderRepository.save(order);
+        if (nextStatus === 'accepted') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Accepted',
+                message: 'Your order has been accepted by the vendor',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+        }
+        else if (nextStatus === 'rejected') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Rejected',
+                message: 'Your order was rejected by the vendor',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+        }
+        else if (nextStatus === 'ready_for_pickup') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Ready',
+                message: 'Your order is ready for pickup',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+        }
+        else if (nextStatus === 'picked_up') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Picked Up',
+                message: 'Your order has been picked up for delivery',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+        }
+        else if (nextStatus === 'delivered') {
+            await this.notificationsService.create({
+                userId: order.customerId,
+                title: 'Order Delivered',
+                message: 'Your order has been delivered',
+                type: 'order_update',
+                referenceId: order.id,
+            });
+        }
+        return updatedOrder;
     }
 };
 exports.OrdersService = OrdersService;
@@ -217,6 +287,7 @@ exports.OrdersService = OrdersService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

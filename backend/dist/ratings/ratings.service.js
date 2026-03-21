@@ -19,14 +19,17 @@ const typeorm_2 = require("typeorm");
 const order_entity_1 = require("../entities/order.entity");
 const rating_entity_1 = require("../entities/rating.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
 let RatingsService = class RatingsService {
     ratingRepository;
     orderRepository;
     vendorRepository;
-    constructor(ratingRepository, orderRepository, vendorRepository) {
+    notificationsService;
+    constructor(ratingRepository, orderRepository, vendorRepository, notificationsService) {
         this.ratingRepository = ratingRepository;
         this.orderRepository = orderRepository;
         this.vendorRepository = vendorRepository;
+        this.notificationsService = notificationsService;
     }
     async create(createRatingDto, customerId) {
         const order = await this.orderRepository.findOne({
@@ -56,6 +59,18 @@ let RatingsService = class RatingsService {
         });
         const savedRating = await this.ratingRepository.save(rating);
         await this.recomputeVendorRating(order.vendorId);
+        const vendor = await this.vendorRepository.findOne({
+            where: { id: order.vendorId },
+        });
+        if (vendor) {
+            await this.notificationsService.create({
+                userId: vendor.userId,
+                title: 'New Rating Received',
+                message: `You received a ${createRatingDto.score}-star rating`,
+                type: 'rating',
+                referenceId: order.id,
+            });
+        }
         return savedRating;
     }
     async findByVendor(vendorId) {
@@ -101,6 +116,7 @@ exports.RatingsService = RatingsService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(vendor_entity_1.Vendor)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], RatingsService);
 //# sourceMappingURL=ratings.service.js.map

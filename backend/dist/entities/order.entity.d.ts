@@ -11,6 +11,8 @@ export declare class Order {
     deliveryAddress: string;
     deliveryLat?: number;
     deliveryLng?: number;
+    riderLat?: number;
+    riderLng?: number;
     notes?: string;
     createdAt: Date;
     updatedAt: Date;

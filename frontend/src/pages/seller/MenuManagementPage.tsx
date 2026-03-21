@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { PencilLine, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '../../services/menuService';
 import { createVendor, getVendors } from '../../services/vendorService';
 import { MenuItem, Vendor } from '../../types';
@@ -95,80 +97,98 @@ export function MenuManagementPage() {
   };
 
   return (
-    <section className="space-y-5">
-      <h1 className="text-3xl font-semibold text-[var(--color-text)]">Menu Management</h1>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Seller"
+        title="Menu management"
+        description="Add items, adjust availability, and keep the menu readable for customers without bouncing across different screens."
+      />
 
-      <Card className="space-y-3">
-        <h2 className="text-xl font-semibold">Add New Menu Item</h2>
-        <form className="grid gap-3 md:grid-cols-2" onSubmit={addMenuItem}>
-          <Input
-            placeholder="Item name"
-            value={newItem.name}
-            onChange={(event) =>
-              setNewItem((current) => ({ ...current, name: event.target.value }))
-            }
-            required
-          />
-          <Input
-            placeholder="Category"
-            value={newItem.category}
-            onChange={(event) =>
-              setNewItem((current) => ({ ...current, category: event.target.value }))
-            }
-          />
-          <Input
-            placeholder="Description"
-            value={newItem.description}
-            onChange={(event) =>
-              setNewItem((current) => ({ ...current, description: event.target.value }))
-            }
-          />
-          <Input
-            type="number"
-            min="1"
-            step="0.01"
-            placeholder="Price"
-            value={newItem.price}
-            onChange={(event) =>
-              setNewItem((current) => ({ ...current, price: event.target.value }))
-            }
-            required
-          />
-          <div className="md:col-span-2">
-            <Button type="submit">Add Item</Button>
-          </div>
-        </form>
+      <Card>
+        <CardContent className="p-5">
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={addMenuItem}>
+            <Input
+              placeholder="Item name"
+              value={newItem.name}
+              onChange={(event) =>
+                setNewItem((current) => ({ ...current, name: event.target.value }))
+              }
+              required
+            />
+            <Input
+              placeholder="Category"
+              value={newItem.category}
+              onChange={(event) =>
+                setNewItem((current) => ({ ...current, category: event.target.value }))
+              }
+            />
+            <Input
+              placeholder="Description"
+              value={newItem.description}
+              onChange={(event) =>
+                setNewItem((current) => ({ ...current, description: event.target.value }))
+              }
+            />
+            <Input
+              type="number"
+              min="1"
+              step="0.01"
+              placeholder="Price"
+              value={newItem.price}
+              onChange={(event) =>
+                setNewItem((current) => ({ ...current, price: event.target.value }))
+              }
+              required
+            />
+            <div className="md:col-span-2">
+              <Button type="submit">Add item</Button>
+            </div>
+          </form>
+        </CardContent>
       </Card>
 
-      {error && <Card className="text-sm text-[var(--color-danger)]">{error}</Card>}
+      {error ? (
+        <Card>
+          <CardContent className="p-5 text-sm text-[color:var(--color-danger)]">{error}</CardContent>
+        </Card>
+      ) : null}
 
-      <Card className="space-y-3">
-        <h2 className="text-xl font-semibold">Current Menu</h2>
-        <div className="space-y-2">
+      <Card>
+        <CardContent className="space-y-4 p-5">
           {menuItems.map((item) => (
             <div
               key={item.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-sm"
+              className="panel-muted flex flex-wrap items-center justify-between gap-4 px-4 py-4"
             >
-              <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-[var(--color-text-soft)]">{formatCurrency(item.price)}</p>
+              <div className="space-y-1">
+                <p className="font-semibold text-[color:var(--color-text)]">{item.name}</p>
+                <p className="text-sm text-[color:var(--color-text-soft)]">{formatCurrency(item.price)}</p>
+                <p className="text-xs text-[color:var(--color-text-muted)]">
+                  {item.category || 'Uncategorized'}
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={() => void toggleAvailability(item)}>
-                  {item.isAvailable ? 'Mark Unavailable' : 'Mark Available'}
+              <div className="flex flex-wrap gap-3">
+                <Button size="sm" variant="ghost" onClick={() => void toggleAvailability(item)}>
+                  <PencilLine className="h-4 w-4" />
+                  {item.isAvailable ? 'Mark unavailable' : 'Mark available'}
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => void removeItem(item.id)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]"
+                  onClick={() => void removeItem(item.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                   Delete
                 </Button>
               </div>
             </div>
           ))}
-          {menuItems.length === 0 && (
-            <p className="text-sm text-[var(--color-text-soft)]">No menu items yet.</p>
-          )}
-        </div>
+          {menuItems.length === 0 ? (
+            <p className="text-sm text-[color:var(--color-text-soft)]">No menu items yet.</p>
+          ) : null}
+        </CardContent>
       </Card>
-    </section>
+    </div>
   );
 }

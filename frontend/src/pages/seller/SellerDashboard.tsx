@@ -1,37 +1,58 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Clock3, DollarSign, ShoppingBag } from 'lucide-react';
+import { OrderRouteMap } from '@/components/maps/OrderRouteMap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Order } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
-import { ShoppingBag, Clock, DollarSign } from 'lucide-react';
+import { MetricCard } from '@/components/layout/MetricCard';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { getOrders } from '@/services/orderService';
 
 export function SellerDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void (async () => {
-      // Mock data for demo purposes since getOrders might fail without backend
-      // In real app: const response = await getOrders({ page: 1, limit: 50 });
-      // setOrders(response.data);
-      const mockOrders: Order[] = [
-        { id: 'ord_12345678', customerId: 'cust_1', vendorId: 'vend_1', riderId: 'rider_1', status: 'pending', totalAmount: 45.50, deliveryAddress: '123 Main St', notes: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-        { id: 'ord_87654321', customerId: 'cust_2', vendorId: 'vend_1', riderId: 'rider_2', status: 'preparing', totalAmount: 32.00, deliveryAddress: '456 Oak Ave', notes: 'No onions', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-        { id: 'ord_24681357', customerId: 'cust_3', vendorId: 'vend_1', riderId: 'rider_3', status: 'delivered', totalAmount: 68.75, deliveryAddress: '789 Pine Ln', notes: '', createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date().toISOString() },
-      ];
-      setOrders(mockOrders);
-    })();
+    const loadOrders = async () => {
+      try {
+        const response = await getOrders({ page: 1, limit: 20 });
+        setOrders(response.data);
+        setError(null);
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
+      }
+    };
+
+    void loadOrders();
+
+    const intervalId = window.setInterval(() => {
+      void loadOrders();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   const metrics = useMemo(() => {
     const todaysOrders = orders.filter(
       (order) => new Date(order.createdAt).toDateString() === new Date().toDateString(),
     ).length;
-    
+
     const activeOrders = orders.filter((order) =>
       ['pending', 'accepted', 'preparing', 'ready_for_pickup', 'picked_up'].includes(order.status),
     ).length;
-    
+
     const revenue = orders
       .filter((order) => order.status === 'delivered')
       .reduce((sum, order) => sum + order.totalAmount, 0);
@@ -39,117 +60,132 @@ export function SellerDashboard() {
     return { todaysOrders, activeOrders, revenue };
   }, [orders]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100';
-      case 'accepted': return 'bg-blue-100 text-blue-800 hover:bg-blue-100';
-      case 'preparing': return 'bg-purple-100 text-purple-800 hover:bg-purple-100';
-      case 'ready_for_pickup': return 'bg-indigo-100 text-indigo-800 hover:bg-indigo-100';
-      case 'picked_up': return 'bg-orange-100 text-orange-800 hover:bg-orange-100';
-      case 'delivered': return 'bg-green-100 text-green-800 hover:bg-green-100';
-      case 'cancelled': return 'bg-red-100 text-red-800 hover:bg-red-100';
-      default: return 'bg-gray-100 text-gray-800';
+  useEffect(() => {
+    if (orders.length === 0) {
+      setSelectedOrderId(null);
+      return;
     }
-  };
+
+    if (selectedOrderId && orders.some((order) => order.id === selectedOrderId)) {
+      return;
+    }
+
+    const firstTrackedOrder =
+      orders.find((order) =>
+        ['accepted', 'preparing', 'ready_for_pickup', 'picked_up', 'delivering'].includes(
+          order.status,
+        ),
+      ) ?? orders[0];
+
+    setSelectedOrderId(firstTrackedOrder.id);
+  }, [orders, selectedOrderId]);
+
+  const selectedOrder =
+    orders.find((order) => order.id === selectedOrderId) ?? null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex items-center space-x-2 text-muted-foreground text-sm">
-          <span>Last updated: {new Date().toLocaleTimeString()}</span>
-        </div>
-      </div>
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Seller"
+        title="Dashboard"
+        description="Today’s order volume, active work, and recent tickets all sit on one surface so the next action is obvious."
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Today's Orders
-            </CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.todaysOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% from yesterday
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Orders
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.activeOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently in progress
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Revenue
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.revenue)}</div>
-            <p className="text-xs text-muted-foreground">
-              +15% from last month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <section className="grid gap-5 md:grid-cols-3">
+        <MetricCard
+          label="Today's orders"
+          value={metrics.todaysOrders}
+          description="Orders placed since midnight"
+          icon={<ShoppingBag className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Active orders"
+          value={metrics.activeOrders}
+          description="Still in progress right now"
+          icon={<Clock3 className="h-5 w-5" />}
+        />
+        <MetricCard
+          label="Delivered revenue"
+          value={formatCurrency(metrics.revenue)}
+          description="Completed order value"
+          icon={<DollarSign className="h-5 w-5" />}
+        />
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Address</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.slice(0, 10).map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">
-                    #{order.id.slice(0, 8)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.status)} variant="outline">
-                      {order.status.replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
-                  <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="truncate max-w-[200px]" title={order.deliveryAddress}>
-                    {order.deliveryAddress}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {orders.length === 0 && (
+      {error ? (
+        <Card>
+          <CardContent className="p-5 text-sm text-[color:var(--color-danger)]">{error}</CardContent>
+        </Card>
+      ) : null}
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                    No orders found.
-                  </TableCell>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Placed</TableHead>
+                  <TableHead>Address</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {orders.slice(0, 10).map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className={`cursor-pointer ${
+                      order.id === selectedOrderId
+                        ? 'bg-[color:var(--color-primary-soft)]/60'
+                        : ''
+                    }`}
+                    onClick={() => setSelectedOrderId(order.id)}
+                  >
+                    <TableCell className="font-semibold">#{order.id.slice(0, 8)}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell>{formatCurrency(order.totalAmount)}</TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell className="max-w-[220px] truncate" title={order.deliveryAddress}>
+                      {order.deliveryAddress}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {orders.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-[color:var(--color-text-soft)]"
+                    >
+                      No orders found.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {selectedOrder ? (
+          <OrderRouteMap
+            order={selectedOrder}
+            title={`Order map #${selectedOrder.id.slice(0, 8)}`}
+            description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
+            compact
+          />
+        ) : (
+          <Card>
+            <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
+              Select an order to view its map.
+            </CardContent>
+          </Card>
+        )}
+      </section>
     </div>
   );
 }

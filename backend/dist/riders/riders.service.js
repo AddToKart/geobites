@@ -31,6 +31,9 @@ let RidersService = class RidersService {
                     { riderId, status: 'picked_up' },
                     { riderId, status: 'delivering' },
                 ],
+                relations: {
+                    vendor: true,
+                },
                 order: { updatedAt: 'DESC' },
             });
         }
@@ -38,6 +41,9 @@ let RidersService = class RidersService {
             where: {
                 status: 'ready_for_pickup',
                 riderId: (0, typeorm_2.IsNull)(),
+            },
+            relations: {
+                vendor: true,
             },
             order: {
                 createdAt: 'ASC',
@@ -80,6 +86,23 @@ let RidersService = class RidersService {
             throw new common_1.BadRequestException('Invalid status transition');
         }
         order.status = updateStatusDto.status;
+        return this.orderRepository.save(order);
+    }
+    async updateRiderLocation(orderId, riderId, updateLocationDto) {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+        });
+        if (!order) {
+            throw new common_1.NotFoundException('Order not found');
+        }
+        if (order.riderId !== riderId) {
+            throw new common_1.ForbiddenException('Delivery is assigned to another rider');
+        }
+        if (!['ready_for_pickup', 'picked_up', 'delivering'].includes(order.status)) {
+            throw new common_1.BadRequestException('Delivery location can no longer be updated');
+        }
+        order.riderLat = updateLocationDto.riderLat;
+        order.riderLng = updateLocationDto.riderLng;
         return this.orderRepository.save(order);
     }
 };

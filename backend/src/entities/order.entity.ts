@@ -88,6 +88,24 @@ export class Order {
   })
   deliveryLng?: number;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+    transformer: decimalNumberTransformer,
+  })
+  riderLat?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+    transformer: decimalNumberTransformer,
+  })
+  riderLng?: number;
+
   @Column({ type: 'text', nullable: true })
   notes?: string;
 

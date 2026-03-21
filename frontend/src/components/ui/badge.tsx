@@ -4,10 +4,10 @@ import { cn } from '../../lib/utils';
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger';
 
 const styles: Record<BadgeVariant, string> = {
-  default: 'bg-[var(--color-surface-2)] text-[var(--color-text-soft)]',
-  success: 'bg-[var(--color-success-soft)] text-[var(--color-success)]',
-  warning: 'bg-[var(--color-warning-soft)] text-[var(--color-warning)]',
-  danger: 'bg-[var(--color-danger-soft)] text-[var(--color-danger)]',
+  default: 'bg-[color:var(--color-surface-2)] text-[color:var(--color-text-soft)]',
+  success: 'bg-[color:var(--color-success-soft)] text-[color:var(--color-success)]',
+  warning: 'bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)]',
+  danger: 'bg-[color:var(--color-danger-soft)] text-[color:var(--color-danger)]',
 };
 
 export function Badge({
@@ -18,7 +18,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+        'inline-flex items-center rounded-full border border-white/70 px-2.5 py-1 text-xs font-medium',
         styles[variant],
         className,
       )}

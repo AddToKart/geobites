@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../../components/ui/card';
+import { BellRing, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   getNotifications,
   markNotificationAsRead,
@@ -24,32 +27,75 @@ export function NotificationsPage() {
     await loadNotifications();
   };
 
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+
   return (
-    <section className="space-y-4">
-      <h1 className="text-3xl font-semibold text-[var(--color-text)]">Notifications</h1>
-      <Card className="space-y-2">
-        {notifications.map((notification) => (
-          <button
-            key={notification.id}
-            type="button"
-            className={`w-full rounded-xl border p-3 text-left ${
-              notification.isRead
-                ? 'border-[var(--color-border)] bg-[var(--color-surface)]'
-                : 'border-[var(--color-primary)] bg-[var(--color-primary-soft)]'
-            }`}
-            onClick={() => void markAsRead(notification.id)}
-          >
-            <p className="font-medium text-[var(--color-text)]">{notification.title}</p>
-            <p className="text-sm text-[var(--color-text-soft)]">{notification.message}</p>
-            <p className="mt-1 text-xs text-[var(--color-text-soft)]">
-              {formatDate(notification.createdAt)}
-            </p>
-          </button>
-        ))}
-        {notifications.length === 0 && (
-          <p className="text-sm text-[var(--color-text-soft)]">No notifications yet.</p>
-        )}
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Updates"
+        title="Notifications"
+        description="Unread items stay obvious, read ones fade back, and you can clear the noise with one tap."
+      />
+
+      <section className="grid gap-5 md:grid-cols-2">
+        <Card>
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
+              <BellRing className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm text-[color:var(--color-text-soft)]">Total notifications</p>
+              <p className="text-2xl font-semibold">{notifications.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 p-5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm text-[color:var(--color-text-soft)]">Unread</p>
+              <p className="text-2xl font-semibold">{unreadCount}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          {notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={
+                notification.isRead
+                  ? 'panel-muted flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between'
+                  : 'rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
+              }
+            >
+              <div className="space-y-1">
+                <p className="font-semibold text-[color:var(--color-text)]">{notification.title}</p>
+                <p className="text-sm text-[color:var(--color-text-soft)]">{notification.message}</p>
+                <p className="text-xs text-[color:var(--color-text-muted)]">
+                  {formatDate(notification.createdAt)}
+                </p>
+              </div>
+              {!notification.isRead ? (
+                <Button size="sm" variant="ghost" onClick={() => void markAsRead(notification.id)}>
+                  Mark as read
+                </Button>
+              ) : null}
+            </div>
+          ))}
+
+          {notifications.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-lg font-semibold">No notifications yet</p>
+              <p className="mt-2 subtle-copy">Order, delivery, and account updates will appear here.</p>
+            </div>
+          ) : null}
+        </CardContent>
       </Card>
-    </section>
+    </div>
   );
 }

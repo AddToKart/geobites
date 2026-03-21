@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
+import { UpdateRiderLocationDto } from './dto/update-rider-location.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 
 @Injectable()
@@ -27,6 +28,9 @@ export class RidersService {
           { riderId, status: 'picked_up' },
           { riderId, status: 'delivering' },
         ],
+        relations: {
+          vendor: true,
+        },
         order: { updatedAt: 'DESC' },
       });
     }
@@ -35,6 +39,9 @@ export class RidersService {
       where: {
         status: 'ready_for_pickup',
         riderId: IsNull(),
+      },
+      relations: {
+        vendor: true,
       },
       order: {
         createdAt: 'ASC',
@@ -94,6 +101,35 @@ export class RidersService {
     }
 
     order.status = updateStatusDto.status;
+    return this.orderRepository.save(order);
+  }
+
+  async updateRiderLocation(
+    orderId: string,
+    riderId: string,
+    updateLocationDto: UpdateRiderLocationDto,
+  ) {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.riderId !== riderId) {
+      throw new ForbiddenException('Delivery is assigned to another rider');
+    }
+
+    if (
+      !['ready_for_pickup', 'picked_up', 'delivering'].includes(order.status)
+    ) {
+      throw new BadRequestException('Delivery location can no longer be updated');
+    }
+
+    order.riderLat = updateLocationDto.riderLat;
+    order.riderLng = updateLocationDto.riderLng;
+
     return this.orderRepository.save(order);
   }
 }

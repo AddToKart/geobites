@@ -19,6 +19,7 @@ const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const session_guard_1 = require("../common/guards/session.guard");
 const query_rider_deliveries_dto_1 = require("./dto/query-rider-deliveries.dto");
+const update_rider_location_dto_1 = require("./dto/update-rider-location.dto");
 const update_delivery_status_dto_1 = require("./dto/update-delivery-status.dto");
 const riders_service_1 = require("./riders.service");
 let RidersController = class RidersController {
@@ -34,6 +35,9 @@ let RidersController = class RidersController {
     }
     updateStatus(orderId, riderId, updateStatusDto) {
         return this.ridersService.updateDeliveryStatus(orderId, riderId, updateStatusDto);
+    }
+    updateLocation(orderId, riderId, updateLocationDto) {
+        return this.ridersService.updateRiderLocation(orderId, riderId, updateLocationDto);
     }
 };
 exports.RidersController = RidersController;
@@ -62,6 +66,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, update_delivery_status_dto_1.UpdateDeliveryStatusDto]),
     __metadata("design:returntype", void 0)
 ], RidersController.prototype, "updateStatus", null);
+__decorate([
+    (0, common_1.Patch)('deliveries/:orderId/location'),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, update_rider_location_dto_1.UpdateRiderLocationDto]),
+    __metadata("design:returntype", void 0)
+], RidersController.prototype, "updateLocation", null);
 exports.RidersController = RidersController = __decorate([
     (0, common_1.Controller)('riders'),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard),

@@ -12,6 +12,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SessionGuard } from '../common/guards/session.guard';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
+import { UpdateRiderLocationDto } from './dto/update-rider-location.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 import { RidersService } from './riders.service';
 
@@ -47,6 +48,19 @@ export class RidersController {
       orderId,
       riderId,
       updateStatusDto,
+    );
+  }
+
+  @Patch('deliveries/:orderId/location')
+  updateLocation(
+    @Param('orderId') orderId: string,
+    @CurrentUser('id') riderId: string,
+    @Body() updateLocationDto: UpdateRiderLocationDto,
+  ) {
+    return this.ridersService.updateRiderLocation(
+      orderId,
+      riderId,
+      updateLocationDto,
     );
   }
 }

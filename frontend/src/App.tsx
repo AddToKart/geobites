@@ -7,7 +7,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { NotificationsPage } from './pages/common/NotificationsPage';
 import { ProfilePage } from './pages/common/ProfilePage';
-import { BrowseVendorsPage } from './pages/customer/BrowseVendorsPage';
+import { BrowseVendorsPagePremium } from './pages/customer/BrowseVendorsPagePremium';
 import { CartPage } from './pages/customer/CartPage';
 import { OrderHistoryPage } from './pages/customer/OrderHistoryPage';
 import { OrderTrackingPage } from './pages/customer/OrderTrackingPage';
@@ -52,7 +52,7 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
 
       <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
-        <Route path="/browse" element={<BrowseVendorsPage />} />
+        <Route path="/browse" element={<BrowseVendorsPagePremium />} />
         <Route path="/vendor/:id" element={<VendorMenuPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/orders" element={<OrderHistoryPage />} />

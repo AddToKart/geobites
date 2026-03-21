@@ -14,7 +14,7 @@ function getTypeOrmConfig(configService) {
             autoSave: false,
             synchronize: true,
             logging: false,
-            entities: [],
+            autoLoadEntities: true,
         };
     }
     return {

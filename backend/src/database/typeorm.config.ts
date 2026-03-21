@@ -18,7 +18,7 @@ export function getTypeOrmConfig(
       autoSave: false,
       synchronize: true,
       logging: false,
-      entities: [],
+      autoLoadEntities: true,
     };
   }
 

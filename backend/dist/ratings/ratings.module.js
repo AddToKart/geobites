@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const order_entity_1 = require("../entities/order.entity");
 const rating_entity_1 = require("../entities/rating.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 const ratings_controller_1 = require("./ratings.controller");
 const ratings_service_1 = require("./ratings.service");
 let RatingsModule = class RatingsModule {
@@ -19,7 +20,10 @@ let RatingsModule = class RatingsModule {
 exports.RatingsModule = RatingsModule;
 exports.RatingsModule = RatingsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([rating_entity_1.Rating, order_entity_1.Order, vendor_entity_1.Vendor])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([rating_entity_1.Rating, order_entity_1.Order, vendor_entity_1.Vendor]),
+            notifications_module_1.NotificationsModule,
+        ],
         controllers: [ratings_controller_1.RatingsController],
         providers: [ratings_service_1.RatingsService],
         exports: [ratings_service_1.RatingsService],

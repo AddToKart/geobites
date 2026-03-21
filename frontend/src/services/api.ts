@@ -12,6 +12,21 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && window.location.pathname !== '/login') {
       window.location.href = '/login';
     }
+
+    // Enhance error with user-friendly message
+    let message = 'An error occurred';
+
+    if (error.response?.data) {
+      const data = error.response.data as Record<string, unknown>;
+      if (typeof data.message === 'string') {
+        message = data.message;
+      }
+    }
+
+    if (!error.message.includes('user-friendly')) {
+      (error as unknown as Record<string, unknown>).userMessage = message;
+    }
+
     return Promise.reject(error);
   },
 );

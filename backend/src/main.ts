@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ensureDatabaseExists } from './database/create-db';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const defaultOrigins = [
   'http://localhost:5173',
@@ -37,6 +38,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.use(cookieParser());
   app.enableCors({
     origin: parseCorsOrigins(),
@@ -54,9 +56,26 @@ async function bootstrap() {
   app.use('/api/auth', toNodeHandler(auth));
 
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port, '0.0.0.0');
+  const server = await app.listen(port, '0.0.0.0');
   console.log(`Backend server running on http://localhost:${port}/api`);
   console.log(`Local network access: http://192.168.100.116:${port}/api`);
+
+  // Graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(async () => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    server.close(async () => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
 }
 
 void bootstrap();

@@ -32,16 +32,22 @@ export class OrdersController {
   }
 
   @Get()
-  findAll(
+  @Roles('customer', 'seller', 'rider')
+  async findAll(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
     @Query() query: QueryOrdersDto,
   ) {
-    return this.ordersService.findAllForUser(
-      userId,
-      role as 'customer' | 'seller' | 'rider',
-      query,
-    );
+    try {
+      return await this.ordersService.findAllForUser(
+        userId,
+        role as 'customer' | 'seller' | 'rider',
+        query,
+      );
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      throw error;
+    }
   }
 
   @Get(':id')

@@ -42,6 +42,7 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const create_db_1 = require("./database/create-db");
+const http_exception_filter_1 = require("./common/filters/http-exception.filter");
 const defaultOrigins = [
     'http://localhost:5173',
     'http://localhost:8081',
@@ -64,6 +65,7 @@ async function bootstrap() {
     const { auth } = await import('./auth/auth.js');
     const { toNodeHandler } = await import('better-auth/node');
     const app = await core_1.NestFactory.create(AppModule);
+    app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     app.use((0, cookie_parser_1.default)());
     app.enableCors({
         origin: parseCorsOrigins(),
@@ -77,9 +79,23 @@ async function bootstrap() {
     }));
     app.use('/api/auth', toNodeHandler(auth));
     const port = Number(process.env.PORT ?? 3000);
-    await app.listen(port, '0.0.0.0');
+    const server = await app.listen(port, '0.0.0.0');
     console.log(`Backend server running on http://localhost:${port}/api`);
     console.log(`Local network access: http://192.168.100.116:${port}/api`);
+    process.on('SIGTERM', async () => {
+        console.log('SIGTERM received, shutting down gracefully...');
+        server.close(async () => {
+            console.log('Server closed');
+            process.exit(0);
+        });
+    });
+    process.on('SIGINT', async () => {
+        console.log('SIGINT received, shutting down gracefully...');
+        server.close(async () => {
+            console.log('Server closed');
+            process.exit(0);
+        });
+    });
 }
 void bootstrap();
 //# sourceMappingURL=main.js.map

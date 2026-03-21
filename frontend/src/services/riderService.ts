@@ -22,3 +22,14 @@ export async function updateDeliveryStatus(
   });
   return response.data;
 }
+
+export async function updateDeliveryLocation(
+  orderId: string,
+  payload: { riderLat: number; riderLng: number },
+): Promise<Order> {
+  const response = await api.patch<Order>(
+    `/riders/deliveries/${orderId}/location`,
+    payload,
+  );
+  return response.data;
+}

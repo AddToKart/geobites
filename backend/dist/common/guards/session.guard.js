@@ -13,30 +13,39 @@ let SessionGuard = class SessionGuard {
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const cookieHeader = request.headers.cookie;
-        const response = await auth_1.auth.api.getSession({
-            headers: new Headers(cookieHeader
-                ? {
-                    cookie: cookieHeader,
-                }
-                : undefined),
-        });
-        const currentSession = response?.session;
-        const currentUser = response?.user;
-        if (!currentSession || !currentUser) {
-            throw new common_1.UnauthorizedException('Authentication required');
+        try {
+            const response = await auth_1.auth.api.getSession({
+                headers: new Headers(cookieHeader
+                    ? {
+                        cookie: cookieHeader,
+                    }
+                    : undefined),
+            });
+            const currentSession = response?.session;
+            const currentUser = response?.user;
+            if (!currentSession || !currentUser) {
+                throw new common_1.UnauthorizedException('Authentication required');
+            }
+            request.session = {
+                id: currentSession.id,
+                userId: currentSession.userId,
+                expiresAt: new Date(currentSession.expiresAt),
+            };
+            request.user = {
+                id: currentUser.id,
+                email: currentUser.email,
+                name: currentUser.name,
+                role: typeof currentUser.role === 'string' ? currentUser.role : undefined,
+            };
+            return true;
         }
-        request.session = {
-            id: currentSession.id,
-            userId: currentSession.userId,
-            expiresAt: new Date(currentSession.expiresAt),
-        };
-        request.user = {
-            id: currentUser.id,
-            email: currentUser.email,
-            name: currentUser.name,
-            role: typeof currentUser.role === 'string' ? currentUser.role : undefined,
-        };
-        return true;
+        catch (error) {
+            if (error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
+            console.error('SessionGuard error:', error);
+            throw new common_1.InternalServerErrorException('Failed to validate session');
+        }
     }
 };
 exports.SessionGuard = SessionGuard;

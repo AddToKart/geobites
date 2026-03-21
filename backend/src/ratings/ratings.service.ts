@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { Rating } from '../entities/rating.entity';
 import { Vendor } from '../entities/vendor.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateRatingDto } from './dto/create-rating.dto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class RatingsService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(Vendor)
     private readonly vendorRepository: Repository<Vendor>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -60,6 +62,21 @@ export class RatingsService {
 
     const savedRating = await this.ratingRepository.save(rating);
     await this.recomputeVendorRating(order.vendorId);
+
+    // Notify seller about the new rating
+    const vendor = await this.vendorRepository.findOne({
+      where: { id: order.vendorId },
+    });
+
+    if (vendor) {
+      await this.notificationsService.create({
+        userId: vendor.userId,
+        title: 'New Rating Received',
+        message: `You received a ${createRatingDto.score}-star rating`,
+        type: 'rating',
+        referenceId: order.id,
+      });
+    }
 
     return savedRating;
   }

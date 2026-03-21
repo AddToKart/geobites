@@ -1,22 +1,22 @@
 import React from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { 
-  Menu, 
-  User, 
-  LogOut, 
-  ShoppingBag, 
-  UtensilsCrossed, 
-  Truck, 
-  Bell, 
-  Home, 
-  History
+import {
+  Bell,
+  History,
+  Home,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  Truck,
+  User,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/sonner';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface NavItem {
   label: string;
@@ -45,66 +45,105 @@ const RIDER_NAV: NavItem[] = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = React.useState(false);
 
   const navItems = React.useMemo(() => {
-    if (!user) return [];
+    if (!user) {
+      return [];
+    }
+
     switch (user.role) {
-      case 'seller': return SELLER_NAV;
-      case 'rider': return RIDER_NAV;
-      default: return CUSTOMER_NAV;
+      case 'seller':
+        return SELLER_NAV;
+      case 'rider':
+        return RIDER_NAV;
+      default:
+        return CUSTOMER_NAV;
     }
   }, [user]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const initials = React.useMemo(() => {
+    if (!user?.name) {
+      return 'G';
+    }
+
+    return user.name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }, [user?.name]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login');
+    }
   };
 
-  if (!user) return <>{children}</>;
+  if (!user) {
+    return <>{children}</>;
+  }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-card fixed inset-y-0 z-50">
-        <NavContent items={navItems} onLogout={handleLogout} />
+    <div className="min-h-screen bg-[color:var(--color-background)]">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-80 p-5 md:block">
+        <NavContent
+          items={navItems}
+          onLogout={handleLogout}
+          userName={user.name}
+          userRole={user.role}
+          initials={initials}
+        />
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Mobile Header */}
-        <header className="md:hidden h-16 border-b bg-card/80 backdrop-blur-sm sticky top-0 z-40 px-4 flex items-center justify-between">
-          <span className="text-lg font-bold font-fraunces text-primary">Geobites</span>
+      <div className="flex min-h-screen flex-col md:ml-80">
+        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-white/70 bg-[rgba(246,240,232,0.86)] px-4 backdrop-blur-md md:hidden">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[color:var(--color-primary)] text-sm font-semibold text-white">
+              {initials}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[color:var(--color-text)]">Geobites</p>
+              <p className="text-xs capitalize text-[color:var(--color-text-soft)]">{user.role}</p>
+            </div>
+          </div>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="-mr-2">
+              <Button variant="ghost" size="icon">
                 <Menu className="w-5 h-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72">
-              <NavContent 
-                items={navItems} 
-                onLogout={handleLogout} 
-                onItemClick={() => setOpen(false)} 
+            <SheetContent side="left" className="w-80 border-none bg-transparent p-3 shadow-none">
+              <NavContent
+                items={navItems}
+                onLogout={handleLogout}
+                onItemClick={() => setOpen(false)}
+                userName={user.name}
+                userRole={user.role}
+                initials={initials}
               />
             </SheetContent>
           </Sheet>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+        <main className="mx-auto flex w-full max-w-7xl flex-1 p-4 md:p-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="h-full"
+              transition={{ duration: 0.18 }}
+              className="h-full w-full"
             >
               {children}
             </motion.div>
@@ -116,23 +155,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavContent({ 
-  items, 
-  onLogout, 
-  onItemClick 
-}: { 
-  items: NavItem[]; 
-  onLogout: () => void; 
+function NavContent({
+  items,
+  onLogout,
+  onItemClick,
+  userName,
+  userRole,
+  initials,
+}: {
+  items: NavItem[];
+  onLogout: () => void;
   onItemClick?: () => void;
+  userName: string;
+  userRole: string;
+  initials: string;
 }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center px-6 h-16 border-b">
-        <span className="text-xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent font-fraunces">
-          Geobites
-        </span>
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-white/80 bg-white/92 shadow-[var(--shadow-panel)] backdrop-blur-md">
+      <div className="border-b border-[color:var(--color-border)] px-6 py-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[color:var(--color-primary)] text-lg font-semibold text-white">
+            {initials}
+          </div>
+          <div className="space-y-1">
+            <span className="block text-xl font-semibold text-[color:var(--color-text)]">
+              Geobites
+            </span>
+            <p className="text-sm text-[color:var(--color-text-soft)]">{userName}</p>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--color-primary-dark)]">
+              {userRole}
+            </p>
+          </div>
+        </div>
       </div>
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+
+      <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6">
         {items.map((item) => (
           <NavLink
             key={item.href}
@@ -140,10 +197,10 @@ function NavContent({
             onClick={onItemClick}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                isActive 
-                  ? "bg-primary/10 text-primary shadow-sm" 
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
+                isActive
+                  ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
+                  : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
               )
             }
           >
@@ -152,25 +209,26 @@ function NavContent({
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t space-y-2">
+
+      <div className="space-y-2 border-t border-[color:var(--color-border)] p-4">
         <NavLink
           to="/notifications"
           onClick={onItemClick}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              isActive 
-                ? "bg-muted text-foreground" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-[color:var(--color-surface-2)] text-[color:var(--color-text)]'
+                : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
             )
           }
         >
           <Bell className="w-5 h-5" />
           Notifications
         </NavLink>
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-danger-soft)] hover:text-[color:var(--color-danger)]"
           onClick={onLogout}
         >
           <LogOut className="w-5 h-5" />

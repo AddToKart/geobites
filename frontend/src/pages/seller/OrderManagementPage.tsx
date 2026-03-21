@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Badge } from '../../components/ui/badge';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { getOrders, updateOrderStatus } from '../../services/orderService';
 import { Order } from '../../types';
 import { ORDER_STATUS_LABELS } from '../../utils/constants';
+import { formatCurrency } from '../../utils/helpers';
 
 const sellerActions: Record<string, Array<'accepted' | 'rejected' | 'preparing' | 'ready_for_pickup'>> = {
   pending: ['accepted', 'rejected'],
@@ -42,41 +45,85 @@ export function OrderManagementPage() {
     }
   };
 
-  return (
-    <section className="space-y-4">
-      <h1 className="text-3xl font-semibold text-[var(--color-text)]">Order Management</h1>
-      {error && <Card className="text-sm text-[var(--color-danger)]">{error}</Card>}
+  const pendingCount = useMemo(
+    () => orders.filter((order) => order.status === 'pending').length,
+    [orders],
+  );
 
-      <div className="space-y-3">
+  return (
+    <div className="page-stack">
+      <PageHeader
+        eyebrow="Seller"
+        title="Order management"
+        description="Every order card keeps the status visible and only exposes the actions that make sense next."
+      />
+
+      {error ? (
+        <Card>
+          <CardContent className="p-5 text-sm text-[color:var(--color-danger)]">{error}</CardContent>
+        </Card>
+      ) : null}
+
+      <section className="grid gap-5 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-[color:var(--color-text-soft)]">Total orders</p>
+            <p className="mt-2 text-3xl font-semibold">{orders.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <p className="text-sm text-[color:var(--color-text-soft)]">Awaiting action</p>
+            <p className="mt-2 text-3xl font-semibold">{pendingCount}</p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <div className="space-y-4">
         {orders.map((order) => {
           const actions = sellerActions[order.status] ?? [];
+
           return (
-            <Card key={order.id} className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
-                  <p className="text-sm text-[var(--color-text-soft)]">{order.deliveryAddress}</p>
+            <Card key={order.id}>
+              <CardContent className="space-y-4 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-xl font-semibold">#{order.id.slice(0, 8)}</h2>
+                      <StatusBadge status={order.status} />
+                    </div>
+                    <p className="text-sm text-[color:var(--color-text-soft)]">{order.deliveryAddress}</p>
+                    <p className="text-sm text-[color:var(--color-text-muted)]">
+                      {formatCurrency(order.totalAmount)}
+                    </p>
+                  </div>
                 </div>
-                <Badge>{ORDER_STATUS_LABELS[order.status]}</Badge>
-              </div>
-              {actions.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {actions.map((status) => (
-                    <Button
-                      key={status}
-                      size="sm"
-                      variant={status === 'rejected' ? 'danger' : 'secondary'}
-                      onClick={() => void changeStatus(order, status)}
-                    >
-                      {ORDER_STATUS_LABELS[status]}
-                    </Button>
-                  ))}
-                </div>
-              )}
+
+                {actions.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                    {actions.map((status) => (
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant={status === 'rejected' ? 'ghost' : 'default'}
+                        className={status === 'rejected' ? 'text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger-soft)]' : ''}
+                        onClick={() => void changeStatus(order, status)}
+                      >
+                        {status === 'rejected' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                        {ORDER_STATUS_LABELS[status]}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-[color:var(--color-text-soft)]">
+                    No seller action required right now.
+                  </p>
+                )}
+              </CardContent>
             </Card>
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }

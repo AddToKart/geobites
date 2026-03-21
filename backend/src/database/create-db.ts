@@ -21,6 +21,9 @@ export async function ensureDatabaseExists() {
     if (res.rowCount === 0) {
       console.log(`Database "${dbName}" does not exist. Creating...`);
       await client.query(`CREATE DATABASE "${dbName}"`);
+      console.log(`Database "${dbName}" created successfully`);
+    } else {
+      console.log(`Database "${dbName}" already exists`);
     }
 
     // Now connect to the geobites database to check for tables
@@ -46,23 +49,35 @@ export async function ensureDatabaseExists() {
       if (fs.existsSync(migrationDir)) {
         const files = fs
           .readdirSync(migrationDir)
-          .filter((f) => f.endsWith('.sql'));
-        if (files.length > 0) {
-          // Sort to get latest if multiple, but here we just take the first
-          const sqlPath = path.join(migrationDir, files[0]);
+          .filter((f) => f.endsWith('.sql'))
+          .sort();
+
+        for (const file of files) {
+          console.log(`Running migration: ${file}`);
+          const sqlPath = path.join(migrationDir, file);
           const sql = fs.readFileSync(sqlPath, 'utf8');
-          await appClient.query(sql);
-          console.log(
-            'Better Auth tables created successfully via SQL migration.',
-          );
+          try {
+            await appClient.query(sql);
+            console.log(`Migration ${file} completed successfully`);
+          } catch (migrationError) {
+            console.error(`Migration ${file} failed:`, migrationError);
+          }
         }
+      } else {
+        console.warn(
+          'better-auth_migrations directory not found. Tables may not be created.',
+        );
       }
+    } else {
+      console.log('Better Auth tables already exist');
     }
 
     await appClient.end();
   } catch (err) {
     console.error('Error ensuring database and tables exist:', err);
+    throw err;
   } finally {
     await client.end();
   }
 }
+

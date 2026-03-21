@@ -30,8 +30,14 @@ let OrdersController = class OrdersController {
     create(createOrderDto, userId) {
         return this.ordersService.create(createOrderDto, userId);
     }
-    findAll(userId, role, query) {
-        return this.ordersService.findAllForUser(userId, role, query);
+    async findAll(userId, role, query) {
+        try {
+            return await this.ordersService.findAllForUser(userId, role, query);
+        }
+        catch (error) {
+            console.error('Error fetching orders:', error);
+            throw error;
+        }
     }
     findOne(id, userId, role) {
         return this.ordersService.findOneForUser(id, userId, role);
@@ -52,12 +58,13 @@ __decorate([
 ], OrdersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('customer', 'seller', 'rider'),
     __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
     __param(1, (0, current_user_decorator_1.CurrentUser)('role')),
     __param(2, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String, query_orders_dto_1.QueryOrdersDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),

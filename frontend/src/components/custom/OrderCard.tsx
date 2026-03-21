@@ -1,48 +1,57 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight, CalendarDays, MapPin, Package2 } from 'lucide-react';
 import { Order } from '../../types';
-import { ORDER_STATUS_LABELS } from '../../utils/constants';
 import { formatCurrency, formatDate } from '../../utils/helpers';
-import { Badge } from '../ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-
-function statusVariant(status: string): 'default' | 'success' | 'warning' | 'danger' {
-  if (status === 'delivered') {
-    return 'success';
-  }
-  if (status === 'rejected' || status === 'cancelled') {
-    return 'danger';
-  }
-  if (status === 'pending' || status === 'ready_for_pickup') {
-    return 'warning';
-  }
-  return 'default';
-}
+import { Card, CardContent, CardHeader } from '../ui/card';
+import { StatusBadge } from '../ui/status-badge';
 
 export function OrderCard({ order }: { order: Order }) {
   return (
-    <Card>
-      <CardHeader>
-        <div>
-          <CardTitle>Order #{order.id.slice(0, 8)}</CardTitle>
-          <p className="mt-1 text-sm text-[var(--color-text-soft)]">{formatDate(order.createdAt)}</p>
+    <Card className="h-full">
+      <CardHeader className="gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+              Order
+            </p>
+            <h3 className="text-xl font-semibold">#{order.id.slice(0, 8)}</h3>
+          </div>
+          <StatusBadge status={order.status} />
         </div>
-        <Badge variant={statusVariant(order.status)}>
-          {ORDER_STATUS_LABELS[order.status] ?? order.status}
-        </Badge>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between text-sm text-[var(--color-text-soft)]">
-          <span>{order.items.length} item(s)</span>
-          <span className="font-semibold text-[var(--color-text)]">
-            {formatCurrency(order.totalAmount)}
-          </span>
+      <CardContent className="flex h-full flex-col gap-4">
+        <div className="grid gap-3 text-sm text-[color:var(--color-text-soft)]">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+            <span>{formatDate(order.createdAt)}</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+            <span className="line-clamp-2">{order.deliveryAddress}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Package2 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+            <span>{order.items.length} item(s)</span>
+          </div>
         </div>
-        <Link
-          to={`/orders/${order.id}`}
-          className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-[var(--color-border-strong)] px-4 text-sm font-medium text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)]"
-        >
-          View Order
-        </Link>
+
+        <div className="mt-auto flex items-center justify-between rounded-[18px] bg-[color:var(--color-surface-2)] px-4 py-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+              Total
+            </p>
+            <p className="text-lg font-semibold text-[color:var(--color-text)]">
+              {formatCurrency(order.totalAmount)}
+            </p>
+          </div>
+          <Link
+            to={`/orders/${order.id}`}
+            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)] shadow-[var(--shadow-soft)] transition hover:text-[color:var(--color-primary)]"
+          >
+            View details
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );
