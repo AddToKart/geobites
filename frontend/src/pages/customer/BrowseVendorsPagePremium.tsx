@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { List, MapIcon, Store } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { Button } from '@/components/ui/button';
@@ -71,9 +71,13 @@ export function BrowseVendorsPagePremium() {
             order.status,
           ),
         ) ?? null;
-      setActiveOrder(trackedOrder);
+      startTransition(() => {
+        setActiveOrder(trackedOrder);
+      });
     } catch {
-      setActiveOrder(null);
+      startTransition(() => {
+        setActiveOrder(null);
+      });
     }
   }, 15000);
 

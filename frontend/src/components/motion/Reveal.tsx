@@ -9,11 +9,17 @@ export function Reveal({
   className,
   delay = 0,
   y = 10,
+  mode = 'inView',
+  viewportMargin = '0px 0px -10% 0px',
+  amount = 0.14,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
   y?: number;
+  mode?: 'immediate' | 'inView';
+  viewportMargin?: string;
+  amount?: number;
 }) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -21,11 +27,25 @@ export function Reveal({
     return <div className={className}>{children}</div>;
   }
 
+  if (mode === 'immediate') {
+    return (
+      <m.div
+        className={className}
+        initial={{ opacity: 0, y }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24, delay, ease: motionEase }}
+      >
+        {children}
+      </m.div>
+    );
+  }
+
   return (
     <m.div
       className={className}
       initial={{ opacity: 0, y }}
-      animate={{ opacity: 1, y: 0 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount, margin: viewportMargin }}
       transition={{ duration: 0.24, delay, ease: motionEase }}
     >
       {children}
@@ -38,11 +58,17 @@ export function Stagger({
   className,
   delayChildren = 0.02,
   stagger = 0.04,
+  mode = 'inView',
+  viewportMargin = '0px 0px -10% 0px',
+  amount = 0.14,
 }: {
   children: ReactNode;
   className?: string;
   delayChildren?: number;
   stagger?: number;
+  mode?: 'immediate' | 'inView';
+  viewportMargin?: string;
+  amount?: number;
 }) {
   const shouldReduceMotion = useReducedMotion();
 
@@ -50,20 +76,31 @@ export function Stagger({
     return <div className={className}>{children}</div>;
   }
 
+  const variants = {
+    hidden: {},
+    visible: {
+      transition: {
+        delayChildren,
+        staggerChildren: stagger,
+      },
+    },
+  };
+
+  if (mode === 'immediate') {
+    return (
+      <m.div className={className} initial="hidden" animate="visible" variants={variants}>
+        {children}
+      </m.div>
+    );
+  }
+
   return (
     <m.div
       className={className}
       initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: {},
-        visible: {
-          transition: {
-            delayChildren,
-            staggerChildren: stagger,
-          },
-        },
-      }}
+      whileInView="visible"
+      viewport={{ once: true, amount, margin: viewportMargin }}
+      variants={variants}
     >
       {children}
     </m.div>

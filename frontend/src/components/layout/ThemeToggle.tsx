@@ -22,7 +22,7 @@ export function ThemeToggle({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-2xl border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] p-1 shadow-[var(--shadow-soft)] backdrop-blur-sm',
+        'inline-flex items-center gap-1 rounded-2xl border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] p-1 shadow-[var(--shadow-soft)]',
         className,
       )}
       role="group"

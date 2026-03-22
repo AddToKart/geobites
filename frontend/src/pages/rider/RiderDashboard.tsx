@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { startTransition, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bike, Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { useRiderLocationTracking } from '@/hooks/useRiderLocationTracking';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ParallaxSection } from '@/components/motion/Parallax';
 import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
@@ -24,11 +25,15 @@ export function RiderDashboard() {
         getDeliveries('available'),
         getDeliveries('active'),
       ]);
-      setAvailable(availableOrders);
-      setActive(activeOrders);
-      setError(null);
+      startTransition(() => {
+        setAvailable(availableOrders);
+        setActive(activeOrders);
+        setError(null);
+      });
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Failed to load deliveries');
+      startTransition(() => {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load deliveries');
+      });
     }
   };
 
@@ -107,26 +112,28 @@ export function RiderDashboard() {
         </Card>
       ) : null}
 
-      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[color:var(--color-text-soft)]">Available</p>
-            <p className="mt-2 text-3xl font-semibold">{available.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[color:var(--color-text-soft)]">Active</p>
-            <p className="mt-2 text-3xl font-semibold">{active.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-[color:var(--color-text-soft)]">Focus</p>
-            <p className="mt-2 text-lg font-semibold">Keep status moving</p>
-          </CardContent>
-        </Card>
-      </Stagger>
+      <ParallaxSection offset={8}>
+        <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-[color:var(--color-text-soft)]">Available</p>
+              <p className="mt-2 text-3xl font-semibold">{available.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-[color:var(--color-text-soft)]">Active</p>
+              <p className="mt-2 text-3xl font-semibold">{active.length}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm text-[color:var(--color-text-soft)]">Focus</p>
+              <p className="mt-2 text-lg font-semibold">Keep status moving</p>
+            </CardContent>
+          </Card>
+        </Stagger>
+      </ParallaxSection>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
         <Reveal className="space-y-6">

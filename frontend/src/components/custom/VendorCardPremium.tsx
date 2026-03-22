@@ -13,7 +13,7 @@ export function VendorCardPremium({ vendor }: VendorCardProps) {
 
   return (
     <Link to={`/vendor/${vendor.id}`} className="group block h-full">
-      <article className="flex h-full flex-col overflow-hidden rounded-[26px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)]">
+      <article className="defer-card flex h-full flex-col overflow-hidden rounded-[26px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transform-gpu transition-transform duration-150 hover:-translate-y-0.5">
         <div className="relative h-52 overflow-hidden bg-[linear-gradient(135deg,#ef7c42,#f6b372)]">
           {vendor.imageUrl ? (
             <img

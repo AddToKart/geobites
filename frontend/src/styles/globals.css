@@ -76,17 +76,17 @@
 
 :root {
   color-scheme: light;
-  --shadow-soft: 0 16px 40px rgba(60, 35, 8, 0.06);
-  --shadow-card: 0 16px 28px rgba(60, 35, 8, 0.08);
-  --shadow-panel: 0 26px 40px rgba(60, 35, 8, 0.1);
+  --shadow-soft: 0 8px 20px rgba(60, 35, 8, 0.05);
+  --shadow-card: 0 10px 22px rgba(60, 35, 8, 0.07);
+  --shadow-panel: 0 14px 28px rgba(60, 35, 8, 0.08);
   --focus-ring: 0 0 0 4px rgba(235, 106, 45, 0.14);
   --shadow-inset-soft: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --color-shell-bg: rgba(255, 255, 255, 0.92);
-  --color-shell-border: rgba(255, 255, 255, 0.8);
-  --color-shell-header: rgba(246, 240, 232, 0.86);
-  --color-shell-nav: rgba(246, 240, 232, 0.94);
-  --color-overlay-bg: rgba(255, 255, 255, 0.94);
-  --color-overlay-border: rgba(255, 255, 255, 0.82);
+  --color-shell-bg: rgba(255, 255, 255, 0.985);
+  --color-shell-border: rgba(233, 220, 200, 0.92);
+  --color-shell-header: rgba(246, 240, 232, 0.98);
+  --color-shell-nav: rgba(246, 240, 232, 0.985);
+  --color-overlay-bg: rgba(255, 255, 255, 0.985);
+  --color-overlay-border: rgba(233, 220, 200, 0.92);
   --page-glow-top-left: rgba(255, 205, 163, 0.28);
   --page-glow-top-right: rgba(255, 240, 215, 0.7);
   --page-gradient-start: #fbf6f0;
@@ -172,16 +172,16 @@
   --color-status-cancelled: rgba(186, 200, 214, 0.14);
   --color-status-cancelled-text: #ced9e3;
 
-  --shadow-soft: 0 18px 44px rgba(2, 8, 18, 0.32);
-  --shadow-card: 0 18px 34px rgba(2, 8, 18, 0.38);
-  --shadow-panel: 0 28px 48px rgba(2, 8, 18, 0.5);
+  --shadow-soft: 0 10px 26px rgba(2, 8, 18, 0.22);
+  --shadow-card: 0 12px 26px rgba(2, 8, 18, 0.28);
+  --shadow-panel: 0 16px 32px rgba(2, 8, 18, 0.34);
   --focus-ring: 0 0 0 4px rgba(255, 140, 85, 0.18);
   --shadow-inset-soft: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --color-shell-bg: rgba(14, 22, 31, 0.92);
+  --color-shell-bg: rgba(14, 22, 31, 0.985);
   --color-shell-border: rgba(120, 147, 173, 0.14);
-  --color-shell-header: rgba(10, 16, 23, 0.88);
-  --color-shell-nav: rgba(10, 16, 23, 0.94);
-  --color-overlay-bg: rgba(15, 24, 34, 0.94);
+  --color-shell-header: rgba(10, 16, 23, 0.985);
+  --color-shell-nav: rgba(10, 16, 23, 0.985);
+  --color-overlay-bg: rgba(15, 24, 34, 0.985);
   --color-overlay-border: rgba(120, 147, 173, 0.16);
   --page-glow-top-left: rgba(255, 140, 85, 0.09);
   --page-glow-top-right: rgba(88, 129, 255, 0.12);
@@ -321,11 +321,12 @@
 }
 
 .page-hero {
-  @apply relative overflow-hidden rounded-[28px] border px-5 py-5 shadow-[var(--shadow-panel)] backdrop-blur-sm md:px-7 md:py-6;
+  @apply relative overflow-hidden rounded-[28px] border px-5 py-5 shadow-[var(--shadow-panel)] md:px-7 md:py-6;
   border-color: var(--color-shell-border);
   background:
     radial-gradient(circle at top right, var(--hero-glow), transparent 18rem),
     linear-gradient(135deg, var(--hero-start), var(--hero-end));
+  contain: paint;
 }
 
 .page-hero::before {
@@ -334,9 +335,8 @@
   width: 18rem;
   height: 18rem;
   border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 68%);
-  filter: blur(10px);
-  opacity: 0.9;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 72%);
+  opacity: 0.72;
   content: "";
   pointer-events: none;
   animation: hero-drift 16s ease-in-out infinite;
@@ -351,9 +351,9 @@
 }
 
 .panel-card {
-  @apply rounded-[24px] border shadow-[var(--shadow-card)] backdrop-blur-sm;
+  @apply rounded-[24px] border shadow-[var(--shadow-card)];
   border-color: var(--color-shell-border);
-  background: color-mix(in srgb, var(--color-card) 90%, transparent);
+  background: var(--color-card);
 }
 
 .panel-muted {
@@ -382,4 +382,14 @@
   );
   background-size: 200% 100%;
   animation: route-loader-shimmer 1.5s linear infinite;
+}
+
+.defer-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 540px;
+}
+
+.defer-card {
+  content-visibility: auto;
+  contain-intrinsic-size: 320px;
 }

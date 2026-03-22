@@ -3,72 +3,41 @@ import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { RouteLoadingScreen } from './components/layout/RouteLoadingScreen';
+import { RouteWarmup } from './components/layout/RouteWarmup';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  loadActiveDeliveryPage,
+  loadBrowsePage,
+  loadCartPage,
+  loadLoginPage,
+  loadMenuManagementPage,
+  loadNotificationsPage,
+  loadOrderHistoryPage,
+  loadOrderManagementPage,
+  loadOrderTrackingPage,
+  loadProfilePage,
+  loadRegisterPage,
+  loadRiderDashboardPage,
+  loadSellerDashboardPage,
+  loadVendorMenuPage,
+} from '@/routes/loaders';
 
-const LoginPage = lazy(() =>
-  import('./pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })),
-);
-const RegisterPage = lazy(() =>
-  import('./pages/auth/RegisterPage').then((module) => ({ default: module.RegisterPage })),
-);
-const NotificationsPage = lazy(() =>
-  import('./pages/common/NotificationsPage').then((module) => ({
-    default: module.NotificationsPage,
-  })),
-);
-const ProfilePage = lazy(() =>
-  import('./pages/common/ProfilePage').then((module) => ({ default: module.ProfilePage })),
-);
-const BrowseVendorsPagePremium = lazy(() =>
-  import('./pages/customer/BrowseVendorsPagePremium').then((module) => ({
-    default: module.BrowseVendorsPagePremium,
-  })),
-);
-const CartPage = lazy(() =>
-  import('./pages/customer/CartPage').then((module) => ({ default: module.CartPage })),
-);
-const OrderHistoryPage = lazy(() =>
-  import('./pages/customer/OrderHistoryPage').then((module) => ({
-    default: module.OrderHistoryPage,
-  })),
-);
-const OrderTrackingPage = lazy(() =>
-  import('./pages/customer/OrderTrackingPage').then((module) => ({
-    default: module.OrderTrackingPage,
-  })),
-);
-const VendorMenuPage = lazy(() =>
-  import('./pages/customer/VendorMenuPage').then((module) => ({
-    default: module.VendorMenuPage,
-  })),
-);
-const ActiveDeliveryPage = lazy(() =>
-  import('./pages/rider/ActiveDeliveryPage').then((module) => ({
-    default: module.ActiveDeliveryPage,
-  })),
-);
-const RiderDashboard = lazy(() =>
-  import('./pages/rider/RiderDashboard').then((module) => ({
-    default: module.RiderDashboard,
-  })),
-);
-const MenuManagementPage = lazy(() =>
-  import('./pages/seller/MenuManagementPage').then((module) => ({
-    default: module.MenuManagementPage,
-  })),
-);
-const OrderManagementPage = lazy(() =>
-  import('./pages/seller/OrderManagementPage').then((module) => ({
-    default: module.OrderManagementPage,
-  })),
-);
-const SellerDashboard = lazy(() =>
-  import('./pages/seller/SellerDashboard').then((module) => ({
-    default: module.SellerDashboard,
-  })),
-);
+const LoginPage = lazy(loadLoginPage);
+const RegisterPage = lazy(loadRegisterPage);
+const NotificationsPage = lazy(loadNotificationsPage);
+const ProfilePage = lazy(loadProfilePage);
+const BrowseVendorsPagePremium = lazy(loadBrowsePage);
+const CartPage = lazy(loadCartPage);
+const OrderHistoryPage = lazy(loadOrderHistoryPage);
+const OrderTrackingPage = lazy(loadOrderTrackingPage);
+const VendorMenuPage = lazy(loadVendorMenuPage);
+const ActiveDeliveryPage = lazy(loadActiveDeliveryPage);
+const RiderDashboard = lazy(loadRiderDashboardPage);
+const MenuManagementPage = lazy(loadMenuManagementPage);
+const OrderManagementPage = lazy(loadOrderManagementPage);
+const SellerDashboard = lazy(loadSellerDashboardPage);
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
@@ -141,6 +110,7 @@ function App() {
       <MotionConfig reducedMotion="user">
         <AuthProvider>
           <CartProvider>
+            <RouteWarmup />
             <AppRoutes />
           </CartProvider>
         </AuthProvider>

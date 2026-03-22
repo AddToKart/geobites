@@ -30,7 +30,7 @@ export function BrowseListItem({
     <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
       <article
         className={cn(
-          'grid overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-panel)] xl:grid-cols-[260px_minmax(0,1fr)_220px]',
+          'defer-card grid overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transform-gpu transition-transform duration-150 hover:-translate-y-0.5 xl:grid-cols-[260px_minmax(0,1fr)_220px]',
           isSelected && 'border-[color:var(--color-primary)] shadow-[0_22px_46px_rgba(235,106,45,0.18)]',
         )}
       >

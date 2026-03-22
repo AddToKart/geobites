@@ -7,7 +7,7 @@ import { StatusBadge } from '../ui/status-badge';
 
 export function OrderCard({ order }: { order: Order }) {
   return (
-    <Card className="h-full">
+    <Card className="defer-card h-full">
       <CardHeader className="gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">

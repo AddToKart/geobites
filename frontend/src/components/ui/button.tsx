@@ -5,18 +5,18 @@ import { Slot } from "radix-ui"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-2xl border border-transparent text-sm font-semibold whitespace-nowrap transition-all duration-200 outline-none select-none focus-visible:ring-0 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-2xl border border-transparent text-sm font-semibold whitespace-nowrap transform-gpu transition-[transform,background-color,color,border-color] duration-150 outline-none select-none focus-visible:ring-0 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)] shadow-[0_12px_20px_rgba(235,106,45,0.18)] hover:bg-[color:var(--color-primary-dark)] hover:shadow-[0_16px_24px_rgba(235,106,45,0.22)]",
+          "bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)] shadow-[0_8px_18px_rgba(235,106,45,0.14)] hover:bg-[color:var(--color-primary-dark)]",
         secondary:
-          "bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)] shadow-[0_12px_22px_rgba(34,53,71,0.16)] hover:bg-[#172636]",
+          "bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)] shadow-[0_8px_18px_rgba(34,53,71,0.12)] hover:bg-[#172636]",
         ghost:
           "border-[color:var(--color-border)] bg-[color:var(--color-surface)]/76 text-[color:var(--color-text)] hover:bg-[color:var(--color-surface-2)]",
         destructive:
-          "bg-[color:var(--color-danger)] text-white shadow-[0_12px_22px_rgba(217,72,91,0.16)] hover:bg-[#c53b4d]",
+          "bg-[color:var(--color-danger)] text-white shadow-[0_8px_18px_rgba(217,72,91,0.12)] hover:bg-[#c53b4d]",
         link: "h-auto rounded-none px-0 text-[color:var(--color-primary-dark)] underline-offset-4 hover:underline shadow-none",
       },
       size: {
