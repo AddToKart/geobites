@@ -38,9 +38,12 @@ export function VendorMenuSections({
               <p className="subtle-copy">{categoryItems.length} items</p>
             </div>
           </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            <Stagger delayChildren={0.02} stagger={0.05} className="contents">
-              {categoryItems.map((item) => {
+          <Stagger
+            delayChildren={0.02}
+            stagger={0.05}
+            className="grid gap-5 md:grid-cols-2"
+          >
+            {categoryItems.map((item) => {
                 const quantity = getItemQuantity(item.id);
 
                 return (
@@ -123,7 +126,6 @@ export function VendorMenuSections({
                 );
               })}
             </Stagger>
-          </div>
         </section>
       ))}
     </>

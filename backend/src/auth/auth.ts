@@ -33,12 +33,14 @@ const pool = new Pool({
   database: process.env.DB_DATABASE || 'geobites',
 });
 
+if (!process.env.BETTER_AUTH_SECRET) {
+  throw new Error('FATAL: BETTER_AUTH_SECRET environment variable is required');
+}
+
 export const auth = betterAuth({
   appName: 'Geobites',
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
-  secret:
-    process.env.BETTER_AUTH_SECRET ??
-    'geobites-dev-secret-change-in-production',
+  secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: parseTrustedOrigins(),
   database: pool,
   emailAndPassword: {

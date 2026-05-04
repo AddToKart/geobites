@@ -12,3 +12,5 @@ bun.lock
 .DS_Store
 Thumbs.db
 dist/
+
+GEMINI.md

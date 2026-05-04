@@ -118,7 +118,12 @@ export class OrdersService {
           vendorId: createOrderDto.vendorId,
           status: 'pending',
           totalAmount,
-          deliveryAddress: createOrderDto.deliveryAddress,
+          street: createOrderDto.street,
+          barangay: createOrderDto.barangay,
+          landmark: createOrderDto.landmark,
+          floorOrGate: createOrderDto.floorOrGate,
+          paymentMethod: createOrderDto.paymentMethod || 'COD',
+          paymentStatus: 'pending',
           deliveryLat: createOrderDto.deliveryLat,
           deliveryLng: createOrderDto.deliveryLng,
           notes: createOrderDto.notes,
@@ -276,6 +281,10 @@ export class OrdersService {
       if (!(currentStatus === 'pending' && nextStatus === 'cancelled')) {
         throw new BadRequestException('Invalid customer status transition');
       }
+      if (nextStatus === 'cancelled') {
+        order.cancellationReason =
+          updateStatusDto.cancellationReason || 'Cancelled by customer';
+      }
     }
 
     if (role === 'seller') {
@@ -292,6 +301,13 @@ export class OrdersService {
       if (!allowed.includes(nextStatus)) {
         throw new BadRequestException('Invalid seller status transition');
       }
+
+      // Calculate a basic ETA when the seller starts preparing (e.g. 45 mins from now)
+      if (nextStatus === 'preparing') {
+        const eta = new Date();
+        eta.setMinutes(eta.getMinutes() + 45);
+        order.estimatedDeliveryTime = eta;
+      }
     }
 
     if (role === 'rider') {
@@ -300,12 +316,21 @@ export class OrdersService {
         throw new BadRequestException('Invalid rider status transition');
       }
 
+      if (order.riderId && order.riderId !== userId) {
+        throw new ForbiddenException(
+          'Order is already assigned to another rider',
+        );
+      }
+
+      if (!order.riderId && nextStatus !== 'ready_for_pickup') {
+        throw new ForbiddenException(
+          'Order must be accepted before updating status',
+        );
+      }
+
       if (nextStatus === 'ready_for_pickup' && !order.riderId) {
         // Rider is accepting the delivery - assign them to this order
         order.riderId = userId;
-      } else if (order.riderId && order.riderId !== userId) {
-        // This order is already assigned to another rider
-        throw new ForbiddenException('Order is already assigned to another rider');
       }
     }
 

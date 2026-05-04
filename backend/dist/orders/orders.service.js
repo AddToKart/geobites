@@ -95,7 +95,12 @@ let OrdersService = class OrdersService {
                 vendorId: createOrderDto.vendorId,
                 status: 'pending',
                 totalAmount,
-                deliveryAddress: createOrderDto.deliveryAddress,
+                street: createOrderDto.street,
+                barangay: createOrderDto.barangay,
+                landmark: createOrderDto.landmark,
+                floorOrGate: createOrderDto.floorOrGate,
+                paymentMethod: createOrderDto.paymentMethod || 'COD',
+                paymentStatus: 'pending',
                 deliveryLat: createOrderDto.deliveryLat,
                 deliveryLng: createOrderDto.deliveryLng,
                 notes: createOrderDto.notes,
@@ -220,6 +225,10 @@ let OrdersService = class OrdersService {
             if (!(currentStatus === 'pending' && nextStatus === 'cancelled')) {
                 throw new common_1.BadRequestException('Invalid customer status transition');
             }
+            if (nextStatus === 'cancelled') {
+                order.cancellationReason =
+                    updateStatusDto.cancellationReason || 'Cancelled by customer';
+            }
         }
         if (role === 'seller') {
             const sellerVendor = await this.vendorRepository.findOne({
@@ -232,17 +241,25 @@ let OrdersService = class OrdersService {
             if (!allowed.includes(nextStatus)) {
                 throw new common_1.BadRequestException('Invalid seller status transition');
             }
+            if (nextStatus === 'preparing') {
+                const eta = new Date();
+                eta.setMinutes(eta.getMinutes() + 45);
+                order.estimatedDeliveryTime = eta;
+            }
         }
         if (role === 'rider') {
             const allowed = riderTransitions[currentStatus] ?? [];
             if (!allowed.includes(nextStatus)) {
                 throw new common_1.BadRequestException('Invalid rider status transition');
             }
+            if (order.riderId && order.riderId !== userId) {
+                throw new common_1.ForbiddenException('Order is already assigned to another rider');
+            }
+            if (!order.riderId && nextStatus !== 'ready_for_pickup') {
+                throw new common_1.ForbiddenException('Order must be accepted before updating status');
+            }
             if (nextStatus === 'ready_for_pickup' && !order.riderId) {
                 order.riderId = userId;
-            }
-            else if (order.riderId && order.riderId !== userId) {
-                throw new common_1.ForbiddenException('Order is already assigned to another rider');
             }
         }
         order.status = nextStatus;

@@ -78,8 +78,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   };
 
   const signOutUser = async () => {
-    await signOut();
-    setUser(null);
+    try {
+      await signOut();
+    } finally {
+      await AsyncStorage.removeItem(SESSION_KEY);
+      setUser(null);
+    }
   };
 
   const value = useMemo<AuthContextType>(

@@ -22,11 +22,18 @@ let Order = class Order {
     riderId;
     status;
     totalAmount;
-    deliveryAddress;
+    street;
+    barangay;
+    landmark;
+    floorOrGate;
+    paymentMethod;
+    paymentStatus;
+    cancellationReason;
+    disputeReason;
+    disputeStatus;
+    estimatedDeliveryTime;
     deliveryLat;
     deliveryLng;
-    riderLat;
-    riderLng;
     notes;
     createdAt;
     updatedAt;
@@ -79,9 +86,57 @@ __decorate([
     __metadata("design:type", Number)
 ], Order.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text' }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
-], Order.prototype, "deliveryAddress", void 0);
+], Order.prototype, "street", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "barangay", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "landmark", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "floorOrGate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
+        default: 'COD',
+    }),
+    __metadata("design:type", String)
+], Order.prototype, "paymentMethod", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: ['pending', 'paid', 'failed'],
+        default: 'pending',
+    }),
+    __metadata("design:type", String)
+], Order.prototype, "paymentStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "cancellationReason", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "disputeReason", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
+        default: 'none',
+    }),
+    __metadata("design:type", String)
+], Order.prototype, "disputeStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Order.prototype, "estimatedDeliveryTime", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'decimal',
@@ -102,26 +157,6 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], Order.prototype, "deliveryLng", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 10,
-        scale: 8,
-        nullable: true,
-        transformer: decimal_number_transformer_1.decimalNumberTransformer,
-    }),
-    __metadata("design:type", Number)
-], Order.prototype, "riderLat", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 11,
-        scale: 8,
-        nullable: true,
-        transformer: decimal_number_transformer_1.decimalNumberTransformer,
-    }),
-    __metadata("design:type", Number)
-], Order.prototype, "riderLng", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)

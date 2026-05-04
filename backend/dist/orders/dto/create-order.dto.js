@@ -29,7 +29,11 @@ __decorate([
 ], CreateOrderItemDto.prototype, "quantity", void 0);
 class CreateOrderDto {
     vendorId;
-    deliveryAddress;
+    street;
+    barangay;
+    landmark;
+    floorOrGate;
+    paymentMethod;
     deliveryLat;
     deliveryLng;
     notes;
@@ -42,9 +46,29 @@ __decorate([
 ], CreateOrderDto.prototype, "vendorId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateOrderDto.prototype, "deliveryAddress", void 0);
+], CreateOrderDto.prototype, "street", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "barangay", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "landmark", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "floorOrGate", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(['COD', 'GCASH', 'MAYA', 'QRPH']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "paymentMethod", void 0);
 __decorate([
     (0, class_validator_1.ValidateIf)((object) => object.deliveryLng !== undefined),
     (0, class_transformer_1.Type)(() => Number),
