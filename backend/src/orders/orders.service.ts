@@ -118,7 +118,7 @@ export class OrdersService {
           vendorId: createOrderDto.vendorId,
           status: 'pending',
           totalAmount,
-          street: createOrderDto.street,
+          street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,
           floorOrGate: createOrderDto.floorOrGate,

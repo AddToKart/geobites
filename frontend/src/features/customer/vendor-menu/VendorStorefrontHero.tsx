@@ -16,41 +16,41 @@ export function VendorStorefrontHero({
   filteredCount: number;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_320px]">
-        <div className="space-y-5 p-6 md:p-7">
+        <div className="space-y-6 p-6 md:p-8 bg-white dark:bg-gray-900">
           <div className="flex flex-wrap gap-2">
-            <Badge variant={vendor.isActive ? 'success' : 'warning'}>
+            <Badge className={`rounded-[16px] px-3 py-1 font-semibold text-xs border-none ${vendor.isActive ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-white'}`}>
               {vendor.isActive ? 'Open now' : 'Closed'}
             </Badge>
-            <Badge>{categoryCount} categories</Badge>
-            {vendorMeta ? <Badge>{vendorMeta.spotlight}</Badge> : null}
+            <Badge variant="secondary" className="rounded-[16px] px-3 py-1 font-semibold text-xs">{categoryCount} categories</Badge>
+            {vendorMeta ? <Badge className="rounded-[16px] px-3 py-1 font-semibold text-xs bg-orange-100 text-orange-700 hover:bg-orange-200 border-none">{vendorMeta.spotlight}</Badge> : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="panel-muted px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Rating
               </p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                <Star className="h-4 w-4 fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />
+              <div className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <Star className="h-5 w-5 fill-orange-500 text-orange-500" />
                 {vendor.rating.toFixed(1)}
               </div>
             </div>
-            <div className="panel-muted px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 ETA
               </p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-semibold">
-                <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+              <div className="mt-2 flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <Clock3 className="h-5 w-5 text-orange-500" />
                 {vendorMeta?.etaMinutes || '20-35 min'}
               </div>
             </div>
-            <div className="panel-muted px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                 Visible items
               </p>
-              <div className="mt-2 text-lg font-semibold">{filteredCount}</div>
+              <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{filteredCount}</div>
             </div>
           </div>
 
@@ -59,7 +59,7 @@ export function VendorStorefrontHero({
               {vendorMeta!.specialties.map((specialty) => (
                 <span
                   key={specialty}
-                  className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                  className="rounded-full bg-slate-100 dark:bg-gray-800 px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300"
                 >
                   {specialty}
                 </span>
@@ -68,17 +68,18 @@ export function VendorStorefrontHero({
           ) : null}
         </div>
 
-        <div className="flex flex-col justify-between bg-[linear-gradient(135deg,#ef7c42,#f6b372)] p-6 text-white">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+        <div className="flex flex-col justify-between bg-gradient-to-br from-orange-500 to-orange-400 p-6 md:p-8 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+          <div className="relative z-10">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-white/80">
               Shop address
             </p>
             <div className="mt-3 flex items-start gap-3">
-              <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0" />
-              <p className="text-sm leading-6 text-white/90">{vendor.address}</p>
+              <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-white/90" />
+              <p className="text-sm font-medium leading-relaxed text-white">{vendor.address}</p>
             </div>
           </div>
-          <p className="mt-8 text-sm leading-6 text-white/80">
+          <p className="mt-8 text-sm font-medium leading-relaxed text-white/80 relative z-10">
             Browse is structured here now: search the menu, jump between categories, and keep the cart summary visible without blocking the menu.
           </p>
         </div>

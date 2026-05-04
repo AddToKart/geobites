@@ -16,7 +16,7 @@ import {
 } from 'class-validator';
 
 export class CreateOrderItemDto {
-  @IsUUID()
+  @IsString()
   menuItemId!: string;
 
   @Type(() => Number)
@@ -26,8 +26,12 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
-  @IsUUID()
+  @IsString()
   vendorId!: string;
+
+  @IsString()
+  @IsOptional()
+  deliveryAddress?: string;
 
   @IsString()
   @IsOptional()

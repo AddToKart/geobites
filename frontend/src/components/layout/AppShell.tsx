@@ -106,26 +106,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-screen flex-col md:ml-80">
-        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-header)] px-4 md:hidden">
+        <header className="sticky top-0 z-40 flex h-[74px] items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md px-4 md:hidden dark:border-gray-800 dark:bg-gray-900/80">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[color:var(--color-primary)] text-sm font-semibold text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-orange-500 text-sm font-bold text-white shadow-[0_4px_12px_rgba(249,115,22,0.3)]">
               {initials}
             </div>
             <div>
-              <p className="text-sm font-semibold text-[color:var(--color-text)]">Geobites</p>
-              <p className="text-xs capitalize text-[color:var(--color-text-soft)]">{user.role}</p>
+              <p className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">Geobites</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500">{user.role}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <ThemeToggle compact />
+            <ThemeToggle compact className="rounded-[14px]" />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="outline" size="icon" className="rounded-[14px] border-slate-200 dark:border-gray-700">
                   <Menu className="w-5 h-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-80 border-none bg-transparent p-3 shadow-none">
+              <SheetContent side="left" className="w-80 border-none bg-transparent p-4 shadow-none">
                 <NavContent
                   items={navItems}
                   onLogout={handleLogout}
@@ -139,7 +139,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="mx-auto flex w-full max-w-[92rem] flex-1 p-4 pb-24 md:p-8 md:pb-8">
+        <main className="flex w-full flex-1 p-4 pb-28 md:p-8 md:pb-12">
           <div className="h-full w-full">{children}</div>
         </main>
 
@@ -206,18 +206,18 @@ function NavContent({
   initials: string;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[30px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-panel)]">
-      <div className="border-b border-[color:var(--color-border)] px-6 py-6">
+    <div className="flex h-full flex-col overflow-hidden rounded-[32px] bg-white shadow-[var(--shadow-panel)] dark:bg-gray-900 border border-slate-100 dark:border-gray-800">
+      <div className="border-b border-slate-100 dark:border-gray-800 px-6 py-8">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-[color:var(--color-primary)] text-lg font-semibold text-white">
+          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-100 text-orange-600 text-lg font-bold">
             {initials}
           </div>
           <div className="space-y-1">
-            <span className="block text-xl font-semibold text-[color:var(--color-text)]">
+            <span className="block text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               Geobites
             </span>
-            <p className="text-sm text-[color:var(--color-text-soft)]">{userName}</p>
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--color-primary-dark)]">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{userName}</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-500">
               {userRole}
             </p>
           </div>
@@ -232,10 +232,10 @@ function NavContent({
               onClick={onItemClick}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-sm font-semibold transition-all duration-200',
                   isActive
-                    ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
-                    : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
+                    ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800 dark:hover:text-white',
                 )
               }
             >
@@ -246,9 +246,9 @@ function NavContent({
         ))}
       </Stagger>
 
-      <div className="space-y-2 border-t border-[color:var(--color-border)] p-4">
-        <div className="px-1 pb-1">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
+      <div className="space-y-2 border-t border-slate-100 dark:border-gray-800 p-4">
+        <div className="px-1 pb-2">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
             Appearance
           </p>
           <ThemeToggle className="w-full justify-between" />
@@ -258,10 +258,10 @@ function NavContent({
           onClick={onItemClick}
           className={({ isActive }) =>
             cn(
-              'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors',
+              'flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-sm font-semibold transition-colors',
               isActive
-                ? 'bg-[color:var(--color-surface-2)] text-[color:var(--color-text)]'
-                : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
+                ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800 dark:hover:text-white',
             )
           }
         >
@@ -270,7 +270,7 @@ function NavContent({
         </PrefetchNavLink>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-danger-soft)] hover:text-[color:var(--color-danger)]"
+          className="w-full justify-start gap-4 rounded-[20px] px-4 py-3.5 text-sm font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 h-auto"
           onClick={onLogout}
         >
           <LogOut className="w-5 h-5" />
@@ -283,23 +283,18 @@ function NavContent({
 
 function MobileBottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-nav)] px-3 py-3 md:hidden">
-      <div
-        className={cn(
-          'mx-auto grid max-w-xl gap-2',
-          items.length <= 3 ? 'grid-cols-3' : 'grid-cols-4',
-        )}
-      >
+    <nav className="fixed inset-x-4 bottom-6 z-40 md:hidden">
+      <div className="mx-auto flex h-[72px] max-w-md items-center justify-around rounded-[28px] bg-white/90 px-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:bg-gray-900/90 border border-slate-100 dark:border-gray-800">
         {items.slice(0, 4).map((item) => (
           <PrefetchNavLink
             key={item.href}
             to={item.href}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-all duration-200',
+                'flex flex-col items-center justify-center gap-1.5 rounded-[22px] w-[72px] h-[56px] text-[11px] font-semibold transition-all duration-300',
                 isActive
-                  ? 'bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)] shadow-[inset_0_0_0_1px_rgba(235,106,45,0.12)]'
-                  : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface)]/72 hover:text-[color:var(--color-text)]',
+                  ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 scale-105'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:scale-105',
               )
             }
           >

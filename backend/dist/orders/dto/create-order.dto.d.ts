@@ -4,6 +4,7 @@ export declare class CreateOrderItemDto {
 }
 export declare class CreateOrderDto {
     vendorId: string;
+    deliveryAddress?: string;
     street?: string;
     barangay?: string;
     landmark?: string;

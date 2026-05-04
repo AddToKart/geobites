@@ -27,7 +27,7 @@ export class Order {
   @Column({ type: 'varchar', length: 255 })
   customerId!: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'varchar', length: 255 })
   vendorId!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

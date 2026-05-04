@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "@fontsource/syne": "^5.2.7",
     "@radix-ui/react-select": "^2.2.6",
     "@tailwindcss/postcss": "^4.2.2",
     "axios": "^1.13.6",

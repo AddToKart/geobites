@@ -72,6 +72,22 @@ export function ActiveDeliveryPage() {
     }
   };
 
+  const nextActionMessage = useMemo(() => {
+    if (!order) return 'Wait for the next valid rider step.';
+    switch (order.status) {
+      case 'ready_for_pickup':
+        return 'Head to the shop, confirm the package, then mark it picked up.';
+      case 'picked_up':
+        return 'Leave the shop and switch the run into delivering when you are moving.';
+      case 'delivering':
+        return 'Stay on route and complete the drop-off once the customer receives the order.';
+      case 'delivered':
+        return 'This delivery is complete. Return to the dashboard for the next run.';
+      default:
+        return 'Wait for the next valid rider step.';
+    }
+  }, [order?.status]);
+
   if (!order) {
     return (
       <Card>
@@ -88,21 +104,6 @@ export function ActiveDeliveryPage() {
     riderLat: liveCoords?.lat ?? order.riderLat,
     riderLng: liveCoords?.lng ?? order.riderLng,
   };
-
-  const nextActionMessage = useMemo(() => {
-    switch (order.status) {
-      case 'ready_for_pickup':
-        return 'Head to the shop, confirm the package, then mark it picked up.';
-      case 'picked_up':
-        return 'Leave the shop and switch the run into delivering when you are moving.';
-      case 'delivering':
-        return 'Stay on route and complete the drop-off once the customer receives the order.';
-      case 'delivered':
-        return 'This delivery is complete. Return to the dashboard for the next run.';
-      default:
-        return 'Wait for the next valid rider step.';
-    }
-  }, [order.status]);
 
   const currentTimelineIndex = riderTimeline.indexOf(order.status);
 

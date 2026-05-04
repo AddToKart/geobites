@@ -51,7 +51,7 @@ __decorate([
     __metadata("design:type", String)
 ], Order.prototype, "customerId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid' }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], Order.prototype, "vendorId", void 0);
 __decorate([

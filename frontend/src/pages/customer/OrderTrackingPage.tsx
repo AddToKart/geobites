@@ -156,37 +156,37 @@ export function OrderTrackingPage() {
         </Card>
       ) : null}
 
-      <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <ShoppingBag className="h-5 w-5" />
+      <Stagger className="grid gap-6 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
+        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+          <CardContent className="flex items-center gap-5 p-6 md:p-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+              <ShoppingBag className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Total</p>
-              <p className="text-xl font-semibold">{formatCurrency(order.totalAmount)}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total</p>
+              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">{formatCurrency(order.totalAmount)}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <PackageCheck className="h-5 w-5" />
+        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+          <CardContent className="flex items-center gap-5 p-6 md:p-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+              <PackageCheck className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Items</p>
-              <p className="text-xl font-semibold">{order.items.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Items</p>
+              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">{order.items.length}</p>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <MapPin className="h-5 w-5" />
+        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+          <CardContent className="flex items-center gap-5 p-6 md:p-8">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+              <MapPin className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Delivery address</p>
-              <p className="line-clamp-2 text-sm font-medium">{order.deliveryAddress}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Address</p>
+              <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white mt-0.5">{order.street} {order.barangay}</p>
             </div>
           </CardContent>
         </Card>
@@ -200,17 +200,17 @@ export function OrderTrackingPage() {
         />
       </Reveal>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
         <Reveal>
-          <Card>
-          <CardContent className="space-y-4 p-5">
+          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+          <CardContent className="space-y-6 p-6 md:p-8">
             <div>
-              <h2 className="text-2xl font-semibold">Progress</h2>
-              <p className="subtle-copy">
-                Each completed step stays highlighted so you can see what has already happened.
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Progress</h2>
+              <p className="text-sm font-medium text-slate-500 mt-2">
+                Each completed step stays highlighted.
               </p>
             </div>
-            <ol className="space-y-3">
+            <ol className="space-y-4">
               {displayTimeline.map((status, index) => {
                 const active = index <= currentStep;
                 const current = status === order.status;
@@ -220,24 +220,24 @@ export function OrderTrackingPage() {
                     key={status}
                     className={
                       active
-                        ? 'rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                        : 'rounded-[22px] border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-4'
+                        ? 'rounded-[24px] bg-orange-500 text-white px-6 py-5 shadow-[0_8px_16px_rgba(249,115,22,0.2)] transition-all transform hover:-translate-y-1'
+                        : 'rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 transition-all opacity-80'
                     }
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-[color:var(--color-text)]">
+                        <p className={`text-lg font-bold tracking-tight ${active ? 'text-white' : 'text-slate-600 dark:text-slate-400'}`}>
                           {ORDER_STATUS_LABELS[status] ?? status}
                         </p>
-                        <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
+                        <p className={`mt-1 text-[11px] font-bold uppercase tracking-widest ${active ? 'text-white/80' : 'text-slate-400'}`}>
                           {current ? 'Current step' : active ? 'Completed' : 'Waiting'}
                         </p>
                       </div>
                       <span
                         className={
                           active
-                            ? 'rounded-full bg-white px-3 py-1 text-xs font-medium text-[color:var(--color-primary-dark)]'
-                            : 'rounded-full bg-white/60 px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]'
+                            ? 'rounded-full bg-white/20 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md'
+                            : 'rounded-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 shadow-sm'
                         }
                       >
                         Step {index + 1}
@@ -251,17 +251,17 @@ export function OrderTrackingPage() {
           </Card>
         </Reveal>
 
-        <Reveal className="space-y-5" delay={0.1}>
-          <Card>
-            <CardContent className="space-y-4 p-5">
-              <h2 className="text-2xl font-semibold">Order summary</h2>
-              <div className="space-y-3 rounded-[20px] bg-[color:var(--color-surface-2)] p-4">
+        <Reveal className="space-y-6" delay={0.1}>
+          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+            <CardContent className="space-y-6 p-6 md:p-8">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Summary</h2>
+              <div className="space-y-3 rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-5">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="text-[color:var(--color-text-soft)]">
-                      {item.quantity}x {item.name}
+                    <span className="font-semibold text-slate-600 dark:text-slate-300">
+                      <span className="text-orange-500">{item.quantity}x</span> {item.name}
                     </span>
-                    <span className="font-medium text-[color:var(--color-text)]">
+                    <span className="font-bold text-slate-900 dark:text-white tracking-tight">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
@@ -270,11 +270,11 @@ export function OrderTrackingPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <h2 className="text-2xl font-semibold">Notes</h2>
-              <p className="text-sm text-[color:var(--color-text-soft)]">
-                {order.notes || 'No delivery notes were added to this order.'}
+          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+            <CardContent className="space-y-4 p-6 md:p-8">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Notes</h2>
+              <p className="text-sm font-medium leading-relaxed text-slate-500">
+                {order.notes || 'No delivery notes were provided for this order.'}
               </p>
             </CardContent>
           </Card>

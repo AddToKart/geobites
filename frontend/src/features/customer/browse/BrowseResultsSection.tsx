@@ -92,24 +92,24 @@ export function BrowseResultsSection({
   }
 
   return (
-    <section className="space-y-5">
-      <Stagger className="grid gap-4 md:grid-cols-3" delayChildren={0.02} stagger={0.06}>
+    <section className="space-y-8 mt-8">
+      <Stagger className="grid gap-6 md:grid-cols-3" delayChildren={0.02} stagger={0.06}>
         {browseVendors.slice(0, 3).map((vendor) => (
-          <StaggerItem key={`${vendor.id}-feature`} className="panel-card p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+          <StaggerItem key={`${vendor.id}-feature`} className="panel-card bg-orange-50 border border-orange-100 shadow-[0_8px_24px_rgba(249,115,22,0.06)]">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-orange-600">
               {vendor.spotlight || 'Featured nearby'}
             </p>
-            <h2 className="mt-3 text-xl font-semibold text-[color:var(--color-text)]">
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
               {vendor.name}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
+            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
               {vendor.description}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               {(vendor.specialties || []).slice(0, 3).map((specialty) => (
                 <span
                   key={specialty}
-                  className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                  className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm"
                 >
                   {specialty}
                 </span>
@@ -119,7 +119,7 @@ export function BrowseResultsSection({
         ))}
       </Stagger>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {browseVendors.map((vendor) => (
           <VendorCardPremium key={vendor.id} vendor={vendor} />
         ))}

@@ -82,6 +82,10 @@ async function bootstrap() {
     const server = await app.listen(port, '0.0.0.0');
     console.log(`Backend server running on http://localhost:${port}/api`);
     console.log(`Local network access: http://192.168.100.116:${port}/api`);
+    const { DataSource } = await import('typeorm');
+    const { seedDemoData } = await import('./database/seed-demo.js');
+    const dataSource = app.get(DataSource);
+    await seedDemoData(dataSource);
     process.on('SIGTERM', async () => {
         console.log('SIGTERM received, shutting down gracefully...');
         server.close(async () => {

@@ -18,7 +18,7 @@ class CreateOrderItemDto {
 }
 exports.CreateOrderItemDto = CreateOrderItemDto;
 __decorate([
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateOrderItemDto.prototype, "menuItemId", void 0);
 __decorate([
@@ -29,6 +29,7 @@ __decorate([
 ], CreateOrderItemDto.prototype, "quantity", void 0);
 class CreateOrderDto {
     vendorId;
+    deliveryAddress;
     street;
     barangay;
     landmark;
@@ -41,9 +42,14 @@ class CreateOrderDto {
 }
 exports.CreateOrderDto = CreateOrderDto;
 __decorate([
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "vendorId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "deliveryAddress", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
