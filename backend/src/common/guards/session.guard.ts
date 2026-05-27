@@ -57,7 +57,8 @@ export class SessionGuard implements CanActivate {
         id: currentUser.id,
         email: currentUser.email,
         name: currentUser.name,
-        role: typeof currentUser.role === 'string' ? currentUser.role : undefined,
+        role:
+          typeof currentUser.role === 'string' ? currentUser.role : undefined,
       };
 
       return true;

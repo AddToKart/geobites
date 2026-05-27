@@ -60,6 +60,12 @@ async function bootstrap() {
   console.log(`Backend server running on http://localhost:${port}/api`);
   console.log(`Local network access: http://192.168.100.116:${port}/api`);
 
+  // Seed demo data
+  const { DataSource } = await import('typeorm');
+  const { seedDemoData } = await import('./database/seed-demo.js');
+  const dataSource = app.get(DataSource);
+  await seedDemoData(dataSource);
+
   // Graceful shutdown
   process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully...');

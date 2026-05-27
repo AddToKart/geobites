@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -39,4 +40,8 @@ export class CreateVendorDto {
   @IsOptional()
   @MaxLength(500)
   imageUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

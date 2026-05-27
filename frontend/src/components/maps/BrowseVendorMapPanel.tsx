@@ -115,160 +115,66 @@ export function BrowseVendorMapPanel({
   const is3D = style === 'openstreetmap3d';
 
   return (
-    <div className="panel-card p-4 md:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold">Santa Maria shop map</h2>
-          <p className="subtle-copy">
-            A bigger map view with local pins, 3D mode, and a live selected-shop panel.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge>{vendors.length} pins</Badge>
-          <Badge variant="success">{formatDistanceLabel(0)}</Badge>
-        </div>
-      </div>
+    <div className="absolute inset-0 z-0 w-full h-full">
+      <Map
+        center={[centerPoint.lng, centerPoint.lat]}
+        zoom={14.2}
+        className="h-full w-full"
+        styles={selectedStyle}
+      >
+        <BrowseMapViewport vendorPoints={vendors} centerPoint={centerPoint} is3D={is3D} />
 
-      <div className="relative h-[min(76vh,760px)] min-h-[560px] overflow-hidden rounded-[28px] border border-[color:var(--color-border)]">
-        <Map
-          center={[centerPoint.lng, centerPoint.lat]}
-          zoom={14.2}
-          className="h-full w-full"
-          styles={selectedStyle}
-        >
-          <BrowseMapViewport vendorPoints={vendors} centerPoint={centerPoint} is3D={is3D} />
-
-          <MapMarker longitude={centerPoint.lng} latitude={centerPoint.lat} anchor="bottom" offset={[0, 6]}>
-            <MarkerContent>
-              <div className="pointer-events-none flex items-center gap-2">
-                <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#223547] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
-                <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                  Anchor
-                </span>
-              </div>
-            </MarkerContent>
-            <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                  Browse center
-                </p>
-                <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                  Santa Maria, Bulacan
-                </p>
-                <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                  This is the default local anchor for distance sorting and browse focus.
-                </p>
-              </div>
-            </MarkerPopup>
-          </MapMarker>
-
-          {vendors.map((vendor) => {
-            const isSelected = vendor.id === selectedVendor?.id;
-
-            return (
-              <MapMarker
-                key={vendor.id}
-                longitude={vendor.longitude}
-                latitude={vendor.latitude}
-                anchor="bottom"
-                offset={[0, 4]}
-                onClick={() => onSelectVendor(vendor.id)}
-              >
-                <MarkerContent>
-                  <div className="pointer-events-none flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'relative inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#eb6a2d] shadow-[0_12px_22px_rgba(15,23,42,0.22)] transition duration-200',
-                        isSelected && 'scale-125 bg-[#223547]',
-                      )}
-                    />
-                    {isSelected ? (
-                      <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                        {vendor.name}
-                      </span>
-                    ) : null}
-                  </div>
-                </MarkerContent>
-                <MarkerPopup closeButton className="min-w-[260px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                        {vendor.neighborhood || 'Santa Maria'}
-                      </p>
-                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                        {vendor.name}
-                      </p>
-                      <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                        {vendor.address}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(vendor.specialties || []).slice(0, 3).map((specialty) => (
-                        <span
-                          key={specialty}
-                          className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
-                        >
-                          {specialty}
-                        </span>
-                      ))}
-                    </div>
-                    <Button asChild size="sm" className="w-full">
-                      <Link to={`/vendor/${vendor.id}`}>Open menu</Link>
-                    </Button>
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
-            );
-          })}
-
-          <MapControls
-            position="bottom-right"
-            showZoom
-            showCompass
-            showLocate
-            showFullscreen
-            onLocate={({ latitude, longitude }) => onLocate({ lat: latitude, lng: longitude })}
-          />
-        </Map>
-
-        <div className="absolute right-3 top-3 z-10">
-          <MapStyleSelect value={style} onChange={setStyle} />
-        </div>
-
-        {selectedVendor ? (
-          <div className="absolute bottom-4 left-4 z-10 hidden max-w-sm rounded-[24px] border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] p-4 shadow-[0_20px_40px_rgba(15,23,42,0.18)] backdrop-blur-sm md:block">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                  Highlighted shop
-                </p>
-                <h3 className="mt-2 text-lg font-semibold text-[color:var(--color-text)]">
-                  {selectedVendor.name}
-                </h3>
-              </div>
-              <Badge>{selectedVendor.spotlight || 'Nearby'}</Badge>
+        <MapMarker longitude={centerPoint.lng} latitude={centerPoint.lat} anchor="bottom" offset={[0, 6]}>
+          <MarkerContent>
+            <div className="pointer-events-none flex items-center gap-2">
+              <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-blue-600 shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
+              <span className="inline-flex rounded-full bg-black/80 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-white shadow-md backdrop-blur-md">
+                You are here
+              </span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-soft)]">
-              {selectedVendor.description}
-            </p>
-            <div className="mt-4 grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                <span>{selectedVendor.address}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                <span>{selectedVendor.etaMinutes || '20-35 min'}</span>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Button asChild size="sm">
-                <Link to={`/vendor/${selectedVendor.id}`}>Open menu</Link>
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+          </MarkerContent>
+        </MapMarker>
+
+        {vendors.map((vendor) => {
+          const isSelected = vendor.id === selectedVendor?.id;
+
+          return (
+            <MapMarker
+              key={vendor.id}
+              longitude={vendor.longitude}
+              latitude={vendor.latitude}
+              anchor="bottom"
+              offset={[0, 4]}
+              onClick={() => onSelectVendor(vendor.id)}
+            >
+              <MarkerContent>
+                <div className="pointer-events-none flex flex-col items-center">
+                  {isSelected ? (
+                    <span className="mb-1 inline-flex rounded-lg bg-black px-3 py-1.5 text-xs font-bold text-white shadow-xl transition-all duration-300 transform scale-110">
+                      {vendor.name}
+                    </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      'relative inline-flex h-5 w-5 rounded-full border-[3px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.3)] transition-all duration-300',
+                      isSelected ? 'bg-black scale-125' : 'bg-orange-500 hover:scale-110',
+                    )}
+                  />
+                </div>
+              </MarkerContent>
+            </MapMarker>
+          );
+        })}
+
+        <MapControls
+          position="bottom-right"
+          showZoom
+          showCompass
+          showLocate
+          showFullscreen
+          onLocate={({ latitude, longitude }) => onLocate({ lat: latitude, lng: longitude })}
+        />
+      </Map>
     </div>
   );
 }

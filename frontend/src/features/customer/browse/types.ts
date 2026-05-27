@@ -1,8 +1,9 @@
 import type { DemoVendor } from '@/data/demoVendors';
 import type { Vendor } from '@/types';
 
-export type BrowseVendor = Vendor &
-  Partial<
+export type BrowseVendor = Vendor & {
+  distance: number;
+} & Partial<
     Pick<
       DemoVendor,
       'etaMinutes' | 'neighborhood' | 'specialties' | 'priceBand' | 'spotlight'

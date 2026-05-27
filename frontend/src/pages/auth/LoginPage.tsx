@@ -1,24 +1,28 @@
-import { type FormEvent, type ReactNode, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowRight, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/layout/ThemeToggle';
-import { toast } from 'sonner';
+import { type FormEvent, type ReactNode, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { ArrowRight, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { toast } from "sonner";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { user, signIn, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isLoading && user) {
     const destination =
-      user.role === 'seller' ? '/seller' : user.role === 'rider' ? '/rider' : '/browse';
+      user.role === "seller"
+        ? "/seller"
+        : user.role === "rider"
+          ? "/rider"
+          : "/browse";
     return <Navigate to={destination} replace />;
   }
 
@@ -28,10 +32,10 @@ export function LoginPage() {
 
     try {
       await signIn(email, password);
-      toast.success('Welcome back');
-      navigate('/');
+      toast.success("Welcome back");
+      navigate("/");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to sign in');
+      toast.error(error instanceof Error ? error.message : "Failed to sign in");
     } finally {
       setIsSubmitting(false);
     }
@@ -40,7 +44,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-[color:var(--color-background)] px-4 py-8 md:px-6">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="flex justify-end lg:col-span-2">
+        <div className="flex items-start justify-end lg:col-span-2">
           <ThemeToggle />
         </div>
         <section className="page-hero flex flex-col justify-between">
@@ -48,7 +52,8 @@ export function LoginPage() {
             <p className="eyebrow">Geobites</p>
             <h1>Sign in to a calmer dashboard</h1>
             <p className="max-w-xl subtle-copy">
-              Cleaner ordering for customers, clearer operations for sellers, and a rider view that keeps the next action obvious.
+              Cleaner ordering for customers, clearer operations for sellers,
+              and a rider view that keeps the next action obvious.
             </p>
           </div>
 
@@ -76,7 +81,9 @@ export function LoginPage() {
             <div className="space-y-2">
               <p className="eyebrow">Welcome back</p>
               <h2 className="text-3xl font-semibold">Sign in</h2>
-              <p className="subtle-copy">Use the account you already created for Geobites.</p>
+              <p className="subtle-copy">
+                Use the account you already created for Geobites.
+              </p>
             </div>
 
             <form onSubmit={onSubmit} className="space-y-4">
@@ -101,15 +108,23 @@ export function LoginPage() {
                   required
                 />
               </div>
-              <Button className="w-full" type="submit" size="lg" disabled={isSubmitting}>
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              <Button
+                className="w-full"
+                type="submit"
+                size="lg"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Signing in..." : "Sign in"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </form>
 
             <p className="text-sm text-[color:var(--color-text-soft)]">
-              Need an account?{' '}
-              <Link className="font-medium text-[color:var(--color-primary-dark)]" to="/register">
+              Need an account?{" "}
+              <Link
+                className="font-medium text-[color:var(--color-primary-dark)]"
+                to="/register"
+              >
                 Create one here
               </Link>
             </p>
@@ -135,7 +150,9 @@ function FeatureCard({
         {icon}
       </div>
       <h3 className="mt-4 text-base font-semibold">{title}</h3>
-      <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">{description}</p>
+      <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+        {description}
+      </p>
     </div>
   );
 }

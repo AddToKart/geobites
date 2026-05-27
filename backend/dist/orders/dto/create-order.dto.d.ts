@@ -4,7 +4,12 @@ export declare class CreateOrderItemDto {
 }
 export declare class CreateOrderDto {
     vendorId: string;
-    deliveryAddress: string;
+    deliveryAddress?: string;
+    street?: string;
+    barangay?: string;
+    landmark?: string;
+    floorOrGate?: string;
+    paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
     deliveryLat?: number;
     deliveryLng?: number;
     notes?: string;

@@ -29,7 +29,7 @@ export function getTypeOrmConfig(
     username,
     password,
     database,
-    synchronize: true,
+    synchronize: true, // Re-enabled for local development to auto-create new columns
     autoLoadEntities: true,
     logging: false,
   };

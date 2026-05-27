@@ -19,12 +19,15 @@ const order_item_entity_1 = require("./entities/order-item.entity");
 const order_entity_1 = require("./entities/order.entity");
 const rating_entity_1 = require("./entities/rating.entity");
 const vendor_entity_1 = require("./entities/vendor.entity");
+const rider_location_entity_1 = require("./entities/rider-location.entity");
 const menu_module_1 = require("./menu/menu.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const orders_module_1 = require("./orders/orders.module");
 const ratings_module_1 = require("./ratings/ratings.module");
 const riders_module_1 = require("./riders/riders.module");
 const vendors_module_1 = require("./vendors/vendors.module");
+const tracking_module_1 = require("./tracking/tracking.module");
+const payments_module_1 = require("./payments/payments.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,6 +48,7 @@ exports.AppModule = AppModule = __decorate([
                 order_item_entity_1.OrderItem,
                 rating_entity_1.Rating,
                 notification_entity_1.Notification,
+                rider_location_entity_1.RiderLocation,
             ]),
             vendors_module_1.VendorsModule,
             menu_module_1.MenuModule,
@@ -52,6 +56,8 @@ exports.AppModule = AppModule = __decorate([
             riders_module_1.RidersModule,
             ratings_module_1.RatingsModule,
             notifications_module_1.NotificationsModule,
+            tracking_module_1.TrackingModule,
+            payments_module_1.PaymentsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -30,7 +30,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = msg || message;
         errorDetails = exceptionResponse;
       } else {
-        message = exceptionResponse as string;
+        message = exceptionResponse;
       }
     } else if (exception instanceof Error) {
       message = exception.message;

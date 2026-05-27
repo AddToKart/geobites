@@ -5,6 +5,7 @@ import { Colors } from '../utils/colors';
 import { AuthNavigator } from './AuthNavigator';
 import { CustomerNavigator } from './CustomerNavigator';
 import { RiderNavigator } from './RiderNavigator';
+import { SellerNavigator } from './SellerNavigator';
 
 export function AppNavigator() {
   const { user, isLoading } = useAuth();
@@ -21,7 +22,7 @@ export function AppNavigator() {
     <NavigationContainer>
       {!user ? <AuthNavigator /> : null}
       {user?.role === 'customer' ? <CustomerNavigator /> : null}
-      {user?.role === 'seller' ? <CustomerNavigator /> : null}
+      {user?.role === 'seller' ? <SellerNavigator /> : null}
       {user?.role === 'rider' ? <RiderNavigator /> : null}
     </NavigationContainer>
   );

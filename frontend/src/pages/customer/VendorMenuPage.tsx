@@ -1,30 +1,37 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
-import { getDemoVendorById, isDemoVendorId, type DemoVendor } from '@/data/demoVendors';
-import { defaultMapStyle, type MapStyleKey } from '@/components/maps/map-styles';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Reveal } from '@/components/motion/Reveal';
-import { useCart } from '@/hooks/useCart';
-import { getVendorMenu } from '@/services/menuService';
-import { getVendorById } from '@/services/vendorService';
-import { MenuItem, Vendor } from '@/types';
-import { toast } from 'sonner';
-import { VendorMenuFilters } from '@/features/customer/vendor-menu/VendorMenuFilters';
-import { VendorMenuSections } from '@/features/customer/vendor-menu/VendorMenuSections';
-import { VendorSidebar } from '@/features/customer/vendor-menu/VendorSidebar';
-import { VendorStorefrontHero } from '@/features/customer/vendor-menu/VendorStorefrontHero';
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { ShoppingBag } from "lucide-react";
+import {
+  getDemoVendorById,
+  isDemoVendorId,
+  type DemoVendor,
+} from "@/data/demoVendors";
+import {
+  defaultMapStyle,
+  type MapStyleKey,
+} from "@/components/maps/map-styles";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Reveal } from "@/components/motion/Reveal";
+import { useCart } from "@/hooks/useCart";
+import { getVendorMenu } from "@/services/menuService";
+import { getVendorById } from "@/services/vendorService";
+import { MenuItem, Vendor } from "@/types";
+import { toast } from "sonner";
+import { VendorMenuFilters } from "@/features/customer/vendor-menu/VendorMenuFilters";
+import { VendorMenuSections } from "@/features/customer/vendor-menu/VendorMenuSections";
+import { VendorSidebar } from "@/features/customer/vendor-menu/VendorSidebar";
+import { VendorStorefrontHero } from "@/features/customer/vendor-menu/VendorStorefrontHero";
 
 export function VendorMenuPage() {
   const { id } = useParams<{ id: string }>();
   const { items, addItem, updateQuantity } = useCart();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [menuSearch, setMenuSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [menuSearch, setMenuSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,12 +48,19 @@ export function VendorMenuPage() {
       setError(null);
 
       try {
-        const [vendorData, menuData] = await Promise.all([getVendorById(id), getVendorMenu(id)]);
+        const [vendorData, menuData] = await Promise.all([
+          getVendorById(id),
+          getVendorMenu(id),
+        ]);
         setVendor(vendorData);
         setMenuItems(menuData);
       } catch (caughtError) {
-        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load menu');
-        toast.error('Failed to load menu data');
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Failed to load menu",
+        );
+        toast.error("Failed to load menu data");
       } finally {
         setIsLoading(false);
       }
@@ -71,7 +85,10 @@ export function VendorMenuPage() {
         return false;
       }
 
-      if (activeCategory !== 'all' && (item.category?.trim() || 'Chef specials') !== activeCategory) {
+      if (
+        activeCategory !== "all" &&
+        (item.category?.trim() || "Chef specials") !== activeCategory
+      ) {
         return false;
       }
 
@@ -86,27 +103,38 @@ export function VendorMenuPage() {
   }, [activeCategory, deferredMenuSearch, menuItems, showAvailableOnly]);
 
   const groupedItems = useMemo(() => {
-    return filteredItems.reduce<Record<string, MenuItem[]>>((accumulator, item) => {
-      const category = item.category?.trim() || 'Chef specials';
-      accumulator[category] = accumulator[category] ?? [];
-      accumulator[category].push(item);
-      return accumulator;
-    }, {});
+    return filteredItems.reduce<Record<string, MenuItem[]>>(
+      (accumulator, item) => {
+        const category = item.category?.trim() || "Chef specials";
+        accumulator[category] = accumulator[category] ?? [];
+        accumulator[category].push(item);
+        return accumulator;
+      },
+      {},
+    );
   }, [filteredItems]);
 
   const categories = useMemo(
-    () => ['all', ...new Set(menuItems.map((item) => item.category?.trim() || 'Chef specials'))],
+    () => [
+      "all",
+      ...new Set(
+        menuItems.map((item) => item.category?.trim() || "Chef specials"),
+      ),
+    ],
     [menuItems],
   );
 
   useEffect(() => {
     if (!categories.includes(activeCategory)) {
-      setActiveCategory('all');
+      setActiveCategory("all");
     }
   }, [activeCategory, categories]);
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const cartTotal = items.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
+  const cartTotal = items.reduce(
+    (sum, item) => sum + item.menuItem.price * item.quantity,
+    0,
+  );
 
   const getItemQuantity = (itemId: string) =>
     items.find((item) => item.menuItem.id === itemId)?.quantity || 0;
@@ -116,7 +144,11 @@ export function VendorMenuPage() {
       addItem(item);
       toast.success(`Added ${item.name} to your cart`);
     } catch (caughtError) {
-      toast.error(caughtError instanceof Error ? caughtError.message : 'Could not add item');
+      toast.error(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Could not add item",
+      );
     }
   };
 
@@ -142,7 +174,8 @@ export function VendorMenuPage() {
       <Card className="mx-auto max-w-2xl p-8 text-center">
         <h1 className="text-2xl font-semibold">Vendor not available</h1>
         <p className="mt-3 subtle-copy">
-          {error || 'The vendor you are looking for could not be loaded right now.'}
+          {error ||
+            "The vendor you are looking for could not be loaded right now."}
         </p>
         <div className="mt-6">
           <Button asChild>
@@ -157,29 +190,33 @@ export function VendorMenuPage() {
 
   return (
     <div className="page-stack pb-8">
-      <PageHeader
-        eyebrow="Vendor"
-        title={vendor.name}
-        description={
-          vendor.description ||
-          'Search the menu, filter by category, and order from a cleaner storefront instead of a long unstructured list.'
-        }
-        actions={
-          <>
-            <Button variant="ghost" asChild>
-              <Link to="/browse">Back to browse</Link>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+        <div>
+          <p className="eyebrow">Vendor</p>
+          <h1 className="text-3xl font-bold tracking-tight">{vendor.name}</h1>
+          <p className="subtle-copy mt-2 max-w-2xl">
+            {vendor.description ||
+              "Search the menu, filter by category, and order from a cleaner storefront instead of a long unstructured list."}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            className="rounded-full font-bold px-6"
+            asChild
+          >
+            <Link to="/browse">Back to browse</Link>
+          </Button>
+          {cartCount > 0 ? (
+            <Button asChild className="rounded-full font-bold px-6">
+              <Link to="/cart">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                View cart ({cartCount})
+              </Link>
             </Button>
-            {cartCount > 0 ? (
-              <Button asChild>
-                <Link to="/cart">
-                  <ShoppingBag className="h-4 w-4" />
-                  View cart ({cartCount})
-                </Link>
-              </Button>
-            ) : null}
-          </>
-        }
-      />
+          ) : null}
+        </div>
+      </div>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
@@ -197,7 +234,9 @@ export function VendorMenuPage() {
               menuSearch={menuSearch}
               onMenuSearchChange={setMenuSearch}
               showAvailableOnly={showAvailableOnly}
-              onToggleAvailableOnly={() => setShowAvailableOnly((current) => !current)}
+              onToggleAvailableOnly={() =>
+                setShowAvailableOnly((current) => !current)
+              }
               categories={categories}
               activeCategory={activeCategory}
               onActiveCategoryChange={setActiveCategory}

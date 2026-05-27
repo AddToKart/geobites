@@ -18,7 +18,7 @@ class CreateOrderItemDto {
 }
 exports.CreateOrderItemDto = CreateOrderItemDto;
 __decorate([
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateOrderItemDto.prototype, "menuItemId", void 0);
 __decorate([
@@ -30,6 +30,11 @@ __decorate([
 class CreateOrderDto {
     vendorId;
     deliveryAddress;
+    street;
+    barangay;
+    landmark;
+    floorOrGate;
+    paymentMethod;
     deliveryLat;
     deliveryLng;
     notes;
@@ -37,14 +42,39 @@ class CreateOrderDto {
 }
 exports.CreateOrderDto = CreateOrderDto;
 __decorate([
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "vendorId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "deliveryAddress", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "street", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "barangay", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "landmark", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "floorOrGate", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(['COD', 'GCASH', 'MAYA', 'QRPH']),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "paymentMethod", void 0);
 __decorate([
     (0, class_validator_1.ValidateIf)((object) => object.deliveryLng !== undefined),
     (0, class_transformer_1.Type)(() => Number),

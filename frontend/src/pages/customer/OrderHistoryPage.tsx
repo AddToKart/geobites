@@ -1,27 +1,40 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Clock3, PackageCheck, Search, ShoppingBag, Sparkles } from 'lucide-react';
-import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
-import { OrderCard } from '../../components/custom/OrderCard';
-import { Card, CardContent } from '../../components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '../../components/ui/skeleton';
-import { MetricCard } from '@/components/layout/MetricCard';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge } from '@/components/ui/badge';
-import { getOrders } from '../../services/orderService';
-import { Order } from '../../types';
+import { useEffect, useMemo, useState } from "react";
+import {
+  Clock3,
+  PackageCheck,
+  Search,
+  ShoppingBag,
+  Sparkles,
+} from "lucide-react";
+import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
+import { OrderCard } from "../../components/custom/OrderCard";
+import { Card, CardContent } from "../../components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "../../components/ui/skeleton";
+import { MetricCard } from "@/components/layout/MetricCard";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Badge } from "@/components/ui/badge";
+import { getOrders } from "../../services/orderService";
+import { Order } from "../../types";
 
-type HistoryFilter = 'all' | 'active' | 'delivered' | 'issues';
+type HistoryFilter = "all" | "active" | "delivered" | "issues";
 
-const activeStatuses = ['pending', 'accepted', 'preparing', 'ready_for_pickup', 'picked_up', 'delivering'];
-const issueStatuses = ['cancelled', 'rejected'];
+const activeStatuses = [
+  "pending",
+  "accepted",
+  "preparing",
+  "ready_for_pickup",
+  "picked_up",
+  "delivering",
+];
+const issueStatuses = ["cancelled", "rejected"];
 
 export function OrderHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<HistoryFilter>('all');
-  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<HistoryFilter>("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -31,7 +44,11 @@ export function OrderHistoryPage() {
         const response = await getOrders({ page: 1, limit: 20 });
         setOrders(response.data);
       } catch (caughtError) {
-        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load orders');
+        setError(
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Failed to load orders",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -39,9 +56,15 @@ export function OrderHistoryPage() {
   }, []);
 
   const metrics = useMemo(() => {
-    const activeCount = orders.filter((order) => activeStatuses.includes(order.status)).length;
-    const deliveredCount = orders.filter((order) => order.status === 'delivered').length;
-    const issueCount = orders.filter((order) => issueStatuses.includes(order.status)).length;
+    const activeCount = orders.filter((order) =>
+      activeStatuses.includes(order.status),
+    ).length;
+    const deliveredCount = orders.filter(
+      (order) => order.status === "delivered",
+    ).length;
+    const issueCount = orders.filter((order) =>
+      issueStatuses.includes(order.status),
+    ).length;
 
     return {
       total: orders.length,
@@ -55,15 +78,15 @@ export function OrderHistoryPage() {
     const normalizedSearch = search.trim().toLowerCase();
 
     return orders.filter((order) => {
-      if (filter === 'active' && !activeStatuses.includes(order.status)) {
+      if (filter === "active" && !activeStatuses.includes(order.status)) {
         return false;
       }
 
-      if (filter === 'delivered' && order.status !== 'delivered') {
+      if (filter === "delivered" && order.status !== "delivered") {
         return false;
       }
 
-      if (filter === 'issues' && !issueStatuses.includes(order.status)) {
+      if (filter === "issues" && !issueStatuses.includes(order.status)) {
         return false;
       }
 
@@ -85,7 +108,7 @@ export function OrderHistoryPage() {
   const spotlightOrder = useMemo(
     () =>
       orders.find((order) => activeStatuses.includes(order.status)) ??
-      orders.find((order) => order.status === 'delivered') ??
+      orders.find((order) => order.status === "delivered") ??
       null,
     [orders],
   );
@@ -116,12 +139,6 @@ export function OrderHistoryPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader
-        eyebrow="Orders"
-        title="Track every order in one place"
-        description="Live orders, completed deliveries, and problem orders now sit inside one denser history surface instead of a loose card wall."
-      />
-
       <section className="grid gap-5 md:grid-cols-3 xl:grid-cols-4">
         <MetricCard
           label="Total orders"
@@ -160,7 +177,8 @@ export function OrderHistoryPage() {
           <CardContent className="p-10 text-center">
             <h2 className="text-2xl font-semibold">No orders yet</h2>
             <p className="mx-auto mt-3 max-w-xl subtle-copy">
-              Once you place an order, status updates and delivery history will appear here.
+              Once you place an order, status updates and delivery history will
+              appear here.
             </p>
           </CardContent>
         </Card>
@@ -173,7 +191,8 @@ export function OrderHistoryPage() {
                   <div>
                     <h2 className="text-2xl font-semibold">History filters</h2>
                     <p className="subtle-copy">
-                      Search orders, isolate live runs, or review completed deliveries without empty space between sections.
+                      Search orders, isolate live runs, or review completed
+                      deliveries without empty space between sections.
                     </p>
                   </div>
                   <Badge>{filteredOrders.length} shown</Badge>
@@ -191,20 +210,22 @@ export function OrderHistoryPage() {
                   </label>
 
                   <div className="flex flex-wrap gap-2">
-                    {([
-                      { key: 'all', label: 'All orders' },
-                      { key: 'active', label: 'Active' },
-                      { key: 'delivered', label: 'Delivered' },
-                      { key: 'issues', label: 'Issues' },
-                    ] as Array<{ key: HistoryFilter; label: string }>).map((option) => (
+                    {(
+                      [
+                        { key: "all", label: "All orders" },
+                        { key: "active", label: "Active" },
+                        { key: "delivered", label: "Delivered" },
+                        { key: "issues", label: "Issues" },
+                      ] as Array<{ key: HistoryFilter; label: string }>
+                    ).map((option) => (
                       <button
                         key={option.key}
                         type="button"
                         onClick={() => setFilter(option.key)}
                         className={
                           filter === option.key
-                            ? 'rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)]'
-                            : 'rounded-full border border-[color:var(--color-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]'
+                            ? "rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)]"
+                            : "rounded-full border border-[color:var(--color-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]"
                         }
                       >
                         {option.label}
@@ -246,7 +267,8 @@ export function OrderHistoryPage() {
                   <p className="eyebrow">History summary</p>
                   <h2 className="mt-2 text-2xl font-semibold">Quick read</h2>
                   <p className="mt-2 subtle-copy">
-                    The side rail now summarizes what matters most instead of ending in dead space.
+                    The side rail now summarizes what matters most instead of
+                    ending in dead space.
                   </p>
                 </div>
 
@@ -256,7 +278,9 @@ export function OrderHistoryPage() {
                       Most recent
                     </p>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--color-text)]">
-                      {orders[0] ? `#${orders[0].id.slice(0, 8)}` : 'No orders yet'}
+                      {orders[0]
+                        ? `#${orders[0].id.slice(0, 8)}`
+                        : "No orders yet"}
                     </p>
                   </div>
                   <div className="panel-muted px-4 py-4">
@@ -264,7 +288,9 @@ export function OrderHistoryPage() {
                       Live attention
                     </p>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--color-text)]">
-                      {metrics.active > 0 ? `${metrics.active} order(s) in motion` : 'No active orders'}
+                      {metrics.active > 0
+                        ? `${metrics.active} order(s) in motion`
+                        : "No active orders"}
                     </p>
                   </div>
                   <div className="panel-muted px-4 py-4">
@@ -272,7 +298,9 @@ export function OrderHistoryPage() {
                       Delivery health
                     </p>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--color-text)]">
-                      {metrics.issues === 0 ? 'No recent issues' : `${metrics.issues} issue order(s)`}
+                      {metrics.issues === 0
+                        ? "No recent issues"
+                        : `${metrics.issues} issue order(s)`}
                     </p>
                   </div>
                 </div>

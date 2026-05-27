@@ -29,7 +29,7 @@ type RoutePoint = {
   color: string;
 };
 
-const fallbackCenter: [number, number] = [104.9282, 11.5564];
+const fallbackCenter: [number, number] = [120.9842, 14.5995]; // Manila, PH
 
 function statusLabel(status: OrderWithRoute['status']) {
   return status.replaceAll('_', ' ');

@@ -19,7 +19,7 @@ export class OrderItem {
   @Column({ type: 'uuid' })
   orderId!: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'varchar', length: 255 })
   menuItemId!: string;
 
   @Column({ type: 'varchar', length: 255 })

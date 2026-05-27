@@ -35,7 +35,7 @@ let Vendor = class Vendor {
 };
 exports.Vendor = Vendor;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    (0, typeorm_1.PrimaryColumn)({ type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], Vendor.prototype, "id", void 0);
 __decorate([

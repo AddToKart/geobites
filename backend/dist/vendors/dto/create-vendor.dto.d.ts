@@ -5,4 +5,5 @@ export declare class CreateVendorDto {
     latitude: number;
     longitude: number;
     imageUrl?: string;
+    isActive?: boolean;
 }

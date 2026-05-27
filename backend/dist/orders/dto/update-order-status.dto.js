@@ -14,10 +14,16 @@ const class_validator_1 = require("class-validator");
 const order_status_1 = require("../../common/constants/order-status");
 class UpdateOrderStatusDto {
     status;
+    cancellationReason;
 }
 exports.UpdateOrderStatusDto = UpdateOrderStatusDto;
 __decorate([
     (0, class_validator_1.IsIn)(order_status_1.ORDER_STATUSES),
     __metadata("design:type", String)
 ], UpdateOrderStatusDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateOrderStatusDto.prototype, "cancellationReason", void 0);
 //# sourceMappingURL=update-order-status.dto.js.map

@@ -9,7 +9,6 @@ import { IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
-import { UpdateRiderLocationDto } from './dto/update-rider-location.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 
 @Injectable()
@@ -52,30 +51,27 @@ export class RidersService {
   }
 
   async acceptDelivery(orderId: string, riderId: string) {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: {
-        vendor: true,
-      },
-    });
+    const result = await this.orderRepository.update(
+      { id: orderId, status: 'ready_for_pickup', riderId: IsNull() },
+      { riderId },
+    );
 
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    if (order.status !== 'ready_for_pickup') {
-      throw new BadRequestException('Order is not ready for pickup');
-    }
-
-    if (order.riderId) {
+    if (result.affected === 0) {
       throw new BadRequestException(
-        'Order has already been assigned to a rider',
+        'Order is no longer available or already accepted',
       );
     }
 
-    order.riderId = riderId;
-    const updatedOrder = await this.orderRepository.save(order);
-    await this.notifyDeliveryAccepted(order);
+    const updatedOrder = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: { vendor: true },
+    });
+
+    if (!updatedOrder) {
+      throw new NotFoundException('Order not found');
+    }
+
+    await this.notifyDeliveryAccepted(updatedOrder);
     return updatedOrder;
   }
 
@@ -114,35 +110,6 @@ export class RidersService {
     const updatedOrder = await this.orderRepository.save(order);
     await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
     return updatedOrder;
-  }
-
-  async updateRiderLocation(
-    orderId: string,
-    riderId: string,
-    updateLocationDto: UpdateRiderLocationDto,
-  ) {
-    const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    if (order.riderId !== riderId) {
-      throw new ForbiddenException('Delivery is assigned to another rider');
-    }
-
-    if (
-      !['ready_for_pickup', 'picked_up', 'delivering'].includes(order.status)
-    ) {
-      throw new BadRequestException('Delivery location can no longer be updated');
-    }
-
-    order.riderLat = updateLocationDto.riderLat;
-    order.riderLng = updateLocationDto.riderLng;
-
-    return this.orderRepository.save(order);
   }
 
   private async notifyDeliveryAccepted(order: Order) {

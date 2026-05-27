@@ -80,4 +80,3 @@ export async function ensureDatabaseExists() {
     await client.end();
   }
 }
-

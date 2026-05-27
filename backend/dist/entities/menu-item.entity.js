@@ -30,11 +30,11 @@ let MenuItem = class MenuItem {
 };
 exports.MenuItem = MenuItem;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    (0, typeorm_1.PrimaryColumn)({ type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], MenuItem.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid' }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], MenuItem.prototype, "vendorId", void 0);
 __decorate([

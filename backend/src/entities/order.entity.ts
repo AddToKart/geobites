@@ -27,7 +27,7 @@ export class Order {
   @Column({ type: 'varchar', length: 255 })
   customerId!: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'varchar', length: 255 })
   vendorId!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
@@ -67,8 +67,47 @@ export class Order {
   })
   totalAmount!: number;
 
-  @Column({ type: 'text' })
-  deliveryAddress!: string;
+  @Column({ type: 'text', nullable: true })
+  street?: string;
+
+  @Column({ type: 'text', nullable: true })
+  barangay?: string;
+
+  @Column({ type: 'text', nullable: true })
+  landmark?: string;
+
+  @Column({ type: 'text', nullable: true })
+  floorOrGate?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
+    default: 'COD',
+  })
+  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'paid', 'failed'],
+    default: 'pending',
+  })
+  paymentStatus!: 'pending' | 'paid' | 'failed';
+
+  @Column({ type: 'text', nullable: true })
+  cancellationReason?: string;
+
+  @Column({ type: 'text', nullable: true })
+  disputeReason?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
+    default: 'none',
+  })
+  disputeStatus!: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
+
+  @Column({ type: 'timestamp', nullable: true })
+  estimatedDeliveryTime?: Date;
 
   @Column({
     type: 'decimal',
@@ -87,24 +126,6 @@ export class Order {
     transformer: decimalNumberTransformer,
   })
   deliveryLng?: number;
-
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 8,
-    nullable: true,
-    transformer: decimalNumberTransformer,
-  })
-  riderLat?: number;
-
-  @Column({
-    type: 'decimal',
-    precision: 11,
-    scale: 8,
-    nullable: true,
-    transformer: decimalNumberTransformer,
-  })
-  riderLng?: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string;

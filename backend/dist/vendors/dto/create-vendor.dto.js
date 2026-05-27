@@ -19,6 +19,7 @@ class CreateVendorDto {
     latitude;
     longitude;
     imageUrl;
+    isActive;
 }
 exports.CreateVendorDto = CreateVendorDto;
 __decorate([
@@ -57,4 +58,9 @@ __decorate([
     (0, class_validator_1.MaxLength)(500),
     __metadata("design:type", String)
 ], CreateVendorDto.prototype, "imageUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateVendorDto.prototype, "isActive", void 0);
 //# sourceMappingURL=create-vendor.dto.js.map

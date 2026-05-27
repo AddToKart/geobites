@@ -4,6 +4,7 @@ import {
   Entity,
   Index,
   OneToMany,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -17,7 +18,7 @@ import { Rating } from './rating.entity';
 @Index(['latitude', 'longitude'])
 @Index(['rating'])
 export class Vendor {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar', length: 255 })
   id!: string;
 
   @Column({ type: 'varchar', length: 255 })

@@ -10,12 +10,15 @@ import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
 import { Rating } from './entities/rating.entity';
 import { Vendor } from './entities/vendor.entity';
+import { RiderLocation } from './entities/rider-location.entity';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
+import { TrackingModule } from './tracking/tracking.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -34,6 +37,7 @@ import { VendorsModule } from './vendors/vendors.module';
       OrderItem,
       Rating,
       Notification,
+      RiderLocation,
     ]),
     VendorsModule,
     MenuModule,
@@ -41,6 +45,8 @@ import { VendorsModule } from './vendors/vendors.module';
     RidersModule,
     RatingsModule,
     NotificationsModule,
+    TrackingModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

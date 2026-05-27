@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -15,7 +16,7 @@ import {
 } from 'class-validator';
 
 export class CreateOrderItemDto {
-  @IsUUID()
+  @IsString()
   menuItemId!: string;
 
   @Type(() => Number)
@@ -25,12 +26,32 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
-  @IsUUID()
+  @IsString()
   vendorId!: string;
 
   @IsString()
-  @IsNotEmpty()
-  deliveryAddress!: string;
+  @IsOptional()
+  deliveryAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  street?: string;
+
+  @IsString()
+  @IsOptional()
+  barangay?: string;
+
+  @IsString()
+  @IsOptional()
+  landmark?: string;
+
+  @IsString()
+  @IsOptional()
+  floorOrGate?: string;
+
+  @IsEnum(['COD', 'GCASH', 'MAYA', 'QRPH'])
+  @IsOptional()
+  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
 
   @ValidateIf((object) => object.deliveryLng !== undefined)
   @Type(() => Number)

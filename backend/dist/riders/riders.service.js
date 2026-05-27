@@ -54,24 +54,18 @@ let RidersService = class RidersService {
         });
     }
     async acceptDelivery(orderId, riderId) {
-        const order = await this.orderRepository.findOne({
+        const result = await this.orderRepository.update({ id: orderId, status: 'ready_for_pickup', riderId: (0, typeorm_2.IsNull)() }, { riderId });
+        if (result.affected === 0) {
+            throw new common_1.BadRequestException('Order is no longer available or already accepted');
+        }
+        const updatedOrder = await this.orderRepository.findOne({
             where: { id: orderId },
-            relations: {
-                vendor: true,
-            },
+            relations: { vendor: true },
         });
-        if (!order) {
+        if (!updatedOrder) {
             throw new common_1.NotFoundException('Order not found');
         }
-        if (order.status !== 'ready_for_pickup') {
-            throw new common_1.BadRequestException('Order is not ready for pickup');
-        }
-        if (order.riderId) {
-            throw new common_1.BadRequestException('Order has already been assigned to a rider');
-        }
-        order.riderId = riderId;
-        const updatedOrder = await this.orderRepository.save(order);
-        await this.notifyDeliveryAccepted(order);
+        await this.notifyDeliveryAccepted(updatedOrder);
         return updatedOrder;
     }
     async updateDeliveryStatus(orderId, riderId, updateStatusDto) {
@@ -100,23 +94,6 @@ let RidersService = class RidersService {
         const updatedOrder = await this.orderRepository.save(order);
         await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
         return updatedOrder;
-    }
-    async updateRiderLocation(orderId, riderId, updateLocationDto) {
-        const order = await this.orderRepository.findOne({
-            where: { id: orderId },
-        });
-        if (!order) {
-            throw new common_1.NotFoundException('Order not found');
-        }
-        if (order.riderId !== riderId) {
-            throw new common_1.ForbiddenException('Delivery is assigned to another rider');
-        }
-        if (!['ready_for_pickup', 'picked_up', 'delivering'].includes(order.status)) {
-            throw new common_1.BadRequestException('Delivery location can no longer be updated');
-        }
-        order.riderLat = updateLocationDto.riderLat;
-        order.riderLng = updateLocationDto.riderLng;
-        return this.orderRepository.save(order);
     }
     async notifyDeliveryAccepted(order) {
         await this.notificationsService.create({
