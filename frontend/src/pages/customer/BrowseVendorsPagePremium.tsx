@@ -2,7 +2,6 @@ import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 
 import { List, MapIcon, Store } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { Button } from '@/components/ui/button';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
@@ -12,7 +11,7 @@ import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverview
 import { BrowseResultsSection } from '@/features/customer/browse/BrowseResultsSection';
 import type { BrowseSort, BrowseVendor, BrowseViewMode } from '@/features/customer/browse/types';
 
-function toBrowseVendor(vendor: Vendor): BrowseVendor | null {
+function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): BrowseVendor | null {
   if (
     typeof vendor.latitude !== 'number' ||
     typeof vendor.longitude !== 'number' ||
@@ -23,8 +22,11 @@ function toBrowseVendor(vendor: Vendor): BrowseVendor | null {
     return null;
   }
 
+  const distance = getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude });
+
   return {
     ...vendor,
+    distance,
     etaMinutes: '22-34 min',
     neighborhood: 'Santa Maria',
     specialties: ['Local meals', 'Delivery ready'],
@@ -83,9 +85,12 @@ export function BrowseVendorsPagePremium() {
 
   const browseVendors = useMemo(() => {
     const merged = [
-      ...demoVendors,
+      ...demoVendors.map((vendor) => ({
+        ...vendor,
+        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
+      })),
       ...liveVendors
-        .map((vendor) => toBrowseVendor(vendor))
+        .map((vendor) => toBrowseVendor(vendor, coords))
         .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
         .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
     ];
@@ -108,10 +113,7 @@ export function BrowseVendorsPagePremium() {
       }
 
       if (sortBy === 'distance') {
-        return (
-          getVendorDistanceKm(coords, { lat: firstVendor.latitude, lng: firstVendor.longitude }) -
-          getVendorDistanceKm(coords, { lat: secondVendor.latitude, lng: secondVendor.longitude })
-        );
+        return firstVendor.distance - secondVendor.distance;
       }
 
       return secondVendor.rating - firstVendor.rating;
@@ -140,70 +142,103 @@ export function BrowseVendorsPagePremium() {
   );
 
   const featuredCount = demoVendors.length;
+
+  if (viewMode === 'map') {
+    return (
+      <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-slate-100">
+        <BrowseResultsSection
+          isLoading={isLoading}
+          browseVendors={browseVendors}
+          viewMode="map"
+          coords={coords}
+          selectedVendor={selectedVendor}
+          onSelectVendor={setSelectedVendorId}
+          onLocate={(nextCoords) => {
+            setCoords(nextCoords);
+            toast.success('Using your current location for nearby sorting');
+          }}
+        />
+        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-6 pb-0 pt-[80px] md:pt-6">
+          <div className="pointer-events-auto max-w-2xl mx-auto">
+            <BrowseOverviewSection
+              search={search}
+              onSearchChange={setSearch}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              onResetArea={() => {
+                setCoords(santaMariaBulacanCenter);
+                toast.success('Centered back on Santa Maria, Bulacan');
+              }}
+              browseCount={browseVendors.length}
+              topRatedCount={topRatedCount}
+              featuredCount={featuredCount}
+              selectedVendor={selectedVendor}
+              activeOrder={activeOrder}
+            />
+          </div>
+        </div>
+        <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-full shadow-[var(--shadow-panel)] border border-slate-100 dark:border-gray-800 p-1">
+          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('grid')}>
+            <Store className="h-4 w-4 mr-2" /> Grid
+          </Button>
+          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('list')}>
+            <List className="h-4 w-4 mr-2" /> List
+          </Button>
+          <Button variant="default" size="sm" className="rounded-full px-4 bg-primary text-white shadow-sm" onClick={() => setViewMode('map')}>
+            <MapIcon className="h-4 w-4 mr-2" /> Map
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-stack">
-      <PageHeader
-        eyebrow="Customer"
-        title="Browse Santa Maria"
-        description="Grid, list, and map now behave like separate views, with everything centered around Santa Maria, Bulacan instead of a dead generic layout."
-        actions={
-          <>
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <Store className="h-4 w-4" />
-              Grid
+      <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto py-6">
+        <BrowseOverviewSection
+          search={search}
+          onSearchChange={setSearch}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onResetArea={() => {
+            setCoords(santaMariaBulacanCenter);
+            toast.success('Centered back on Santa Maria, Bulacan');
+          }}
+          browseCount={browseVendors.length}
+          topRatedCount={topRatedCount}
+          featuredCount={featuredCount}
+          selectedVendor={selectedVendor}
+          activeOrder={activeOrder}
+        />
+        
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-gray-800">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">All Restaurants</h2>
+          <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-1">
+            <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('grid')}>
+              <Store className="h-4 w-4 mr-1.5" /> Grid
             </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4" />
-              List
+            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('list')}>
+              <List className="h-4 w-4 mr-1.5" /> List
             </Button>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-            >
-              <MapIcon className="h-4 w-4" />
-              Map
+            <Button variant="ghost" size="sm" className="rounded-full px-4 h-8 text-slate-500" onClick={() => setViewMode('map')}>
+              <MapIcon className="h-4 w-4 mr-1.5" /> Map
             </Button>
-          </>
-        }
-      />
+          </div>
+        </div>
 
-      <BrowseOverviewSection
-        search={search}
-        onSearchChange={setSearch}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        onResetArea={() => {
-          setCoords(santaMariaBulacanCenter);
-          toast.success('Centered back on Santa Maria, Bulacan');
-        }}
-        browseCount={browseVendors.length}
-        topRatedCount={topRatedCount}
-        featuredCount={featuredCount}
-        selectedVendor={selectedVendor}
-        activeOrder={activeOrder}
-      />
-
-      <BrowseResultsSection
-        isLoading={isLoading}
-        browseVendors={browseVendors}
-        viewMode={viewMode}
-        coords={coords}
-        selectedVendor={selectedVendor}
-        onSelectVendor={setSelectedVendorId}
-        onLocate={(nextCoords) => {
-          setCoords(nextCoords);
-          toast.success('Using your current location for nearby sorting');
-        }}
-      />
+        <BrowseResultsSection
+          isLoading={isLoading}
+          browseVendors={browseVendors}
+          viewMode={viewMode}
+          coords={coords}
+          selectedVendor={selectedVendor}
+          onSelectVendor={setSelectedVendorId}
+          onLocate={(nextCoords) => {
+            setCoords(nextCoords);
+            toast.success('Using your current location for nearby sorting');
+          }}
+        />
+      </div>
     </div>
   );
 }

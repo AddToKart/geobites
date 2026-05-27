@@ -1,8 +1,14 @@
-import { Clock3, MapPin, Star } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import type { DemoVendor } from '@/data/demoVendors';
-import type { Vendor } from '@/types';
+import {
+  Clock3,
+  MapPin,
+  Star,
+  ShoppingBag,
+  Info,
+  TrendingUp,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import type { DemoVendor } from "@/data/demoVendors";
+import type { Vendor } from "@/types";
 
 export function VendorStorefrontHero({
   vendor,
@@ -16,74 +22,122 @@ export function VendorStorefrontHero({
   filteredCount: number;
 }) {
   return (
-    <Card className="overflow-hidden rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
-      <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_320px]">
-        <div className="space-y-6 p-6 md:p-8 bg-white dark:bg-gray-900">
-          <div className="flex flex-wrap gap-2">
-            <Badge className={`rounded-[16px] px-3 py-1 font-semibold text-xs border-none ${vendor.isActive ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-white'}`}>
-              {vendor.isActive ? 'Open now' : 'Closed'}
+    <div className="bento-grid gap-4">
+      {/* Primary Hero Info */}
+      <div className="col-span-1 md:col-span-4 lg:col-span-8 xl:col-span-8 p-8 md:p-10 bg-white dark:bg-gray-900 min-h-[320px] flex flex-col justify-between rounded-[32px] shadow-[var(--shadow-card)] relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-transparent dark:from-orange-900/10 pointer-events-none transition-opacity duration-500 opacity-50 group-hover:opacity-100"></div>
+        <div className="flex flex-wrap items-center gap-4 mb-8 relative z-10">
+          <Badge
+            className={`rounded-full px-4 py-2 font-bold text-[11px] uppercase tracking-widest border-none shadow-sm ${vendor.isActive ? "bg-orange-500 text-white" : "bg-slate-200 text-slate-500 dark:bg-slate-800"}`}
+          >
+            <div
+              className={`w-1.5 h-1.5 rounded-full mr-2 inline-block ${vendor.isActive ? "bg-white animate-pulse" : "bg-slate-400"}`}
+            ></div>
+            {vendor.isActive ? "Taking Orders" : "Currently Closed"}
+          </Badge>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-full px-4 py-2 text-[13px] font-bold text-slate-900 dark:text-white shadow-sm">
+            <Star className="h-4 w-4 fill-orange-500 text-orange-500" />
+            {vendor.rating.toFixed(1)}{" "}
+            <span className="text-slate-400 font-medium">
+              ({vendor.totalRatings})
+            </span>
+          </div>
+          {vendorMeta ? (
+            <Badge className="rounded-full px-4 py-2 font-bold text-[11px] uppercase tracking-widest bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-none shadow-sm">
+              {vendorMeta.spotlight}
             </Badge>
-            <Badge variant="secondary" className="rounded-[16px] px-3 py-1 font-semibold text-xs">{categoryCount} categories</Badge>
-            {vendorMeta ? <Badge className="rounded-[16px] px-3 py-1 font-semibold text-xs bg-orange-100 text-orange-700 hover:bg-orange-200 border-none">{vendorMeta.spotlight}</Badge> : null}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                Rating
-              </p>
-              <div className="mt-2 flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                <Star className="h-5 w-5 fill-orange-500 text-orange-500" />
-                {vendor.rating.toFixed(1)}
-              </div>
-            </div>
-            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                ETA
-              </p>
-              <div className="mt-2 flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                <Clock3 className="h-5 w-5 text-orange-500" />
-                {vendorMeta?.etaMinutes || '20-35 min'}
-              </div>
-            </div>
-            <div className="rounded-[24px] bg-slate-50 dark:bg-gray-800 px-5 py-5 border border-slate-100 dark:border-gray-700">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-                Visible items
-              </p>
-              <div className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{filteredCount}</div>
-            </div>
-          </div>
-
-          {(vendorMeta?.specialties?.length ?? 0) > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {vendorMeta!.specialties.map((specialty) => (
-                <span
-                  key={specialty}
-                  className="rounded-full bg-slate-100 dark:bg-gray-800 px-3.5 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                >
-                  {specialty}
-                </span>
-              ))}
-            </div>
           ) : null}
         </div>
 
-        <div className="flex flex-col justify-between bg-gradient-to-br from-orange-500 to-orange-400 p-6 md:p-8 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
-          <div className="relative z-10">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-white/80">
-              Shop address
-            </p>
-            <div className="mt-3 flex items-start gap-3">
-              <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-white/90" />
-              <p className="text-sm font-medium leading-relaxed text-white">{vendor.address}</p>
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-950 dark:text-white mb-4 leading-tight">
+            {vendor.name}
+          </h1>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center shrink-0">
+              <MapPin className="h-4 w-4 text-orange-500" />
             </div>
+            <p className="text-[16px] font-medium text-slate-600 dark:text-slate-400">
+              {vendor.address}
+            </p>
           </div>
-          <p className="mt-8 text-sm font-medium leading-relaxed text-white/80 relative z-10">
-            Browse is structured here now: search the menu, jump between categories, and keep the cart summary visible without blocking the menu.
+        </div>
+      </div>
+
+      {/* Specialty Image Bento */}
+      <div className="col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-4 min-h-[320px] relative overflow-hidden group rounded-[32px] shadow-[var(--shadow-card)]">
+        {vendor.imageUrl ? (
+          <img
+            src={vendor.imageUrl}
+            alt="Specialty"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-tr from-slate-200 to-slate-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center transition-transform duration-700 group-hover:scale-105">
+            <ShoppingBag className="w-12 h-12 text-slate-400 dark:text-gray-500 opacity-50" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></div>
+
+        <div className="absolute top-5 right-5 bg-white/20 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 flex items-center gap-2 shadow-sm">
+          <TrendingUp className="w-4 h-4 text-white" />
+          <span className="text-[11px] font-bold text-white uppercase tracking-widest">
+            Trending Now
+          </span>
+        </div>
+
+        <div className="absolute bottom-0 left-0 p-8 w-full">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-400 mb-2 drop-shadow-sm">
+            Signature Item
+          </p>
+          <h3 className="text-2xl font-bold text-white drop-shadow-md line-clamp-2 leading-snug">
+            {vendorMeta?.specialties?.[0] || "Chef's Special"}
+          </h3>
+        </div>
+      </div>
+
+      {/* Metrics Row */}
+      <div className="col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-4 p-8 bg-white dark:bg-gray-900 flex items-center gap-6 rounded-[32px] shadow-[var(--shadow-card)] hover:-translate-y-1 transition-transform duration-300">
+        <div className="w-16 h-16 rounded-[24px] bg-orange-50 dark:bg-gray-800 text-orange-500 flex items-center justify-center shrink-0 shadow-sm border border-orange-100 dark:border-gray-700">
+          <Clock3 className="w-7 h-7" />
+        </div>
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-1">
+            Average ETA
+          </p>
+          <p className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            {vendorMeta?.etaMinutes || "20-35 min"}
           </p>
         </div>
       </div>
-    </Card>
+
+      <div className="col-span-1 md:col-span-2 lg:col-span-4 xl:col-span-4 p-8 bg-white dark:bg-gray-900 flex items-center gap-6 rounded-[32px] shadow-[var(--shadow-card)] hover:-translate-y-1 transition-transform duration-300">
+        <div className="w-16 h-16 rounded-[24px] bg-slate-50 dark:bg-gray-800 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-gray-700">
+          <ShoppingBag className="w-7 h-7" />
+        </div>
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-slate-400 dark:text-slate-500 mb-1">
+            Menu Size
+          </p>
+          <p className="text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+            {filteredCount}{" "}
+            <span className="text-[18px] font-semibold text-slate-400 tracking-normal inline-block ml-1">
+              items
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div className="col-span-1 md:col-span-4 lg:col-span-4 xl:col-span-4 p-8 bg-slate-950 dark:bg-black text-white flex flex-col justify-center relative overflow-hidden rounded-[32px] shadow-[var(--shadow-card)] hover:-translate-y-1 transition-transform duration-300">
+        <div className="absolute -top-16 -right-16 w-48 h-48 bg-orange-500/20 blur-[60px] rounded-full pointer-events-none"></div>
+        <p className="text-[12px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-3 flex items-center gap-2 relative z-10">
+          <Info className="w-4 h-4 text-orange-500" /> Order Context
+        </p>
+        <p className="text-[15px] font-medium leading-relaxed text-slate-300 relative z-10 max-w-sm">
+          {vendor.description ||
+            "Highly rated local favorite. Explore the full menu below to view options and build your cart."}
+        </p>
+      </div>
+    </div>
   );
 }

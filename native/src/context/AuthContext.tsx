@@ -12,6 +12,8 @@ import { User, UserRole } from '../types';
 
 const SESSION_KEY = 'geobites_session';
 
+  a
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -25,6 +27,16 @@ interface AuthContextType {
   }) => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+}
+
+a
+
+export function ComponentName() {
+  return (
+    <div className={cn("$1")}>
+      $0
+    </div>
+  );
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -108,3 +120,6 @@ export function useAuth() {
   }
   return context;
 }
+
+  afn
+
