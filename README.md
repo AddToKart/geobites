@@ -19,7 +19,7 @@ Before setting up the project, make sure you have the following installed on you
 | **PostgreSQL** | `v15+` | [Download PostgreSQL Installer](https://www.postgresql.org/download/windows/) |
 | **Expo Go (Optional)** | Latest | Install the **Expo Go** app from the Google Play Store or Apple App Store on your physical device to test the mobile app. |
 
----
+---asdfasdfasdfasd
 
 ## 🚀 Step-by-Step Setup on Windows
 
@@ -67,7 +67,7 @@ To set up Option A (Local PostgreSQL):
 3. Open `backend/.env` and update the database configuration to match your PostgreSQL installation credentials:
    ```env
    DB_PASSWORD=your_postgres_password_here
-   
+
    # Or enable memory DB if you didn't install PostgreSQL:
    USE_MEMORY_DB=true
    ```
