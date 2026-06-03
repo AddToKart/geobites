@@ -3,6 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export async function ensureDatabaseExists() {
+  const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
+  if (useMemoryDb) {
+    console.log('[Memory DB] Skipping PostgreSQL database existence check.');
+    return;
+  }
+
   const dbName = process.env.DB_DATABASE || 'geobites';
   const client = new Client({
     host: process.env.DB_HOST || 'localhost',

@@ -8,9 +8,46 @@ Geobites is a full-stack monorepo application featuring:
 
 ---
 
+## ⚡ Quick Start (Zero PostgreSQL Setup — 2 Minutes)
+
+If you want to quickly test the application or run it without installing PostgreSQL, follow these simple steps:
+
+### 1. Copy the Environment Templates
+Run these commands in the root directory to create the configuration files:
+*   **PowerShell**:
+    ```powershell
+    Copy-Item backend/.env.example backend/.env
+    Copy-Item frontend/.env.example frontend/.env
+    ```
+*   **Command Prompt (cmd)**:
+    ```cmd
+    copy backend\.env.example backend\.env
+    copy frontend\.env.example frontend\.env
+    ```
+
+### 2. Enable In-Memory Mode
+Open the newly created `backend/.env` file and change `USE_MEMORY_DB` to `true`:
+```env
+USE_MEMORY_DB=true
+```
+
+### 3. Start Frontend & Backend Concurrently
+From the root directory, run:
+```powershell
+npm install
+npm run dev:full
+```
+This single command installs all dependencies and starts both the NestJS backend and Vite frontend concurrently.
+*   **Backend Server**: running on `http://localhost:3000`
+*   **Frontend Client**: running on `http://localhost:5173` (or the port Vite outputs)
+
+The database will run entirely in-memory, auto-initialize the Better Auth tables, and automatically seed demo food vendors and menus. No PostgreSQL install required!
+
+---
+
 ## 🛠️ Prerequisites for Windows
 
-Before setting up the project, make sure you have the following installed on your Windows machine:
+Before setting up the project, make sure you have the following installed on your Windows machine (PostgreSQL is optional if using the Quick Start above):
 
 | Software | Recommended Version | Windows Installation Method |
 | :--- | :--- | :--- |

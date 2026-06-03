@@ -1,0 +1,11 @@
+{
+  "name": "geobites-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:full": "concurrently \"npm run start:dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

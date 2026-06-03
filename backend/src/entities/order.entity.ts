@@ -34,7 +34,7 @@ export class Order {
   riderId?: string;
 
   @Column({
-    type: 'enum',
+    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
     enum: [
       'pending',
       'accepted',
@@ -80,14 +80,14 @@ export class Order {
   floorOrGate?: string;
 
   @Column({
-    type: 'enum',
+    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
     enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
     default: 'COD',
   })
   paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
 
   @Column({
-    type: 'enum',
+    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
     enum: ['pending', 'paid', 'failed'],
     default: 'pending',
   })
@@ -100,13 +100,13 @@ export class Order {
   disputeReason?: string;
 
   @Column({
-    type: 'enum',
+    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
     enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
     default: 'none',
   })
   disputeStatus!: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: process.env.USE_MEMORY_DB === 'true' ? 'datetime' : 'timestamp', nullable: true })
   estimatedDeliveryTime?: Date;
 
   @Column({
