@@ -7,6 +7,10 @@ export interface SignUpPayload {
   password: string;
   role: UserRole;
   phone?: string;
+  storeName?: string;
+  businessPermit?: string;
+  vehicleType?: string;
+  licenseNumber?: string;
 }
 
 export async function signIn(email: string, password: string): Promise<User> {
@@ -28,6 +32,10 @@ export async function signUp(payload: SignUpPayload): Promise<User> {
     name: payload.name,
     role: payload.role,
     phone: payload.phone,
+    storeName: payload.storeName,
+    businessPermit: payload.businessPermit,
+    vehicleType: payload.vehicleType,
+    licenseNumber: payload.licenseNumber,
   });
   const session = await getSession();
   if (!session?.user) {

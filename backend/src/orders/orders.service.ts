@@ -12,6 +12,7 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { haversineKm, calculateDeliveryFee } from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -108,16 +109,34 @@ export class OrdersService {
           };
         });
 
-        const totalAmount = orderItems.reduce(
+        const subtotal = orderItems.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
+
+        // Compute distance-based delivery fee
+        let deliveryFee = 0;
+        if (
+          createOrderDto.deliveryLat !== undefined &&
+          createOrderDto.deliveryLng !== undefined
+        ) {
+          const distanceKm = haversineKm(
+            vendor.latitude,
+            vendor.longitude,
+            createOrderDto.deliveryLat,
+            createOrderDto.deliveryLng,
+          );
+          deliveryFee = calculateDeliveryFee(distanceKm);
+        }
+
+        const totalAmount = subtotal + deliveryFee;
 
         const order = orderRepository.create({
           customerId,
           vendorId: createOrderDto.vendorId,
           status: 'pending',
           totalAmount,
+          deliveryFee,
           street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,

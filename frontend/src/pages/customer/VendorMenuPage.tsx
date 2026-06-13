@@ -10,8 +10,6 @@ import {
   defaultMapStyle,
   type MapStyleKey,
 } from "@/components/maps/map-styles";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
@@ -153,16 +151,16 @@ export function VendorMenuPage() {
 
   if (isLoading) {
     return (
-      <div className="page-stack">
-        <Skeleton className="h-56 rounded-[28px]" />
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-5">
-            <Skeleton className="h-32 rounded-[28px]" />
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12">
+        <Skeleton className="h-64 rounded-none border-b border-border" />
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_340px] mt-12">
+          <div className="space-y-8">
+            <Skeleton className="h-32 rounded-none border border-border" />
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-56 rounded-[28px]" />
+              <Skeleton key={index} className="h-56 rounded-none border border-border" />
             ))}
           </div>
-          <Skeleton className="h-[420px] rounded-[28px]" />
+          <Skeleton className="h-[420px] rounded-none border border-border" />
         </div>
       </div>
     );
@@ -170,91 +168,83 @@ export function VendorMenuPage() {
 
   if (error || !vendor) {
     return (
-      <Card className="mx-auto max-w-2xl p-8 text-center">
-        <h1 className="text-2xl font-semibold">Vendor not available</h1>
-        <p className="mt-3 subtle-copy">
-          {error ||
-            "The vendor you are looking for could not be loaded right now."}
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center border-b border-border">
+        <h1 className="text-4xl font-medium tracking-tighter mb-4">Vendor not available</h1>
+        <p className="text-lg text-muted-foreground mb-8">
+          {error || "The vendor you are looking for could not be loaded right now."}
         </p>
-        <div className="mt-6">
-          <Button asChild>
-            <Link to="/browse">Back to browse</Link>
-          </Button>
-        </div>
-      </Card>
+        <Link to="/browse" className="border border-border px-6 py-3 font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors">
+          Back to browse
+        </Link>
+      </div>
     );
   }
+  
   return (
-    <div className="page-stack pb-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-        <div>
-          <p className="eyebrow">Vendor</p>
-          <h1 className="text-3xl font-bold tracking-tight">{vendor.name}</h1>
-          <p className="subtle-copy mt-2 max-w-2xl">
-            {vendor.description ||
-              "Browse the menu, filter by category, and add items to your cart."}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            className="rounded-full font-bold px-6"
-            asChild
-          >
-            <Link to="/browse">Back to browse</Link>
-          </Button>
-          {cartCount > 0 ? (
-            <Button asChild className="rounded-full font-bold px-6">
-              <Link to="/cart">
-                <ShoppingBag className="h-4 w-4 mr-2" />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b-2 border-foreground pb-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Vendor</p>
+            <h1 className="text-5xl font-medium tracking-tighter text-foreground">{vendor.name}</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/browse" className="text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+              Back to directory
+            </Link>
+            {cartCount > 0 ? (
+              <Link to="/cart" className="flex items-center gap-2 border border-border bg-foreground text-background px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors hover:opacity-90">
+                <ShoppingBag className="h-4 w-4" />
                 View cart ({cartCount})
               </Link>
-            </Button>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          <Reveal delay={0.02}>
-            <VendorStorefrontHero
+        <section className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="space-y-12">
+            <Reveal delay={0.02}>
+              <VendorStorefrontHero
+                vendor={vendor}
+                vendorMeta={vendorMeta}
+                filteredCount={filteredItems.length}
+              />
+            </Reveal>
+
+            <Reveal delay={0.08}>
+              <VendorMenuFilters
+                menuSearch={menuSearch}
+                onMenuSearchChange={setMenuSearch}
+                showAvailableOnly={showAvailableOnly}
+                onToggleAvailableOnly={() =>
+                  setShowAvailableOnly((current) => !current)
+                }
+                categories={categories}
+                activeCategory={activeCategory}
+                onActiveCategoryChange={setActiveCategory}
+              />
+            </Reveal>
+
+            <VendorMenuSections
+              groupedItems={groupedItems}
+              getItemQuantity={getItemQuantity}
+              onAddItem={handleAddItem}
+              onUpdateQuantity={updateQuantity}
+            />
+          </div>
+
+          <div className="border-t border-border xl:border-none pt-12 xl:pt-0">
+            <VendorSidebar
+              cartCount={cartCount}
+              cartTotal={cartTotal}
               vendor={vendor}
               vendorMeta={vendorMeta}
-              filteredCount={filteredItems.length}
+              style={style}
+              onStyleChange={setStyle}
             />
-          </Reveal>
-
-          <Reveal delay={0.08}>
-            <VendorMenuFilters
-              menuSearch={menuSearch}
-              onMenuSearchChange={setMenuSearch}
-              showAvailableOnly={showAvailableOnly}
-              onToggleAvailableOnly={() =>
-                setShowAvailableOnly((current) => !current)
-              }
-              categories={categories}
-              activeCategory={activeCategory}
-              onActiveCategoryChange={setActiveCategory}
-            />
-          </Reveal>
-
-          <VendorMenuSections
-            groupedItems={groupedItems}
-            getItemQuantity={getItemQuantity}
-            onAddItem={handleAddItem}
-            onUpdateQuantity={updateQuantity}
-          />
-        </div>
-
-        <VendorSidebar
-          cartCount={cartCount}
-          cartTotal={cartTotal}
-          vendor={vendor}
-          vendorMeta={vendorMeta}
-          style={style}
-          onStyleChange={setStyle}
-        />
-      </section>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

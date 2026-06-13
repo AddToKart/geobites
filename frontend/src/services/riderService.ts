@@ -15,7 +15,7 @@ export async function acceptDelivery(orderId: string): Promise<Order> {
 
 export async function updateDeliveryStatus(
   orderId: string,
-  status: 'picked_up' | 'delivering' | 'delivered',
+  status: 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered',
 ): Promise<Order> {
   const response = await api.patch<Order>(`/riders/deliveries/${orderId}/status`, {
     status,

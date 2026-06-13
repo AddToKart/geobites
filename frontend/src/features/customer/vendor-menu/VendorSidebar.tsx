@@ -1,9 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock3, MapPin, ShoppingBag } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { MapStyleSelect } from '@/components/maps/MapStyleSelect';
 import { mapStyles, type MapStyleKey } from '@/components/maps/map-styles';
 import {
@@ -72,109 +69,100 @@ export function VendorSidebar({
   const is3D = style === 'openstreetmap3d';
 
   return (
-    <div className="space-y-4 xl:sticky xl:top-8 xl:self-start">
-      <Card>
-        <CardContent className="space-y-5 p-5">
-          <div>
-            <p className="eyebrow">Cart</p>
-            <h2 className="mt-2 text-2xl font-semibold">{cartCount} item(s)</h2>
-              <p className="subtle-copy">
-                Items from this vendor will appear here. Check out when you're ready.
-              </p>
+    <div className="space-y-8 xl:sticky xl:top-8 xl:self-start">
+      <div className="border border-border p-8 bg-background">
+        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Your Cart</p>
+        <h2 className="text-4xl font-medium tracking-tighter text-foreground mb-8">
+          {cartCount} item(s)
+        </h2>
+        
+        <div className="border-t border-border pt-6 space-y-4 mb-8">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Subtotal</span>
+            <span className="text-2xl font-medium tracking-tighter text-foreground">
+              {formatCurrency(cartTotal)}
+            </span>
           </div>
-          <div className="panel-muted space-y-3 px-4 py-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[color:var(--color-text-soft)]">Current subtotal</span>
-              <span className="font-semibold text-[color:var(--color-text)]">
-                {formatCurrency(cartTotal)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-[color:var(--color-text-soft)]">Vendor</span>
-              <span className="font-medium text-[color:var(--color-text)]">{vendor.name}</span>
-            </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Vendor</span>
+            <span className="text-sm font-bold text-foreground text-right max-w-[150px] truncate">{vendor.name}</span>
           </div>
-          {cartCount > 0 ? (
-            <Button asChild>
-              <Link to="/cart">
-                <ShoppingBag className="h-4 w-4" />
-                Go to cart
-              </Link>
-            </Button>
-          ) : (
-            <Button disabled>
-              <ShoppingBag className="h-4 w-4" />
-              Go to cart
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardContent className="space-y-4 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold">Shop map</h2>
-              <p className="subtle-copy">See the vendor location and nearby area.</p>
-            </div>
-            <Badge>{vendorMeta?.neighborhood || 'Local shop'}</Badge>
+        {cartCount > 0 ? (
+          <Link to="/cart" className="flex items-center justify-center gap-2 w-full border border-border bg-foreground text-background py-4 px-6 font-bold uppercase tracking-widest hover:opacity-90 transition-colors">
+            <ShoppingBag className="h-5 w-5" />
+            Go to checkout
+          </Link>
+        ) : (
+          <button disabled className="flex items-center justify-center gap-2 w-full border border-border bg-secondary/50 text-muted-foreground py-4 px-6 font-bold uppercase tracking-widest cursor-not-allowed">
+            <ShoppingBag className="h-5 w-5" />
+            Go to checkout
+          </button>
+        )}
+      </div>
+
+      <div className="border border-border p-8 bg-background">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-medium tracking-tighter">Location</h2>
+          <span className="text-xs font-bold uppercase tracking-widest bg-foreground text-background px-3 py-1">
+            {vendorMeta?.neighborhood || 'Local shop'}
+          </span>
+        </div>
+
+        <div className="relative h-64 overflow-hidden border border-border mb-8">
+          <Map
+            center={[vendor.longitude, vendor.latitude]}
+            zoom={15}
+            className="h-full w-full"
+            styles={selectedStyle}
+          >
+            <VendorMapCamera vendor={vendor} is3D={is3D} />
+            <MapMarker longitude={vendor.longitude} latitude={vendor.latitude} anchor="bottom" offset={[0, 6]}>
+              <MarkerContent>
+                <div className="pointer-events-none flex items-center gap-2">
+                  <span className="inline-flex h-4 w-4 rounded-full border-2 border-background bg-primary" />
+                  <span className="inline-flex border border-border bg-background px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-foreground">
+                    Shop
+                  </span>
+                </div>
+              </MarkerContent>
+              <MarkerPopup closeButton className="min-w-[200px] border border-border bg-background p-4 rounded-none shadow-none">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                    Pickup point
+                  </p>
+                  <p className="text-base font-medium tracking-tighter text-foreground">
+                    {vendor.name}
+                  </p>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    {vendor.address}
+                  </p>
+                </div>
+              </MarkerPopup>
+            </MapMarker>
+            <MapControls position="bottom-right" showZoom showCompass showFullscreen />
+          </Map>
+
+          <div className="absolute right-2 top-2 z-10">
+            <MapStyleSelect value={style} onChange={onStyleChange} />
           </div>
+        </div>
 
-          <div className="relative h-72 overflow-hidden rounded-[24px] border border-[color:var(--color-border)]">
-            <Map
-              center={[vendor.longitude, vendor.latitude]}
-              zoom={15}
-              className="h-full w-full"
-              styles={selectedStyle}
-            >
-              <VendorMapCamera vendor={vendor} is3D={is3D} />
-              <MapMarker longitude={vendor.longitude} latitude={vendor.latitude} anchor="bottom" offset={[0, 6]}>
-                <MarkerContent>
-                  <div className="pointer-events-none flex items-center gap-2">
-                    <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-[#eb6a2d] shadow-[0_12px_22px_rgba(15,23,42,0.26)]" />
-                    <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
-                      Shop
-                    </span>
-                  </div>
-                </MarkerContent>
-                <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
-                      Pickup point
-                    </p>
-                    <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                      {vendor.name}
-                    </p>
-                    <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
-                      {vendor.address}
-                    </p>
-                  </div>
-                </MarkerPopup>
-              </MapMarker>
-              <MapControls position="bottom-right" showZoom showCompass showFullscreen />
-            </Map>
-
-            <div className="absolute right-3 top-3 z-10">
-              <MapStyleSelect value={style} onChange={onStyleChange} />
-            </div>
-          </div>
-
-          <div className="panel-muted space-y-2 px-4 py-4 text-sm text-[color:var(--color-text-soft)]">
-            <p>{vendor.address}</p>
-            <p>
-              {vendorMeta?.priceBand || '₱₱'} • {vendorMeta?.etaMinutes || '20-35 min'}
-            </p>
+        <div className="space-y-4 text-sm font-bold text-muted-foreground">
+          <p className="text-foreground">{vendor.address}</p>
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+              <MapPin className="h-4 w-4 text-primary" />
               <span>{vendorMeta?.neighborhood || 'Santa Maria'}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+              <Clock3 className="h-4 w-4 text-primary" />
               <span>{vendorMeta?.etaMinutes || '20-35 min'}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

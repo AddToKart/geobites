@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ShieldCheck, Landmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, CheckCircle2, ShieldCheck, Landmark, Smartphone, KeyRound, Receipt } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/utils/helpers";
 import { toast } from "sonner";
@@ -23,25 +21,34 @@ export function MockPaymentPage() {
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
  
-  // Set colors based on method
-  // GCash: #0056eb (Deep Blue)
-  // Maya: #00c300 (Neon Green)
   const isGcash = method === "GCASH";
   const isMaya = method === "MAYA";
   const isQr = method === "QRPH";
  
-  const primaryColorClass = isGcash 
-    ? "bg-blue-600 hover:bg-blue-700" 
-    : isMaya 
-      ? "bg-emerald-600 hover:bg-emerald-700"
-      : "bg-orange-500 hover:bg-orange-600";
- 
   const brandBg = isGcash 
-    ? "bg-[#0c4fc7]" 
+    ? "bg-[#005CEE] text-white" 
     : isMaya 
-      ? "bg-[#18181b]" 
-      : "bg-slate-900";
- 
+      ? "bg-[#00D15A] text-white"
+      : "bg-foreground text-background";
+      
+  const brandText = isGcash 
+    ? "text-[#005CEE]" 
+    : isMaya 
+      ? "text-[#00D15A]"
+      : "text-foreground";
+      
+  const brandBorder = isGcash 
+    ? "border-[#005CEE]" 
+    : isMaya 
+      ? "border-[#00D15A]"
+      : "border-foreground";
+
+  const brandHoverBg = isGcash
+    ? "hover:bg-[#004bbd]"
+    : isMaya
+      ? "hover:bg-[#00a849]"
+      : "hover:bg-foreground/90";
+
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneNumber.length < 10) {
@@ -64,22 +71,16 @@ export function MockPaymentPage() {
     setIsSubmitting(true);
     try {
       if (cashInId) {
-        // Direct call to simulate success API for wallet cash-in
         await api.post(`/wallet/cash-in/${cashInId}/simulate-success`);
         setStep("success");
         toast.success("Wallet cash-in authorized successfully");
-        
-        // Redirect back to wallet page after a small delay
         setTimeout(() => {
           navigate(`/wallet`);
         }, 2000);
       } else {
-        // Direct call to simulate success API for order payment
         await api.post(`/payments/${orderId}/simulate-success`);
         setStep("success");
         toast.success("Payment authorized successfully");
-        
-        // Redirect to order details page after a small delay to show checkmark
         setTimeout(() => {
           navigate(`/orders/${orderId}`);
         }, 2000);
@@ -97,230 +98,262 @@ export function MockPaymentPage() {
 
   if (isQr) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-card border-border text-card-foreground rounded-[32px] overflow-hidden shadow-[var(--shadow-panel)]">
-          <div className="p-6 bg-muted border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-primary" />
-              <span className="font-bold tracking-wider text-sm">QR PH SIMULATOR</span>
-            </div>
-            <span className="text-xs bg-primary-soft text-primary font-bold px-2.5 py-1 rounded-full">
-              SANDBOX
+      <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground flex flex-col md:flex-row">
+        {/* Brand/Info Left Side */}
+        <div className={`md:w-1/2 p-8 md:p-12 lg:p-24 flex flex-col justify-between ${brandBg} relative`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xl font-bold tracking-tight flex items-center gap-2">
+              <Landmark className="h-6 w-6" strokeWidth={2.5} />
+              QR PH
+            </span>
+            <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 border border-current">
+              Sandbox
             </span>
           </div>
 
-          <CardContent className="p-8 flex flex-col items-center text-center gap-6">
-            <h2 className="text-xl font-bold text-foreground">Scan to Pay</h2>
-            <p className="text-sm text-text-muted">
-              {cashInId ? "Service: " : "Merchant: "}
-              <strong className="text-foreground">
-                {cashInId ? "GeoPay Wallet Funding" : "Geobites Platform"}
-              </strong>
+          <div className="mt-16 md:mt-0">
+            <p className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4">
+              {cashInId ? "Service" : "Merchant"}
             </p>
-
-            {/* Generated Mock QR PH box */}
-            <div className="bg-card p-5 rounded-[24px] shadow-inner relative group border-4 border-primary/20">
-              <div className="h-48 w-48 bg-muted flex flex-col items-center justify-center gap-2 rounded-lg relative overflow-hidden">
-                {/* Simulated QR Code visual */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-muted via-card to-muted flex flex-col items-center justify-center p-4">
-                  <div className="grid grid-cols-5 gap-1.5 w-full aspect-square">
-                    {Array.from({ length: 25 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`rounded-sm ${(i * 7 + 13) % 3 === 0 ? "bg-foreground" : "bg-transparent"}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-primary text-primary-foreground font-extrabold text-[10px] p-2 rounded-full shadow-md">
-                      QR PH
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-2xl font-black tracking-tight mt-2">
+            <h1 className="text-5xl md:text-6xl font-medium tracking-tighter mb-12">
+              {cashInId ? "GeoPay Wallet" : "Geobites"}
+            </h1>
+            <p className="text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Total Amount</p>
+            <div className="text-7xl md:text-[8rem] font-medium tracking-tighter leading-[0.9]">
               {formatCurrency(amount)}
             </div>
+          </div>
+        </div>
 
-            <p className="text-xs text-text-muted max-w-xs leading-relaxed">
-              Scan this mockup code or click below to simulate scanning with a mobile banking app.
-            </p>
+        {/* Action Right Side */}
+        <div className="md:w-1/2 flex flex-col justify-center p-8 md:p-12 lg:p-24 bg-background border-l border-border relative">
+          <div className="w-full max-w-md mx-auto">
+            {step !== "success" ? (
+              <div className="space-y-12">
+                <div>
+                  <h2 className="text-4xl font-medium tracking-tighter mb-4">Scan to Pay</h2>
+                  <p className="text-muted-foreground text-lg">
+                    Scan this code with your mobile banking app or e-wallet to complete the transaction.
+                  </p>
+                </div>
 
-            <Button
-              onClick={handleConfirmPayment}
-              disabled={isSubmitting}
-              className={`w-full h-13 rounded-[18px] text-base font-bold transition-all shadow-lg ${primaryColorClass}`}
-            >
-              {isSubmitting ? "Verifying Transaction..." : "Simulate QR Scan Success"}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+                <div className="p-8 border-4 border-foreground/10 flex justify-center items-center bg-secondary/10 relative">
+                  {/* Decorative corner markers */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-foreground"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-foreground"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-foreground"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-foreground"></div>
+
+                  <div className="w-64 h-64 border border-border bg-background p-4 relative flex flex-col justify-between">
+                     <div className="grid grid-cols-5 gap-2 w-full h-full">
+                        {Array.from({ length: 25 }).map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`${(i * 7 + 13) % 3 === 0 ? "bg-foreground" : "bg-transparent"} transition-all`}
+                          />
+                        ))}
+                     </div>
+                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <div className="bg-background border-4 border-foreground px-4 py-2 text-foreground font-bold tracking-tighter text-xl">
+                         QR PH
+                       </div>
+                     </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleConfirmPayment}
+                  disabled={isSubmitting}
+                  className={`w-full h-16 bg-foreground text-background font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50`}
+                >
+                  {isSubmitting ? "Verifying..." : "Simulate Scan Success"}
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500 py-12">
+                <div className="flex justify-center mb-8">
+                  <div className="h-24 w-24 bg-foreground text-background rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="h-12 w-12" />
+                  </div>
+                </div>
+                <h2 className="text-4xl font-medium tracking-tighter text-foreground">Transaction complete.</h2>
+                <p className="text-xl text-muted-foreground">Redirecting to Geobites...</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
 
+  // GCASH or MAYA layout
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      {/* Brand themed sandbox wrapper */}
-      <Card className="w-full max-w-md border-none overflow-hidden rounded-[32px] shadow-[0_24px_50px_rgba(0,0,0,0.12)]">
-        <div className={`p-6 text-white ${brandBg} flex items-center justify-between transition-colors`}>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-extrabold tracking-widest text-white/60 uppercase">
-              Sandbox Simulator
-            </span>
-            <h1 className="text-2xl font-black tracking-tight">
-              {isGcash ? "GCash" : "Maya"}
-            </h1>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-foreground selection:text-background flex flex-col md:flex-row">
+      {/* Brand/Info Left Side */}
+      <div className={`md:w-5/12 lg:w-1/2 p-8 md:p-12 lg:p-24 flex flex-col justify-between ${brandBg} relative`}>
+        <div className="flex items-center justify-between">
+          <span className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            {isGcash ? "GCash" : "Maya"}
+          </span>
+          <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 px-3 py-1 border border-current">
             <ShieldCheck className="h-4 w-4" />
-            Secure
-          </div>
+            Secure Sandbox
+          </span>
         </div>
 
-        <CardContent className="p-8 bg-card">
+        <div className="mt-16 md:mt-0">
+          <p className="text-sm font-bold uppercase tracking-widest opacity-70 mb-4">
+            {cashInId ? "Service" : "Merchant"}
+          </p>
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium tracking-tighter mb-12 leading-none">
+            {cashInId ? "GeoPay Wallet" : "Geobites"}
+          </h1>
+          <p className="text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Total Amount</p>
+          <div className="text-7xl md:text-[8rem] font-medium tracking-tighter leading-[0.9]">
+            {formatCurrency(amount)}
+          </div>
+        </div>
+      </div>
+
+      {/* Action Right Side */}
+      <div className="md:w-7/12 lg:w-1/2 flex flex-col justify-center p-8 md:p-12 lg:p-24 bg-background border-l border-border relative">
+        <div className="w-full max-w-md mx-auto">
           {step === "phone" && (
-            <form onSubmit={handlePhoneSubmit} className="space-y-6">
-              <div className="text-center">
-                <p className="text-sm font-semibold text-text-muted">
-                  {cashInId ? "Service" : "Merchant"}
-                </p>
-                <h3 className="text-lg font-bold text-text">
-                  {cashInId ? "GeoPay Wallet Cash-In" : "Geobites Food"}
-                </h3>
-                <h2 className="text-3xl font-black tracking-tight text-text mt-2">
-                  {formatCurrency(amount)}
-                </h2>
-              </div>
-
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-text-muted pl-1">
-                  Mobile Number
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-text-muted">
-                    +63
-                  </span>
-                  <Input
-                    type="tel"
-                    placeholder="917 123 4567"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
-                    className="pl-13 h-13 rounded-[16px] font-bold text-lg border-border focus:ring-2 focus:ring-primary/20"
-                    maxLength={10}
-                    required
-                  />
+            <div className="space-y-12">
+              <div>
+                <div className="mb-6 inline-flex h-12 w-12 items-center justify-center bg-secondary/20 text-muted-foreground border border-border">
+                  <Smartphone className="h-6 w-6" />
                 </div>
+                <h2 className="text-4xl font-medium tracking-tighter mb-4">Log in to {isGcash ? "GCash" : "Maya"}</h2>
+                <p className="text-muted-foreground text-lg">Enter your mobile number to authenticate this transaction.</p>
               </div>
 
-              <Button
-                type="submit"
-                className={`w-full h-13 rounded-[18px] text-base font-bold transition-all shadow-md ${primaryColorClass}`}
-              >
-                Next
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
+              <form onSubmit={handlePhoneSubmit} className="space-y-8">
+                <div className="space-y-4">
+                  <label className="text-sm font-bold uppercase tracking-widest text-muted-foreground block">
+                    Mobile Number
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-medium text-foreground">
+                      +63
+                    </span>
+                    <Input
+                      type="tel"
+                      placeholder="917 123 4567"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                      className={`pl-16 h-20 rounded-none text-3xl font-medium border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:${brandBorder} transition-colors`}
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full h-16 ${brandBg} ${brandHoverBg} font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-colors`}
+                >
+                  Next
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </form>
+            </div>
           )}
 
           {step === "otp" && (
-            <form onSubmit={handleOtpSubmit} className="space-y-6">
-              <div className="text-center space-y-1">
-                <h2 className="text-xl font-bold">Authentication</h2>
-                <p className="text-sm text-text-muted">
-                  Enter the 6-digit OTP code sent to your mobile number.
-                </p>
+            <div className="space-y-12 animate-in slide-in-from-right-8 duration-300">
+              <div>
+                <div className="mb-6 inline-flex h-12 w-12 items-center justify-center bg-secondary/20 text-muted-foreground border border-border">
+                  <KeyRound className="h-6 w-6" />
+                </div>
+                <h2 className="text-4xl font-medium tracking-tighter mb-4">Verification</h2>
+                <p className="text-muted-foreground text-lg">Enter the 6-digit code sent to +63 {phoneNumber}.</p>
               </div>
 
-              <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-text-muted pl-1">
-                  Verification Code (OTP)
-                </label>
-                <Input
-                  type="text"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="h-13 rounded-[16px] font-mono font-bold text-center tracking-[0.4em] text-2xl border-border"
-                  maxLength={6}
-                  required
-                />
-              </div>
+              <form onSubmit={handleOtpSubmit} className="space-y-8">
+                <div className="space-y-4">
+                  <label className="text-sm font-bold uppercase tracking-widest text-muted-foreground block">
+                    6-Digit OTP
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="000000"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                    className={`h-20 rounded-none text-4xl font-medium text-center tracking-[0.2em] border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:${brandBorder} transition-colors`}
+                    maxLength={6}
+                    required
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className={`w-full h-13 rounded-[18px] text-base font-bold transition-all shadow-md ${primaryColorClass}`}
-              >
-                Verify OTP
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
+                <button
+                  type="submit"
+                  className={`w-full h-16 ${brandBg} ${brandHoverBg} font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-colors`}
+                >
+                  Verify
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </form>
+            </div>
           )}
 
           {step === "confirm" && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <p className="text-sm font-semibold text-text-muted">
-                  {cashInId ? "Funding" : "Paying"}
-                </p>
-                <h3 className="text-lg font-bold text-text">
-                  {cashInId ? "GeoPay Wallet" : "Geobites Platform"}
-                </h3>
-                <h2 className="text-3xl font-black tracking-tight text-text mt-2">
-                  {formatCurrency(amount)}
-                </h2>
+            <div className="space-y-12 animate-in slide-in-from-right-8 duration-300">
+              <div>
+                <div className="mb-6 inline-flex h-12 w-12 items-center justify-center bg-secondary/20 text-muted-foreground border border-border">
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <h2 className="text-4xl font-medium tracking-tighter mb-4">Confirm Payment</h2>
+                <p className="text-muted-foreground text-lg">Review details before authorizing.</p>
               </div>
 
-              <div className="rounded-[20px] bg-surface-2 p-5 space-y-3 border border-border">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-text-muted">Source Account</span>
-                  <span className="font-bold text-text">
-                    {isGcash ? "GCash Wallet" : "Maya Account"} (***{phoneNumber.slice(-4)})
-                  </span>
+              <div className="border border-border bg-secondary/5 p-8 space-y-6">
+                <div className="flex justify-between items-start border-b border-border pb-6">
+                  <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Source</span>
+                  <div className="text-right">
+                    <span className={`block text-xl font-medium tracking-tighter ${brandText}`}>
+                      {isGcash ? "GCash Wallet" : "Maya Wallet"}
+                    </span>
+                    <span className="text-sm text-muted-foreground">***{phoneNumber.slice(-4)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-text-muted">Amount</span>
-                  <span className="font-bold text-text">
+                <div className="flex justify-between items-center border-b border-border pb-6">
+                  <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Amount</span>
+                  <span className="text-2xl font-medium tracking-tighter text-foreground">
                     {formatCurrency(amount)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-text-muted">Transaction Fee</span>
-                  <span className="font-bold text-success">₱0.00 (Free)</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Fee</span>
+                  <span className="text-lg font-medium tracking-tighter text-green-500">Free</span>
                 </div>
               </div>
 
-              <Button
+              <button
                 onClick={handleConfirmPayment}
                 disabled={isSubmitting}
-                className={`w-full h-13 rounded-[18px] text-base font-bold transition-all shadow-md ${primaryColorClass}`}
+                className={`w-full h-16 ${brandBg} ${brandHoverBg} font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-colors disabled:opacity-50`}
               >
-                {isSubmitting ? "Authorizing payment..." : `Confirm & Pay ${formatCurrency(amount)}`}
-              </Button>
+                {isSubmitting ? "Authorizing..." : `Pay ${formatCurrency(amount)}`}
+                {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+              </button>
             </div>
           )}
 
           {step === "success" && (
-            <div className="py-8 flex flex-col items-center justify-center text-center gap-4 animate-in fade-in zoom-in-95 duration-500">
-              <CheckCircle2 className="h-20 w-20 text-success animate-bounce" />
-              <h2 className="text-2xl font-black tracking-tight text-text">
-                {cashInId ? "Cash-In Successful" : "Payment Successful"}
-              </h2>
-              <p className="text-sm text-text-muted max-w-xs">
-                {cashInId
-                  ? `Your wallet has been successfully funded and confirmed by ${isGcash ? "GCash" : "Maya"}.`
-                  : `Your payment has been successfully authorized and confirmed by ${isGcash ? "GCash" : "Maya"}.`}
-              </p>
-              <div className="text-xs font-semibold text-text-muted mt-2">
-                Redirecting back to Geobites...
+            <div className="space-y-6 text-center animate-in fade-in zoom-in-95 duration-500 py-12">
+              <div className="flex justify-center mb-8">
+                <div className={`h-24 w-24 ${brandBg} rounded-full flex items-center justify-center`}>
+                  <CheckCircle2 className="h-12 w-12" />
+                </div>
               </div>
+              <h2 className="text-4xl font-medium tracking-tighter text-foreground">Transaction complete.</h2>
+              <p className="text-xl text-muted-foreground">Redirecting to Geobites...</p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

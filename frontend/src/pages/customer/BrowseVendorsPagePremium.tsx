@@ -1,7 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { List, MapIcon, Store } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
-import { Button } from '@/components/ui/button';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
@@ -151,34 +150,37 @@ export function BrowseVendorsPagePremium() {
             toast.success('Using your current location for nearby sorting');
           }}
         />
-        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-6 pb-0 pt-[80px] md:pt-6">
-          <div className="pointer-events-auto max-w-2xl mx-auto">
+        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-8 pt-[80px] md:pt-8">
+          <div className="pointer-events-auto max-w-3xl mx-auto">
             <BrowseOverviewSection
               search={search}
               onSearchChange={setSearch}
               browseCount={browseVendors.length}
               activeOrder={activeOrder}
+              isMapMode={true}
             />
           </div>
         </div>
-        <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-card/90 backdrop-blur-md rounded-full shadow-[var(--shadow-panel)] border border-border p-1">
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-text-soft" onClick={() => setViewMode('grid')}>
-            <Store className="h-4 w-4 mr-2" /> Grid
-          </Button>
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-text-soft" onClick={() => setViewMode('list')}>
-            <List className="h-4 w-4 mr-2" /> List
-          </Button>
-            <Button variant="default" size="sm" className="rounded-full px-4 bg-primary text-primary-foreground shadow-sm" onClick={() => setViewMode('map')}>
-            <MapIcon className="h-4 w-4 mr-2" /> Map
-          </Button>
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-background border-2 border-foreground">
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('grid')}>
+            <span className="flex items-center gap-2"><Store className="h-4 w-4" /> Grid</span>
+          </button>
+          <div className="w-px h-12 bg-foreground" />
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('list')}>
+            <span className="flex items-center gap-2"><List className="h-4 w-4" /> List</span>
+          </button>
+          <div className="w-px h-12 bg-foreground" />
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest bg-foreground text-background" onClick={() => setViewMode('map')}>
+            <span className="flex items-center gap-2"><MapIcon className="h-4 w-4" /> Map</span>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-stack">
-      <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto py-6">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="flex flex-col w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12 lg:py-16">
         <BrowseOverviewSection
           search={search}
           onSearchChange={setSearch}
@@ -186,18 +188,22 @@ export function BrowseVendorsPagePremium() {
           activeOrder={activeOrder}
         />
         
-        <div className="flex items-center justify-between pb-4 border-b border-border">
-          <h2 className="text-xl font-bold text-foreground">All Restaurants</h2>
-          <div className="flex items-center bg-muted rounded-full p-1">
-            <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'grid' ? 'bg-card text-foreground shadow-sm' : 'text-text-muted'}`} onClick={() => setViewMode('grid')}>
-              <Store className="h-4 w-4 mr-1.5" /> Grid
-            </Button>
-            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-text-muted'}`} onClick={() => setViewMode('list')}>
-              <List className="h-4 w-4 mr-1.5" /> List
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-full px-4 h-8 text-text-muted" onClick={() => setViewMode('map')}>
-              <MapIcon className="h-4 w-4 mr-1.5" /> Map
-            </Button>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-16 mb-4">
+          <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 sm:mb-0">
+            Explore {viewMode === 'list' ? 'directory' : 'catalog'}
+          </h2>
+          <div className="flex items-center border border-border">
+            <button className={`px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${viewMode === 'grid' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`} onClick={() => setViewMode('grid')}>
+              Grid
+            </button>
+            <div className="w-px h-full bg-border" />
+            <button className={`px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`} onClick={() => setViewMode('list')}>
+              List
+            </button>
+            <div className="w-px h-full bg-border" />
+            <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('map')}>
+              Map
+            </button>
           </div>
         </div>
 

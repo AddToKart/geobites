@@ -67,6 +67,15 @@ export class Order {
   })
   totalAmount!: number;
 
+  @Column({
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    default: 0,
+    transformer: decimalNumberTransformer,
+  })
+  deliveryFee!: number;
+
   @Column({ type: 'text', nullable: true })
   street?: string;
 

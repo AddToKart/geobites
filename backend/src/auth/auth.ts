@@ -72,6 +72,22 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
       },
+      storeName: {
+        type: 'string',
+        required: false,
+      },
+      businessPermit: {
+        type: 'string',
+        required: false,
+      },
+      vehicleType: {
+        type: 'string',
+        required: false,
+      },
+      licenseNumber: {
+        type: 'string',
+        required: false,
+      },
     },
   },
 });

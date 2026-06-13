@@ -18,6 +18,10 @@ export interface User {
   role: UserRole;
   phone?: string;
   address?: string;
+  storeName?: string;
+  businessPermit?: string;
+  vehicleType?: string;
+  licenseNumber?: string;
 }
 
 export interface Vendor {
@@ -70,6 +74,7 @@ export interface Order {
   riderId?: string;
   status: OrderStatus;
   totalAmount: number;
+  deliveryFee: number;
   deliveryAddress: string;
   street?: string;
   barangay?: string;

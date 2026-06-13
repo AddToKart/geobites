@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BellRing, CheckCircle2, Filter, Sparkles } from 'lucide-react';
-import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { getNotifications, markNotificationAsRead } from '../../services/notificationService';
 import { Notification } from '../../types';
 import { formatDate } from '../../utils/helpers';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
 
 type NotificationFilter = 'all' | 'unread' | 'read' | Notification['type'];
 
@@ -62,188 +60,189 @@ export function NotificationsPage() {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Updates"
-        title="Notifications"
-        description="Stay updated on orders, deliveries, and account activity."
-      />
-
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <BellRing className="h-5 w-5" />
-            </div>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <Reveal>
+          <div className="border-b-2 border-foreground pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Total notifications</p>
-              <p className="text-2xl font-semibold">{notifications.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Unread</p>
-              <p className="text-2xl font-semibold">{unreadCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <Filter className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Current filter</p>
-              <p className="text-2xl font-semibold capitalize">
-                {filter === 'order_update' || filter === 'delivery_request' ? filter.replace('_', ' ') : filter}
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Updates</p>
+              <h1 className="text-6xl font-medium tracking-tighter">Alerts.</h1>
+              <p className="text-xl text-muted-foreground mt-4 max-w-xl">
+                Stay updated on orders, deliveries, and account activity.
               </p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-[color:var(--color-text-soft)]">Visible now</p>
-              <p className="text-2xl font-semibold">{filteredNotifications.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+            {visibleUnread.length > 0 && (
+              <button 
+                onClick={() => void markVisibleAsRead()}
+                className="text-xs font-bold uppercase tracking-widest text-primary hover:text-foreground transition-colors border border-primary px-4 py-2 hover:bg-primary hover:text-primary-foreground"
+              >
+                Mark visible as read
+              </button>
+            )}
+          </div>
+        </Reveal>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Card>
-          <CardContent className="space-y-5 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-2xl font-semibold">Inbox</h2>
-                <p className="subtle-copy">
-                  Filter by type or mark notifications as read.
-                </p>
+        <section className="grid gap-12 md:grid-cols-2 lg:grid-cols-4 mb-16">
+          <div className="border border-border p-8 bg-background flex flex-col justify-between min-h-[200px]">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</span>
+              <BellRing className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-5xl font-medium tracking-tighter">{notifications.length}</p>
+          </div>
+          <div className="border border-border p-8 bg-background flex flex-col justify-between min-h-[200px]">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">Unread</span>
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+            </div>
+            <p className="text-5xl font-medium tracking-tighter text-primary">{unreadCount}</p>
+          </div>
+          <div className="border border-border p-8 bg-background flex flex-col justify-between min-h-[200px]">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filter</span>
+              <Filter className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-2xl font-medium tracking-tighter capitalize truncate">
+              {filter === 'order_update' || filter === 'delivery_request' ? filter.replace('_', ' ') : filter}
+            </p>
+          </div>
+          <div className="border border-border p-8 bg-background flex flex-col justify-between min-h-[200px]">
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Visible</span>
+              <Sparkles className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="text-5xl font-medium tracking-tighter">{filteredNotifications.length}</p>
+          </div>
+        </section>
+
+        <section className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="space-y-12">
+            <Reveal>
+              <div className="border border-border p-8 bg-background">
+                <div className="mb-8 flex flex-col gap-6">
+                  <h2 className="text-3xl font-medium tracking-tighter">Inbox</h2>
+                  <div className="flex flex-wrap gap-3">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'unread', label: 'Unread' },
+                      { key: 'read', label: 'Read' },
+                      { key: 'order_update', label: 'Orders' },
+                      { key: 'delivery_request', label: 'Deliveries' },
+                      { key: 'rating', label: 'Ratings' },
+                      { key: 'system', label: 'System' },
+                    ] as Array<{ key: NotificationFilter; label: string }>).map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => setFilter(option.key)}
+                        className={`border px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                          filter === option.key
+                            ? 'border-foreground bg-foreground text-background'
+                            : 'border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/10'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              {visibleUnread.length > 0 ? (
-                <Button size="sm" onClick={() => void markVisibleAsRead()}>
-                  Mark visible as read
-                </Button>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {([
-                { key: 'all', label: 'All' },
-                { key: 'unread', label: 'Unread' },
-                { key: 'read', label: 'Read' },
-                { key: 'order_update', label: 'Orders' },
-                { key: 'delivery_request', label: 'Deliveries' },
-                { key: 'rating', label: 'Ratings' },
-                { key: 'system', label: 'System' },
-              ] as Array<{ key: NotificationFilter; label: string }>).map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  onClick={() => setFilter(option.key)}
-                  className={
-                    filter === option.key
-                      ? 'rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)]'
-                      : 'rounded-full border border-[color:var(--color-border)] bg-card px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]'
-                  }
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            </Reveal>
 
             {filteredNotifications.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-lg font-semibold">No notifications here</p>
-                <p className="mt-2 subtle-copy">
+              <div className="border border-border p-12 text-center bg-secondary/5 min-h-[300px] flex flex-col items-center justify-center">
+                <p className="text-3xl font-medium tracking-tighter mb-2">No notifications here</p>
+                <p className="text-lg text-muted-foreground mb-8">
                   Adjust the filter or wait for new order, delivery, or account updates.
                 </p>
-                {filter !== 'all' ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-4 rounded-full font-semibold"
+                {filter !== 'all' && (
+                  <button
+                    className="border border-border px-6 py-3 font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors text-sm"
                     onClick={() => setFilter('all')}
                   >
-                    <Filter className="h-4 w-4 mr-1.5" />
                     Show all notifications
-                  </Button>
-                ) : null}
+                  </button>
+                )}
               </div>
             ) : (
-              filteredNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={
-                    notification.isRead
-                      ? 'panel-muted flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between'
-                      : 'rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                  }
-                >
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-[color:var(--color-text)]">{notification.title}</p>
-                      <Badge variant={notification.isRead ? 'warning' : 'default'}>
-                        {notificationTypeLabels[notification.type]}
-                      </Badge>
+              <Stagger className="space-y-4" delayChildren={0.05} stagger={0.05}>
+                {filteredNotifications.map((notification) => (
+                  <StaggerItem key={notification.id}>
+                    <div
+                      className={`flex flex-col md:flex-row md:items-start justify-between gap-6 p-8 border transition-colors ${
+                        notification.isRead
+                          ? 'border-border bg-background hover:bg-secondary/5'
+                          : 'border-primary/50 bg-primary/5 hover:bg-primary/10'
+                      }`}
+                    >
+                      <div className="space-y-4 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className={`text-xs font-bold uppercase tracking-widest border px-3 py-1 ${
+                            notification.isRead 
+                              ? 'border-border text-muted-foreground' 
+                              : 'border-primary text-primary bg-primary/10'
+                          }`}>
+                            {notificationTypeLabels[notification.type]}
+                          </span>
+                          <span className="text-xs font-bold text-muted-foreground tracking-widest">
+                            {formatDate(notification.createdAt)}
+                          </span>
+                        </div>
+                        
+                        <div>
+                          <p className={`text-2xl font-medium tracking-tighter mb-2 ${
+                            notification.isRead ? 'text-foreground' : 'text-primary'
+                          }`}>
+                            {notification.title}
+                          </p>
+                          <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
+                            {notification.message}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {!notification.isRead && (
+                        <button 
+                          onClick={() => void markAsRead(notification.id)}
+                          className="shrink-0 border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:self-center"
+                        >
+                          Mark as read
+                        </button>
+                      )}
                     </div>
-                    <p className="text-sm text-[color:var(--color-text-soft)]">{notification.message}</p>
-                    <p className="text-xs text-[color:var(--color-text-muted)]">
-                      {formatDate(notification.createdAt)}
-                    </p>
-                  </div>
-                  {!notification.isRead ? (
-                    <Button size="sm" variant="ghost" onClick={() => void markAsRead(notification.id)}>
-                      Mark as read
-                    </Button>
-                  ) : null}
-                </div>
-              ))
+                  </StaggerItem>
+                ))}
+              </Stagger>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="space-y-4 p-5">
-              <div>
-                <p className="eyebrow">Triage</p>
-                <h2 className="mt-2 text-2xl font-semibold">Quick read</h2>
-                <p className="mt-2 subtle-copy">
-                  See how many notifications of each type you have.
+          <div className="space-y-8 xl:sticky xl:top-12 xl:self-start">
+            <Reveal>
+              <div className="border border-border p-8 bg-background">
+                <h2 className="text-2xl font-medium tracking-tighter mb-8 border-b border-border pb-4">Triage</h2>
+                <div className="space-y-6">
+                  {Object.entries(notificationTypeLabels).map(([type, label]) => (
+                    <div key={type} className="flex justify-between items-center pb-4 border-b border-border/50 last:border-0 last:pb-0">
+                      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+                      <span className="text-2xl font-medium tracking-tighter">
+                        {notifications.filter((notification) => notification.type === type).length}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.1}>
+              <div className="border border-border p-8 bg-secondary/10">
+                <h2 className="text-2xl font-medium tracking-tighter mb-4">Settings</h2>
+                <p className="text-lg text-muted-foreground">
+                  Notification preferences and frequency management are coming soon.
                 </p>
               </div>
-              <div className="grid gap-3">
-                {Object.entries(notificationTypeLabels).map(([type, label]) => (
-                  <div key={type} className="panel-muted flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-[color:var(--color-text-soft)]">{label}</span>
-                    <span className="text-sm font-semibold text-[color:var(--color-text)]">
-                      {notifications.filter((notification) => notification.type === type).length}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <h2 className="text-2xl font-semibold">Notification settings</h2>
-              <p className="text-sm text-[color:var(--color-text-soft)]">
-                Manage which types of notifications you receive — coming soon.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+            </Reveal>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

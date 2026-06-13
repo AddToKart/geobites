@@ -8,8 +8,6 @@ import {
   CreditCard,
   AlertCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/utils/helpers";
@@ -75,7 +73,6 @@ export function WalletPage() {
     try {
       const result = await initiateCashIn(amountNum, paymentMethod);
       toast.success("Redirecting to payment processor...");
-      // Redirect to the mock payment checkout URL
       window.location.href = result.checkoutUrl;
     } catch (error) {
       toast.error(
@@ -87,17 +84,13 @@ export function WalletPage() {
 
   if (isLoading) {
     return (
-      <div className="page-stack max-w-5xl mx-auto py-6">
-        <Skeleton className="h-6 w-56 rounded-full" />
-        <Skeleton className="h-10 w-72 rounded-full mt-2" />
-        <Skeleton className="h-5 w-96 rounded-full mt-2" />
-        <div className="grid gap-8 md:grid-cols-12 mt-8">
-          <div className="md:col-span-7 space-y-6">
-            <Skeleton className="h-64 rounded-[32px]" />
-            <Skeleton className="h-80 rounded-[32px]" />
-          </div>
-          <div className="md:col-span-5">
-            <Skeleton className="h-96 rounded-[32px]" />
+      <div className="w-full max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <Skeleton className="h-32 rounded-none border border-border" />
+        <div className="mt-12 space-y-8">
+          <Skeleton className="h-64 rounded-none border border-border" />
+          <div className="grid gap-12 md:grid-cols-2">
+            <Skeleton className="h-96 rounded-none border border-border" />
+            <Skeleton className="h-96 rounded-none border border-border" />
           </div>
         </div>
       </div>
@@ -105,80 +98,68 @@ export function WalletPage() {
   }
 
   return (
-    <div className="page-stack max-w-5xl mx-auto py-6">
-      <Reveal>
-        <div className="mb-8">
-          <p className="eyebrow flex items-center gap-1.5 text-primary font-bold uppercase tracking-wider text-xs">
-            <Sparkles className="w-3.5 h-3.5" /> Direct Payment System
-          </p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground mt-1">
-            GeoPay Wallet
-          </h1>
-          <p className="subtle-copy text-text-muted font-medium mt-1">
-            Cash in using GCash, Maya, or QRPH, and complete orders instantly without redirects.
-          </p>
-        </div>
-      </Reveal>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <Reveal>
+          <div className="border-b-2 border-foreground pb-6 mb-12">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" /> Direct Payment System
+            </p>
+            <h1 className="text-6xl font-medium tracking-tighter text-foreground mt-1">
+              GeoPay Wallet.
+            </h1>
+            <p className="text-xl text-muted-foreground mt-4">
+              Cash in seamlessly. Pay instantly. Zero friction.
+            </p>
+          </div>
+        </Reveal>
 
-      <div className="grid gap-8 md:grid-cols-12">
-        {/* Left Side: Card + Cash In */}
-        <div className="md:col-span-7 space-y-6">
-          {/* Glassmorphic Visa Card */}
-          <Reveal>
-            <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-tr from-[#1e1e24] via-[#2d2d38] to-[#121214] p-8 text-white shadow-2xl border border-border">
-              {/* Background Glow Accents */}
-              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-[80px]" />
-              <div className="absolute -left-12 -bottom-12 h-40 w-40 rounded-full bg-success-soft blur-[80px]" />
-
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
-                    Digital BiteWallet
-                  </span>
-                  <h2 className="text-2xl font-black tracking-tight mt-1 flex items-center gap-2">
-                    <Wallet className="h-6 w-6 text-primary" /> GeoPay
-                  </h2>
-                </div>
-                <CreditCard className="h-10 w-10 text-text-muted/70" />
+        {/* Master Balance Header */}
+        <Reveal>
+          <div className="border border-border bg-secondary/5 p-8 md:p-16 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8 relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-6">
+                <Wallet className="h-6 w-6 text-primary" />
+                <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  Available Balance
+                </span>
               </div>
-
-              <div className="mt-14">
-                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Available Balance</span>
-                <div className="text-4xl md:text-5xl font-black tracking-tight mt-1">
-                  {formatCurrency(balance ?? 0)}
-                </div>
-              </div>
-
-              <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-6 text-xs text-text-muted">
-                <div>
-                  <p className="font-semibold uppercase text-text-muted">Account Holder</p>
-                  <p className="font-bold text-white mt-1 text-sm">{user?.name || "Geobites Member"}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold uppercase text-text-muted">System Status</p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-extrabold text-success">
-                    ● Active
-                  </span>
-                </div>
+              <div className="text-7xl md:text-[8rem] font-medium tracking-tighter leading-[0.9] text-foreground">
+                {formatCurrency(balance ?? 0)}
               </div>
             </div>
-          </Reveal>
+            
+            <div className="relative z-10 text-left md:text-right border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Account Holder</p>
+              <p className="text-xl font-medium tracking-tighter text-foreground">{user?.name || "Member"}</p>
+              
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-6 mb-2">Status</p>
+              <span className="text-primary font-bold uppercase tracking-widest inline-flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" /> Active
+              </span>
+            </div>
+          </div>
+        </Reveal>
 
-          {/* Cash In Panel */}
-          <Reveal>
-            <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)] overflow-hidden">
-              <CardContent className="p-8">
-                <h3 className="text-xl font-bold tracking-tight text-foreground mb-6">
-                  Cash In Funds
-                </h3>
+        <div className="grid gap-12 lg:grid-cols-2">
+          {/* Cash In Section */}
+          <div className="flex flex-col">
+            <Reveal>
+              <div className="border border-border bg-background p-8 md:p-12 h-full flex flex-col">
+                <div className="flex items-center justify-between border-b border-border pb-6 mb-8">
+                  <h3 className="text-3xl font-medium tracking-tighter text-foreground">
+                    Cash In
+                  </h3>
+                  <CreditCard className="h-6 w-6 text-muted-foreground" />
+                </div>
 
-                <form onSubmit={handleCashIn} className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-xs font-extrabold uppercase tracking-wider text-text-muted pl-1">
-                      Enter Amount (PHP)
+                <form onSubmit={handleCashIn} className="flex flex-col flex-1">
+                  <div className="space-y-4 mb-8">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Amount (PHP)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-text-muted">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-medium text-muted-foreground">
                         ₱
                       </span>
                       <Input
@@ -187,154 +168,139 @@ export function WalletPage() {
                         value={cashInAmount}
                         onBlur={handleAmountBlur}
                         onChange={(e) => { setCashInAmount(e.target.value); setAmountError(null); }}
-                        className={`pl-10 h-14 rounded-[20px] text-xl font-black border-border focus:ring-2 focus:ring-primary/30 ${amountError ? 'ring-2 ring-danger/40' : ''}`}
+                        className={`pl-14 h-24 rounded-none text-4xl font-medium border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground transition-colors ${amountError ? 'border-red-500 bg-red-500/5' : ''}`}
                         aria-invalid={Boolean(amountError)}
                         aria-describedby={amountError ? 'amount-error' : undefined}
                         min="1"
                         max="50000"
                         required
                       />
-                      {amountError ? <p id="amount-error" className="text-xs font-semibold text-danger mt-1.5">{amountError}</p> : null}
+                      {amountError && <p id="amount-error" className="text-xs font-bold text-red-500 mt-3">{amountError}</p>}
                     </div>
                   </div>
 
-                  {/* Quick Select Buttons */}
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-3 mb-10">
                     {[100, 200, 500, 1000].map((amt) => (
-                      <Button
+                      <button
                         key={amt}
                         type="button"
-                        variant="outline"
                         onClick={() => handleQuickAmount(amt)}
-                        className="rounded-[16px] h-10 font-bold border-border hover:bg-accent"
+                        className="h-14 border border-border font-bold text-lg hover:bg-foreground hover:text-background transition-colors"
                       >
                         +{amt}
-                      </Button>
+                      </button>
                     ))}
                   </div>
 
-                  {/* Fund Source */}
-                  <div className="space-y-3 pt-2">
-                    <label className="text-xs font-extrabold uppercase tracking-wider text-text-muted pl-1">
-                      Fund Source Gateway
+                  <div className="space-y-4 mb-10">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Funding Source
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                       {(["GCASH", "MAYA", "QRPH"] as const).map((method) => (
-                        <Button
+                        <button
                           key={method}
                           type="button"
-                          variant={paymentMethod === method ? "default" : "outline"}
                           onClick={() => setPaymentMethod(method)}
-                          className={`rounded-[16px] h-12 font-bold transition-all ${
+                          className={`h-16 font-bold uppercase tracking-widest text-sm transition-colors border ${
                             paymentMethod === method
-                              ? "bg-foreground text-background hover:bg-foreground/90"
-                              : "border-border text-text-soft hover:bg-muted shadow-sm"
+                              ? "bg-foreground text-background border-foreground"
+                              : "border-border text-foreground hover:bg-secondary/10"
                           }`}
                         >
                           {method}
-                        </Button>
+                        </button>
                       ))}
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full h-14 rounded-[20px] text-lg font-bold bg-primary hover:bg-primary-dark text-primary-foreground shadow-glow transition-all mt-4"
-                  >
-                    {isSubmitting ? "Initiating Deposit..." : "Proceed to Cash In"}
-                  </Button>
+                  <div className="mt-auto pt-8 border-t border-border">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-20 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {isSubmitting ? "Initiating..." : "Proceed to Payment"}
+                    </button>
+                  </div>
                 </form>
-              </CardContent>
-            </Card>
-          </Reveal>
-        </div>
+              </div>
+            </Reveal>
+          </div>
 
-        {/* Right Side: Transactions */}
-        <div className="md:col-span-5">
-          <Reveal>
-            <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)] h-full overflow-hidden">
-              <CardContent className="p-8">
-                <div className="flex items-center gap-2 mb-6 border-b border-border pb-4">
-                  <History className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">
-                    Activity History
+          {/* Activity Section */}
+          <div className="flex flex-col">
+            <Reveal>
+              <div className="border border-border bg-background flex flex-col h-full min-h-[600px]">
+                <div className="p-8 md:p-12 border-b border-border flex items-center justify-between">
+                  <h3 className="text-3xl font-medium tracking-tighter text-foreground">
+                    Activity
                   </h3>
+                  <History className="h-6 w-6 text-muted-foreground" />
                 </div>
 
-                {transactions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-text-muted gap-4">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                      <AlertCircle className="h-6 w-6 text-text-muted" />
+                <div className="flex-1 overflow-y-auto p-8 md:p-12">
+                  {transactions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-6 py-20">
+                      <AlertCircle className="h-12 w-12 text-border" />
+                      <div>
+                        <p className="text-3xl font-medium tracking-tighter text-foreground mb-2">No history</p>
+                        <p className="text-lg">Your cash-ins and payments will appear here.</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground">No activity yet</p>
-                      <p className="text-xs font-medium mt-1">Funds cashing in and order payments will display here.</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full font-semibold"
-                      onClick={() => {
-                        document.querySelector<HTMLInputElement>('input[type="number"]')?.focus();
-                      }}
-                    >
-                      <Sparkles className="h-4 w-4 mr-1.5" />
-                      Cash in now
-                    </Button>
-                  </div>
-                ) : (
-                  <Stagger className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                    {transactions.map((tx) => {
-                      const isCredit = Number(tx.amount) > 0;
-                      return (
-                        <StaggerItem key={tx.id}>
-                          <div className="flex items-center justify-between p-3.5 rounded-[20px] bg-muted border border-border transition-all hover:bg-accent">
-                            <div className="flex items-center gap-3">
-                              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                                isCredit 
-                                  ? "bg-success-soft text-success" 
-                                  : "bg-primary-soft text-primary"
-                              }`}>
-                                {isCredit ? (
-                                  <ArrowDownLeft className="h-5 w-5" />
-                                ) : (
-                                  <ArrowUpRight className="h-5 w-5" />
-                                )}
+                  ) : (
+                    <Stagger className="space-y-2">
+                      {transactions.map((tx) => {
+                        const isCredit = Number(tx.amount) > 0;
+                        return (
+                          <StaggerItem key={tx.id}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 border border-border bg-background hover:bg-secondary/5 transition-colors gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className={`h-12 w-12 border flex items-center justify-center shrink-0 ${
+                                  isCredit 
+                                    ? "bg-green-500/10 border-green-500/20 text-green-500" 
+                                    : "bg-primary/10 border-primary/20 text-primary"
+                                }`}>
+                                  {isCredit ? (
+                                    <ArrowDownLeft className="h-5 w-5" />
+                                  ) : (
+                                    <ArrowUpRight className="h-5 w-5" />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-xl font-medium tracking-tighter text-foreground capitalize">
+                                    {tx.type === "cash_in" ? "Cash In" : "Order Payment"}
+                                  </p>
+                                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1 block">
+                                    {new Date(tx.createdAt).toLocaleDateString("en-PH", {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "numeric",
+                                      minute: "numeric",
+                                    })}
+                                  </span>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-bold text-foreground capitalize">
-                                  {tx.type === "cash_in" ? "Cash In" : "Order Payment"}
-                                </p>
-                                <span className="text-[10px] font-semibold text-text-muted uppercase">
-                                  {new Date(tx.createdAt).toLocaleDateString("en-PH", {
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit"
-                                  })}
+                              <div className="sm:text-right flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-border pt-4 sm:pt-0">
+                                <span className={`text-2xl font-medium tracking-tighter ${
+                                  isCredit ? "text-green-500" : "text-foreground"
+                                }`}>
+                                  {isCredit ? "+" : ""}{formatCurrency(tx.amount)}
                                 </span>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground sm:mt-1">
+                                  {tx.paymentMethod || "GEOPAY"}
+                                </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className={`text-base font-black ${
-                                isCredit ? "text-success" : "text-foreground"
-                              }`}>
-                                {isCredit ? "+" : ""}{formatCurrency(tx.amount)}
-                              </span>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted mt-0.5">
-                                {tx.paymentMethod || "GEOPAY"}
-                              </p>
-                            </div>
-                          </div>
-                        </StaggerItem>
-                      );
-                    })}
-                  </Stagger>
-                )}
-              </CardContent>
-            </Card>
-          </Reveal>
+                          </StaggerItem>
+                        );
+                      })}
+                    </Stagger>
+                  )}
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </div>
     </div>

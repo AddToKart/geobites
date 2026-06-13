@@ -23,7 +23,18 @@ export class RidersService {
     const type = query.type ?? 'available';
 
     if (type === 'available') {
-      return [];
+      // Global booking pool: orders accepted by seller, not yet claimed by a rider
+      return this.orderRepository.find({
+        where: {
+          status: 'accepted',
+          riderId: IsNull(),
+        },
+        relations: {
+          vendor: true,
+          items: true,
+        },
+        order: { updatedAt: 'DESC' },
+      });
     }
 
     if (type === 'active') {
@@ -37,6 +48,7 @@ export class RidersService {
         ],
         relations: {
           vendor: true,
+          items: true,
         },
         order: { updatedAt: 'DESC' },
       });
@@ -46,14 +58,15 @@ export class RidersService {
   }
 
   async acceptDelivery(orderId: string, riderId: string) {
+    // Atomic claim: only succeeds if the booking hasn't been taken yet
     const result = await this.orderRepository.update(
-      { id: orderId, status: 'ready_for_pickup', riderId: IsNull() },
+      { id: orderId, status: 'accepted', riderId: IsNull() },
       { riderId },
     );
 
     if (result.affected === 0) {
       throw new BadRequestException(
-        'Order is no longer available or already accepted',
+        'This booking is no longer available or has already been claimed',
       );
     }
 
@@ -91,6 +104,8 @@ export class RidersService {
     }
 
     const transitions: Record<string, string[]> = {
+      accepted: ['ready_for_pickup'],
+      preparing: ['ready_for_pickup'],
       ready_for_pickup: ['picked_up'],
       picked_up: ['delivering'],
       delivering: ['delivered'],
@@ -108,19 +123,21 @@ export class RidersService {
   }
 
   private async notifyDeliveryAccepted(order: Order) {
+    // Notify the customer
     await this.notificationsService.create({
       userId: order.customerId,
-      title: 'Rider Assigned',
-      message: 'A rider has accepted your delivery request',
+      title: 'Rider On The Way',
+      message: 'A rider accepted your delivery and is heading to the shop',
       type: 'order_update',
       referenceId: order.id,
     });
 
+    // Notify the seller so they know a rider is coming
     if (order.vendor?.userId) {
       await this.notificationsService.create({
         userId: order.vendor.userId,
-        title: 'Rider Assigned',
-        message: 'A rider is heading to pick up this order',
+        title: 'Rider Accepted',
+        message: `A rider claimed the delivery for order #${order.id.slice(0, 8).toUpperCase()}`,
         type: 'delivery_request',
         referenceId: order.id,
       });
@@ -131,6 +148,17 @@ export class RidersService {
     order: Order,
     status: UpdateDeliveryStatusDto['status'],
   ) {
+    if (status === 'ready_for_pickup') {
+      await this.notificationsService.create({
+        userId: order.customerId,
+        title: 'Rider At The Shop',
+        message: 'Your rider is at the shop waiting for your order',
+        type: 'order_update',
+        referenceId: order.id,
+      });
+      return;
+    }
+
     if (status === 'picked_up') {
       await this.notificationsService.create({
         userId: order.customerId,
@@ -149,7 +177,6 @@ export class RidersService {
           referenceId: order.id,
         });
       }
-
       return;
     }
 
@@ -157,18 +184,18 @@ export class RidersService {
       await this.notificationsService.create({
         userId: order.customerId,
         title: 'Order On The Way',
-        message: 'Your rider is on the way to the delivery pin',
+        message: 'Your rider is on the way to your delivery pin',
         type: 'order_update',
         referenceId: order.id,
       });
-
       return;
     }
 
+    // delivered
     await this.notificationsService.create({
       userId: order.customerId,
       title: 'Order Delivered',
-      message: 'Your rider marked the order as delivered',
+      message: 'Your rider marked the order as delivered. Enjoy!',
       type: 'order_update',
       referenceId: order.id,
     });

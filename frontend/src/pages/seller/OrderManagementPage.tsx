@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle, Bike } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
-import { getOrders, updateOrderStatus, verifyManualPayment, getAvailableRiders, assignRider, type AvailableRider } from '../../services/orderService';
+import { getOrders, updateOrderStatus, verifyManualPayment } from '../../services/orderService';
 import { Order } from '../../types';
 import { ORDER_STATUS_LABELS } from '../../utils/constants';
 import { formatCurrency } from '../../utils/helpers';
@@ -99,9 +99,6 @@ export function OrderManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [availableRiders, setAvailableRiders] = useState<AvailableRider[]>([]);
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [selectedRiderId, setSelectedRiderId] = useState<string>('');
 
   const loadOrders = useCallback(async () => {
     try {
@@ -113,24 +110,11 @@ export function OrderManagementPage() {
     }
   }, []);
 
-  const loadRiders = useCallback(async () => {
-    try {
-      const response = await getAvailableRiders();
-      setAvailableRiders(response);
-    } catch (caughtError) {
-      console.error('Failed to load available riders:', caughtError);
-    }
-  }, []);
-
-  const loadAllData = useCallback(async () => {
-    await Promise.all([loadOrders(), loadRiders()]);
-  }, [loadOrders, loadRiders]);
-
-  useVisiblePolling(loadAllData, 15000);
+  useVisiblePolling(loadOrders, 10000);
 
   useEffect(() => {
-    void loadAllData();
-  }, [loadAllData]);
+    void loadOrders();
+  }, [loadOrders]);
 
   const changeStatus = async (
     order: Order,
@@ -138,7 +122,7 @@ export function OrderManagementPage() {
   ) => {
     try {
       await updateOrderStatus(order.id, status);
-      await loadAllData();
+      await loadOrders();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Failed to update status');
     }
@@ -146,12 +130,8 @@ export function OrderManagementPage() {
 
   const filteredOrders = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-
     return orders.filter((order) => {
-      if (!normalizedSearch) {
-        return true;
-      }
-
+      if (!normalizedSearch) return true;
       return [order.id, order.deliveryAddress, order.vendor?.name]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(normalizedSearch));
@@ -167,7 +147,6 @@ export function OrderManagementPage() {
       setSelectedOrderId(null);
       return;
     }
-
     if (!selectedOrderId || !filteredOrders.some((order) => order.id === selectedOrderId)) {
       setSelectedOrderId(filteredOrders[0].id);
     }
@@ -285,7 +264,6 @@ export function OrderManagementPage() {
             <>
               <LazyOrderRouteMap
                 order={selectedOrder}
-                availableRiders={availableRiders}
                 title={`Focused order #${selectedOrder.id.slice(0, 8)}`}
                 description="Route map and key details for the selected order."
                 compact
@@ -381,7 +359,7 @@ export function OrderManagementPage() {
                           try {
                             await verifyManualPayment(selectedOrder.id);
                             toast.success("Payment verified successfully!");
-                            void loadAllData();
+                            void loadOrders();
                           } catch (err) {
                             toast.error(err instanceof Error ? err.message : "Failed to verify payment");
                           }
@@ -393,104 +371,46 @@ export function OrderManagementPage() {
                     )}
                   </div>
 
-                  {/* Rider Assignment Panel */}
-                  {selectedOrder.status !== 'pending' && selectedOrder.status !== 'rejected' && selectedOrder.status !== 'cancelled' && (
-                    <div className="panel-muted space-y-4 px-4 py-4">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-muted)]">
-                        Rider Assignment
-                      </h4>
-                      {selectedOrder.riderId ? (
-                        <div className="space-y-3">
-                          <div className="flex flex-col gap-1 text-sm text-[color:var(--color-text)]">
-                            <div className="flex justify-between">
-                              <span className="text-[color:var(--color-text-soft)]">Assigned Rider:</span>
-                              <span className="font-semibold text-primary">
-                                {availableRiders.find(r => r.id === selectedOrder.riderId)?.name || 'Assigned'}
+                  {/* Rider Status Panel — shows booking pool status */}
+                  {selectedOrder.status !== 'pending' &&
+                    selectedOrder.status !== 'rejected' &&
+                    selectedOrder.status !== 'cancelled' && (
+                      <div className="panel-muted space-y-3 px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <Bike className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-muted)]">
+                            Rider status
+                          </h4>
+                        </div>
+
+                        {selectedOrder.riderId ? (
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-[color:var(--color-text-soft)]">Rider ID</span>
+                              <span className="font-mono text-xs font-bold text-[color:var(--color-primary)]">
+                                #{selectedOrder.riderId.slice(0, 8).toUpperCase()}
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-[color:var(--color-text-soft)]">Rider ID:</span>
-                              <span className="font-mono text-xs text-text-soft">{selectedOrder.riderId.slice(0, 8)}</span>
-                            </div>
+                            <p className="text-xs text-[color:var(--color-text-muted)] pt-1">
+                              A rider has claimed this delivery from the booking pool.
+                            </p>
                           </div>
-                          
-                          {/* Allow re-assigning */}
-                          <div className="space-y-2 pt-2 border-t border-border/60">
-                            <select
-                              value={selectedRiderId}
-                              onChange={(e) => setSelectedRiderId(e.target.value)}
-                              className="w-full h-10 rounded-[12px] bg-card border border-border text-sm px-3 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                              <option value="">-- Reassign Rider --</option>
-                              {availableRiders.map((rider) => (
-                                <option key={rider.id} value={rider.id}>
-                                  {rider.name} ({rider.status})
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              size="sm"
-                              disabled={!selectedRiderId || isAssigning}
-                              className="w-full font-bold bg-primary hover:bg-primary-dark text-primary-foreground rounded-[12px]"
-                              onClick={async () => {
-                                setIsAssigning(true);
-                                try {
-                                  await assignRider(selectedOrder.id, selectedRiderId);
-                                  toast.success("Rider assigned successfully!");
-                                  setSelectedRiderId('');
-                                  void loadAllData();
-                                } catch (err) {
-                                  toast.error(err instanceof Error ? err.message : "Failed to assign rider");
-                                } finally {
-                                  setIsAssigning(false);
-                                }
-                              }}
-                            >
-                              {isAssigning ? "Assigning..." : "Change Assignment"}
-                            </Button>
+                        ) : selectedOrder.status === 'accepted' ? (
+                          <div className="space-y-1">
+                            <p className="text-sm font-semibold text-[color:var(--color-primary)] animate-pulse">
+                              Waiting for a rider...
+                            </p>
+                            <p className="text-xs text-[color:var(--color-text-muted)]">
+                              This order is in the global booking pool. Any available rider can claim it.
+                            </p>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-xs text-[color:var(--color-text-soft)]">
-                            Assign an available rider to pick up and deliver this order.
+                        ) : (
+                          <p className="text-xs text-[color:var(--color-text-muted)]">
+                            Rider will be assigned once you accept and the order enters the pool.
                           </p>
-                          <select
-                            value={selectedRiderId}
-                            onChange={(e) => setSelectedRiderId(e.target.value)}
-                            className="w-full h-10 rounded-[12px] bg-card border border-border text-sm px-3 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                          >
-                            <option value="">-- Select Available Rider --</option>
-                            {availableRiders.map((rider) => (
-                              <option key={rider.id} value={rider.id}>
-                                {rider.name} ({rider.status})
-                              </option>
-                            ))}
-                          </select>
-                          <Button
-                            size="sm"
-                            disabled={!selectedRiderId || isAssigning}
-                            className="w-full font-bold bg-primary hover:bg-primary-dark text-primary-foreground rounded-[12px]"
-                            onClick={async () => {
-                              setIsAssigning(true);
-                              try {
-                                await assignRider(selectedOrder.id, selectedRiderId);
-                                toast.success("Rider assigned successfully!");
-                                setSelectedRiderId('');
-                                void loadAllData();
-                              } catch (err) {
-                                toast.error(err instanceof Error ? err.message : "Failed to assign rider");
-                              } finally {
-                                setIsAssigning(false);
-                               }
-                            }}
-                          >
-                            {isAssigning ? "Assigning..." : "Assign Rider"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             </>

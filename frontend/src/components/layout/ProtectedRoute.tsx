@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { UserRole } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { AppShell } from './AppShell';
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -33,6 +34,12 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
       return <Navigate to="/rider" replace />;
     }
     return <Navigate to="/browse" replace />;
+  }
+
+  const isFullscreenRoute = location.pathname === '/mock-payment';
+
+  if (isFullscreenRoute) {
+    return <Outlet />;
   }
 
   return (

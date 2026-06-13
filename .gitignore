@@ -1,5 +1,6 @@
 # Antigravity/Gemini specific
 .agent/
+.agents/
 .gemini/
 .opencode/
 GEMINI.md

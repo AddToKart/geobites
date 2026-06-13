@@ -1,8 +1,7 @@
-import { type FormEvent, useState, useEffect } from "react";
+import { type FormEvent, useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
@@ -10,7 +9,10 @@ import { useCart } from "@/hooks/useCart";
 import { formatCurrency } from "@/utils/helpers";
 import { placeOrder, initiatePayment } from "@/services/orderService";
 import { getWallet } from "@/services/walletService";
+import { getVendorById } from "@/services/vendorService";
+import { haversineKm, calculateDeliveryFee } from "@/utils/distance";
 import { toast } from "sonner";
+import type { Vendor } from "@/types";
 
 export function CartPage() {
   const navigate = useNavigate();
@@ -48,6 +50,24 @@ export function CartPage() {
   };
   const [paymentRef, setPaymentRef] = useState("");
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+
+  // Live delivery fee computed from vendor → pin distance
+  const deliveryFee = useMemo(() => {
+    if (!vendor || !deliveryPin) return null;
+    const distanceKm = haversineKm(
+      vendor.latitude,
+      vendor.longitude,
+      deliveryPin.lat,
+      deliveryPin.lng,
+    );
+    return calculateDeliveryFee(distanceKm);
+  }, [vendor, deliveryPin]);
+
+  const orderTotal = useMemo(
+    () => total + (deliveryFee ?? 0),
+    [total, deliveryFee],
+  );
 
   useEffect(() => {
     async function fetchBalance() {
@@ -60,6 +80,11 @@ export function CartPage() {
     }
     fetchBalance();
   }, []);
+
+  useEffect(() => {
+    if (!vendorId) return;
+    getVendorById(vendorId).then(setVendor).catch(console.error);
+  }, [vendorId]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -132,63 +157,39 @@ export function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="page-stack">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-          <div>
-            <p className="eyebrow">Customer</p>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Your cart is empty
-            </h1>
-            <p className="subtle-copy mt-2 max-w-2xl">
-              Start with one restaurant, add a few items, and this page will
-              turn into a straightforward checkout.
-            </p>
-          </div>
-          <Button
-            asChild
-            className="rounded-full font-bold px-6 py-6 h-auto shadow-sm"
-          >
-            <Link to="/browse">Browse restaurants</Link>
-          </Button>
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 bg-background">
+        <div className="flex h-24 w-24 items-center justify-center border border-border bg-secondary/20 text-muted-foreground mb-8">
+          <ShoppingBag className="h-10 w-10" />
         </div>
-
-        <Card className="mx-auto max-w-2xl rounded-[32px] border-none shadow-[var(--shadow-panel)]">
-          <CardContent className="flex flex-col items-center gap-6 p-12 text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-orange-50 text-orange-500">
-              <ShoppingBag className="h-10 w-10" />
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">
-              Nothing to check out
-            </h2>
-            <p className="max-w-xl text-text-muted font-medium text-lg">
-              Once you add menu items, this page will show your subtotal,
-              delivery details, and a cleaner order summary.
-            </p>
-          </CardContent>
-        </Card>
+        <h1 className="text-5xl font-medium tracking-tighter text-foreground mb-4">
+          Your cart is empty.
+        </h1>
+        <p className="text-xl text-muted-foreground mb-12 max-w-lg text-center leading-relaxed">
+          Start with one restaurant, add a few items, and this page will turn into a straightforward checkout.
+        </p>
+        <Link to="/browse" className="bg-foreground text-background px-8 py-4 font-bold uppercase tracking-widest hover:opacity-90 transition-colors">
+          Browse restaurants
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="page-stack">
-      <div className="mb-2">
-        <p className="eyebrow">Checkout</p>
-        <h1 className="text-3xl font-bold tracking-tight">Review order</h1>
-        <p className="subtle-copy mt-2 max-w-2xl">
-          Adjust quantities, confirm where it should go, and place the order.
-        </p>
-      </div>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <div className="border-b-2 border-foreground pb-6 mb-12">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Checkout</p>
+          <h1 className="text-6xl font-medium tracking-tighter">Review order.</h1>
+        </div>
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6">
-          {items.map((item) => (
-            <Card
-              key={item.menuItem.id}
-              className="rounded-[28px] border border-border shadow-[var(--shadow-card)] overflow-hidden"
-            >
-              <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-center">
-                <div className="h-32 w-full rounded-[20px] bg-muted border border-border md:w-32 flex-shrink-0 relative overflow-hidden">
+        <div className="grid gap-16 xl:grid-cols-[minmax(0,1fr)_480px]">
+          <div className="space-y-8">
+            {items.map((item) => (
+              <article
+                key={item.menuItem.id}
+                className="flex flex-col md:flex-row gap-8 pb-8 border-b border-border"
+              >
+                <div className="h-32 w-32 border border-border bg-secondary/10 flex-shrink-0 relative overflow-hidden">
                   {item.menuItem.imageUrl ? (
                     <img
                       src={item.menuItem.imageUrl}
@@ -197,143 +198,138 @@ export function CartPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center p-4 bg-gradient-to-tr from-orange-400 to-orange-300">
-                      <span className="font-bold text-white">Item</span>
+                    <div className="flex h-full items-center justify-center text-4xl">
+                      🍲
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-1 flex-col gap-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-1 flex-col justify-between">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="text-xl font-bold tracking-tight text-foreground">
+                      <h2 className="text-2xl font-medium tracking-tighter">
                         {item.menuItem.name}
                       </h2>
-                      <p className="mt-1 text-sm text-text-muted font-medium">
+                      <p className="mt-2 text-muted-foreground line-clamp-1">
                         {item.menuItem.description || "Prepared fresh."}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold tracking-tight text-foreground">
+                      <p className="text-2xl font-medium tracking-tighter">
                         {formatCurrency(item.menuItem.price * item.quantity)}
                       </p>
-                      <p className="text-xs font-semibold text-text-muted mt-1">
-                        {formatCurrency(item.menuItem.price)} / ea
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                        {formatCurrency(item.menuItem.price)} each
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-surface-2/60 border border-border px-4 py-3">
+                  <div className="flex items-center justify-between mt-6">
                     <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 rounded-full border-border bg-card shadow-sm"
-                        onClick={() =>
-                          updateQuantity(item.menuItem.id, item.quantity - 1)
-                        }
+                      <button
+                        className="h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors"
+                        onClick={() => updateQuantity(item.menuItem.id, item.quantity - 1)}
                       >
                         <Minus className="h-4 w-4" />
-                      </Button>
-                      <span className="w-8 text-center text-sm font-bold text-foreground">
+                      </button>
+                      <span className="w-6 text-center text-lg font-bold">
                         {item.quantity}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 rounded-full border-border bg-card shadow-sm"
-                        onClick={() =>
-                          updateQuantity(item.menuItem.id, item.quantity + 1)
-                        }
+                      <button
+                        className="h-10 w-10 border border-border bg-foreground text-background flex items-center justify-center hover:opacity-90 transition-colors"
+                        onClick={() => updateQuantity(item.menuItem.id, item.quantity + 1)}
                       >
                         <Plus className="h-4 w-4" />
-                      </Button>
+                      </button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger hover:bg-danger-soft hover:text-danger font-bold rounded-full px-4"
+                    <button
+                      className="text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors flex items-center gap-1.5"
                       onClick={() => removeItem(item.menuItem.id)}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <Trash2 className="h-4 w-4" />
                       Remove
-                    </Button>
+                    </button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="xl:sticky xl:top-8 xl:self-start space-y-6"
-        >
-          <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)]">
-            <CardContent className="space-y-6 p-8">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
+          <form
+            onSubmit={onSubmit}
+            className="xl:sticky xl:top-12 xl:self-start space-y-12"
+          >
+            <div className="bg-background border border-border p-8 md:p-10">
+              <div className="mb-12">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
                   Summary
                 </p>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                <h2 className="text-5xl font-medium tracking-tighter">
                   {itemCount} items
                 </h2>
               </div>
 
-              <div className="panel-muted space-y-4">
-                <div className="flex items-center justify-between text-sm font-semibold text-text-muted">
-                  <span>Subtotal</span>
-                  <span className="text-foreground">
-                    {formatCurrency(total)}
-                  </span>
+              <div className="space-y-6 border-b border-border pb-8 mb-8">
+                <div className="flex items-center justify-between text-lg font-medium">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm font-semibold text-text-muted">
-                  <span>Delivery</span>
-                  <span className="text-success">Included</span>
+                <div className="flex items-center justify-between text-lg font-medium">
+                  <span className="text-muted-foreground">Delivery</span>
+                  {deliveryFee !== null ? (
+                    <span className="text-foreground font-bold">
+                      {formatCurrency(deliveryFee)}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Pin to calculate
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center justify-between border-t border-border pt-4 text-sm font-semibold text-text-muted">
+                <div className="flex items-center justify-between border-t-2 border-foreground pt-6 text-2xl font-bold">
                   <span>Total</span>
-                  <span className="text-2xl font-bold text-foreground">
-                    {formatCurrency(total)}
-                  </span>
+                  <span>{formatCurrency(orderTotal)}</span>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-[13px] font-bold uppercase tracking-wider text-foreground pl-1">
-                  Delivery Details (PH)
+              <div className="space-y-6 mb-12">
+                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
+                  Delivery Details
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Input
                     placeholder="Street / Unit Number"
                     value={street}
                     onBlur={() => handleBlur('street')}
                     onChange={(e) => { setStreet(e.target.value); clearError('street'); }}
-                    className={`rounded-[16px] h-14 focus:ring-2 focus:ring-primary/20 shadow-sm ${errors.street ? 'ring-2 ring-danger/40' : ''}`}
+                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.street ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.street)}
                     aria-describedby={errors.street ? 'street-error' : undefined}
                     required
                   />
-                  {errors.street ? <p id="street-error" className="text-xs font-semibold text-danger mt-1.5">{errors.street}</p> : null}
+                  {errors.street && <p id="street-error" className="text-xs font-semibold text-red-500">{errors.street}</p>}
+                  
                   <Input
                     placeholder="Barangay"
                     value={barangay}
                     onBlur={() => handleBlur('barangay')}
                     onChange={(e) => { setBarangay(e.target.value); clearError('barangay'); }}
-                    className={`rounded-[16px] h-14 focus:ring-2 focus:ring-primary/20 shadow-sm ${errors.barangay ? 'ring-2 ring-danger/40' : ''}`}
+                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.barangay ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.barangay)}
                     aria-describedby={errors.barangay ? 'barangay-error' : undefined}
                     required
                   />
-                  {errors.barangay ? <p id="barangay-error" className="text-xs font-semibold text-danger mt-1.5">{errors.barangay}</p> : null}
+                  {errors.barangay && <p id="barangay-error" className="text-xs font-semibold text-red-500">{errors.barangay}</p>}
+                  
                   <Input
                     placeholder="Landmark (Optional)"
                     value={landmark}
                     onChange={(e) => setLandmark(e.target.value)}
-                    className="rounded-[16px] h-14 focus:ring-2 focus:ring-primary/20 shadow-sm"
+                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
                   />
                   <Textarea
-                    className="rounded-[16px] min-h-[100px] resize-none"
+                    className="min-h-[100px] resize-none rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
                     placeholder="Notes for rider (Gate code, instructions...)"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -341,144 +337,122 @@ export function CartPage() {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-[13px] font-bold uppercase tracking-wider text-foreground pl-1">
+              <div className="space-y-6 mb-12">
+                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
                   Payment Method
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {(["COD", "GCASH", "MAYA", "QRPH", "GEOPAY"] as const).map((method) => (
-                    <Button
+                    <button
                       key={method}
                       type="button"
-                      variant={paymentMethod === method ? "default" : "outline"}
                       onClick={() => setPaymentMethod(method)}
-                      className="rounded-[16px] h-12 font-bold transition-all w-full"
+                      className={`h-14 font-bold tracking-widest border transition-colors ${
+                        paymentMethod === method 
+                          ? "bg-foreground text-background border-foreground" 
+                          : "bg-transparent text-foreground border-border hover:bg-secondary/20"
+                      }`}
                     >
                       {method}
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
 
               {["GCASH", "MAYA", "QRPH"].includes(paymentMethod) && (
-                <div className="panel-muted space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-primary">
-                      Payment Instructions
+                <div className="space-y-6 bg-secondary/10 p-6 border border-border mb-12">
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                      Instructions
                     </p>
-                    <p className="text-xs font-semibold text-text-soft leading-relaxed">
+                    <p className="text-sm text-foreground leading-relaxed">
                       {paymentMethod === "GCASH" && (
-                        <>
-                          Send GCash payment to: <strong className="text-text font-bold">0917 123 4567 (Geobites Platform)</strong>
-                        </>
+                        <>Send GCash payment to: <strong>0917 123 4567</strong></>
                       )}
                       {paymentMethod === "MAYA" && (
-                        <>
-                          Send Maya payment to: <strong className="text-text font-bold">0917 123 4567 (Geobites Food)</strong>
-                        </>
+                        <>Send Maya payment to: <strong>0917 123 4567</strong></>
                       )}
                       {paymentMethod === "QRPH" && (
-                        <>
-                          Scan the QR Code below with your GCash, Maya, or bank app, then input the transaction reference number.
-                        </>
+                        <>Scan the QR Code below with your app, then input the reference number.</>
                       )}
                     </p>
                   </div>
 
                   {paymentMethod === "QRPH" && (
-                    <div className="flex justify-center p-3 bg-card rounded-[16px] border border-border">
-                      <div className="h-32 w-32 bg-muted rounded-lg flex flex-col items-center justify-center p-2 relative overflow-hidden">
-                        <div className="grid grid-cols-4 gap-1.5 w-full aspect-square opacity-60">
-                          {Array.from({ length: 16 }).map((_, i) => (
-                            <div 
-                              key={i} 
-                              className={`rounded-sm ${(i * 5 + 7) % 3 === 0 ? "bg-text" : "bg-transparent"}`}
-                            />
-                          ))}
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-primary text-primary-foreground font-extrabold text-[8px] px-2 py-1 rounded-full shadow-md">
-                            QR PH
-                          </div>
-                        </div>
+                    <div className="flex justify-center p-6 border border-border bg-background">
+                      <div className="h-32 w-32 border border-border flex items-center justify-center text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                        [ QR CODE ]
                       </div>
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-text-muted pl-1">
-                      {paymentMethod} Reference Number
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Reference Number
                     </label>
                     <Input
-                      placeholder="Enter Reference Number (e.g. 5013...)"
+                      placeholder="e.g. 5013..."
                       value={paymentRef}
                       onBlur={() => handleBlur('paymentRef')}
                       onChange={(e) => { setPaymentRef(e.target.value.replace(/\D/g, "")); clearError('paymentRef'); }}
-                      className={`rounded-[16px] h-12 focus:ring-2 focus:ring-primary/20 shadow-sm ${errors.paymentRef ? 'ring-2 ring-danger/40' : ''}`}
-                      aria-invalid={Boolean(errors.paymentRef)}
-                      aria-describedby={errors.paymentRef ? 'ref-error' : undefined}
+                      className={`h-14 rounded-none border-border bg-background shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.paymentRef ? 'border-red-500 bg-red-500/5' : ''}`}
                       required
                     />
-                    {errors.paymentRef ? <p id="ref-error" className="text-xs font-semibold text-danger mt-1.5">{errors.paymentRef}</p> : null}
+                    {errors.paymentRef && <p className="text-xs font-semibold text-red-500">{errors.paymentRef}</p>}
                   </div>
                 </div>
               )}
 
               {paymentMethod === "GEOPAY" && (
-                <div className="panel-muted space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-primary">
-                      GeoPay Wallet Payment
-                    </p>
-                    {wallet ? (
-                      <>
-                        <p className="text-sm font-semibold text-text-soft">
-                          Available Balance: <strong className="text-text">{formatCurrency(wallet.balance)}</strong>
+                <div className="space-y-4 bg-secondary/10 p-6 border border-border mb-12">
+                  <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                    GeoPay Wallet
+                  </p>
+                  {wallet ? (
+                    <>
+                      <p className="text-xl font-medium tracking-tighter">
+                        Balance: <strong>{formatCurrency(wallet.balance)}</strong>
+                      </p>
+                      {wallet.balance < total ? (
+                        <p className="text-sm text-red-500 font-medium mt-2">
+                          Insufficient funds. Top up {formatCurrency(total - wallet.balance)} to proceed.
                         </p>
-                        {wallet.balance < total ? (
-                          <p className="text-xs font-semibold text-danger mt-1">
-                            Insufficient balance. You need {formatCurrency(total - wallet.balance)} more to place this order. Please fund your wallet first or choose another method.
-                          </p>
-                        ) : (
-                          <p className="text-xs font-semibold text-success mt-1">
-                            Your wallet has sufficient funds. The amount of {formatCurrency(total)} will be deducted upon placing the order.
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-border border-t-primary" />
-                        <span className="text-xs font-semibold text-text-muted">Checking balance...</span>
-                      </div>
-                    )}
-                  </div>
+                      ) : (
+                        <p className="text-sm text-green-600 font-medium mt-2">
+                          Sufficient funds available.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Checking balance...</p>
+                  )}
                 </div>
               )}
 
-              <div className="rounded-[20px] bg-surface-2 border border-border px-4 py-3.5 text-xs font-semibold text-text-muted text-center">
+              <div className="mb-8 p-4 border border-border bg-secondary/5 text-sm font-bold uppercase tracking-widest text-center text-muted-foreground">
                 {deliveryPin
                   ? `Pin set: ${deliveryPin.lat.toFixed(4)}, ${deliveryPin.lng.toFixed(4)}`
                   : "Place a pin on the map below"}
               </div>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full h-14 rounded-[20px] text-lg font-bold bg-primary text-primary-foreground shadow-glow hover:bg-primary-dark hover:-translate-y-0.5 transition-all"
-                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet !== null && wallet.balance < total)}
+                className="w-full h-16 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet !== null && wallet.balance < orderTotal)}
               >
                 {isSubmitting ? "Processing..." : "Place order"}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </CardContent>
-          </Card>
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
 
-          <div className="rounded-[32px] overflow-hidden border border-border shadow-[var(--shadow-card)]">
-            <LazyDeliveryLocationPicker
-              value={deliveryPin}
-              onChange={setDeliveryPin}
-            />
-          </div>
-        </form>
+            <div className="border border-border h-96 relative">
+              <LazyDeliveryLocationPicker
+                value={deliveryPin}
+                onChange={setDeliveryPin}
+              />
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
