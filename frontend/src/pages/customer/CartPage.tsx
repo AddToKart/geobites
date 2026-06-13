@@ -338,6 +338,11 @@ export function CartPage() {
                     <LazyDeliveryLocationPicker
                       value={deliveryPin}
                       onChange={setDeliveryPin}
+                      vendorCoords={
+                        vendor
+                          ? { lat: Number(vendor.latitude), lng: Number(vendor.longitude) }
+                          : null
+                      }
                     />
                   </div>
                 </div>

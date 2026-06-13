@@ -6,6 +6,7 @@ import {
   Map,
   MapControls,
   MapMarker,
+  MapRoute,
   MarkerContent,
   MarkerPopup,
   useMap,
@@ -25,11 +26,19 @@ const fallbackCenter = santaMariaBulacanCenter;
 
 function DeliveryPickerInteractions({
   center,
+  vendorCoords,
+  draftCoords,
   is3D,
+  hasFitBounds,
+  onFitBounds,
   onPick,
 }: {
   center: { lat: number; lng: number };
+  vendorCoords?: { lat: number; lng: number } | null;
+  draftCoords?: { lat: number; lng: number } | null;
   is3D: boolean;
+  hasFitBounds: boolean;
+  onFitBounds: () => void;
   onPick: (coords: { lat: number; lng: number }) => void;
 }) {
   const { map, isLoaded } = useMap();
@@ -39,11 +48,30 @@ function DeliveryPickerInteractions({
       return;
     }
 
-    map.jumpTo({
-      center: [center.lng, center.lat],
-      zoom: Math.max(map.getZoom(), 15),
-    });
-  }, [center, isLoaded, map]);
+    if (vendorCoords && draftCoords) {
+      if (!hasFitBounds) {
+        const lngs = [vendorCoords.lng, draftCoords.lng];
+        const lats = [vendorCoords.lat, draftCoords.lat];
+        map.fitBounds(
+          [
+            [Math.min(...lngs), Math.min(...lats)],
+            [Math.max(...lngs), Math.max(...lats)],
+          ],
+          {
+            padding: 80,
+            duration: 0,
+            maxZoom: 15.5,
+          }
+        );
+        onFitBounds();
+      }
+    } else {
+      map.jumpTo({
+        center: [center.lng, center.lat],
+        zoom: Math.max(map.getZoom(), 15),
+      });
+    }
+  }, [isLoaded, map, center, vendorCoords, draftCoords, hasFitBounds, onFitBounds]);
 
   useEffect(() => {
     if (!isLoaded || !map) {
@@ -82,6 +110,7 @@ function DeliveryPickerInteractions({
 export function DeliveryLocationPicker({
   value,
   onChange,
+  vendorCoords = null,
   title = 'Delivery pin',
   description = 'Open the map picker to place the exact drop-off point for the rider.',
   actionLabel = 'Use my location',
@@ -96,6 +125,7 @@ export function DeliveryLocationPicker({
 }: {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
+  vendorCoords?: { lat: number; lng: number } | null;
   title?: string;
   description?: string;
   actionLabel?: string;
@@ -112,6 +142,57 @@ export function DeliveryLocationPicker({
   const [draftCoords, setDraftCoords] = useState<{ lat: number; lng: number } | null>(value);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
   const [isLocating, setIsLocating] = useState(false);
+  const [hasFitBounds, setHasFitBounds] = useState(false);
+  const [routeCoords, setRouteCoords] = useState<[number, number][]>([]);
+
+  useEffect(() => {
+    if (open) {
+      setHasFitBounds(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!vendorCoords || !draftCoords) {
+      setRouteCoords([]);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchRoute = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${vendorCoords.lng},${vendorCoords.lat};${draftCoords.lng},${draftCoords.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error('OSRM request failed');
+        const data = await res.json();
+
+        if (data.routes && data.routes[0]) {
+          const coords = data.routes[0].geometry.coordinates as [number, number][];
+          setRouteCoords(coords);
+        } else {
+          setRouteCoords([
+            [vendorCoords.lng, vendorCoords.lat],
+            [draftCoords.lng, draftCoords.lat]
+          ]);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setRouteCoords([
+          [vendorCoords.lng, vendorCoords.lat],
+          [draftCoords.lng, draftCoords.lat]
+        ]);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      void fetchRoute();
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [vendorCoords, draftCoords]);
 
   useEffect(() => {
     if (value) {
@@ -283,7 +364,56 @@ export function DeliveryLocationPicker({
               className="h-[min(70vh,36rem)] w-full"
               styles={selectedStyle}
             >
-              <DeliveryPickerInteractions center={center} is3D={is3D} onPick={applyDraftCoords} />
+              <DeliveryPickerInteractions
+                center={center}
+                vendorCoords={vendorCoords}
+                draftCoords={draftCoords}
+                is3D={is3D}
+                hasFitBounds={hasFitBounds}
+                onFitBounds={() => setHasFitBounds(true)}
+                onPick={applyDraftCoords}
+              />
+
+              {routeCoords.length > 0 ? (
+                <MapRoute
+                  coordinates={routeCoords}
+                  color="var(--color-primary)"
+                  width={5}
+                  opacity={0.88}
+                  interactive={false}
+                />
+              ) : null}
+
+              {vendorCoords ? (
+                <MapMarker
+                  longitude={vendorCoords.lng}
+                  latitude={vendorCoords.lat}
+                  anchor="bottom"
+                  offset={[0, 6]}
+                >
+                  <MarkerContent>
+                    <div className="pointer-events-none flex items-center gap-2">
+                      <span className="inline-flex h-4 w-4 rounded-full border-[3px] border-white bg-foreground shadow-lg" />
+                      <span className="inline-flex rounded-none border border-border bg-background px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-foreground shadow-md backdrop-blur-sm">
+                        Store
+                      </span>
+                    </div>
+                  </MarkerContent>
+                  <MarkerPopup closeButton className="min-w-[220px] rounded-none border border-border p-4 bg-background">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Pickup point
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        Restaurant
+                      </p>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        The vendor where your food will be freshly prepared.
+                      </p>
+                    </div>
+                  </MarkerPopup>
+                </MapMarker>
+              ) : null}
 
               {draftCoords ? (
                 <MapMarker
