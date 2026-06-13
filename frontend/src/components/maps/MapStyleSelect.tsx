@@ -15,7 +15,7 @@ export function MapStyleSelect({
       aria-label="Map style"
     >
       {Object.entries(mapStyleLabels).map(([key, label]) => (
-        <option key={key} value={key}>
+        <option key={key} value={key} className="bg-background text-foreground" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
           {label}
         </option>
       ))}

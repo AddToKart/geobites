@@ -169,11 +169,11 @@ export function SellerPromotions() {
                 <select
                   value={form.type}
                   onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as any }))}
-                  className="h-12 w-full border border-border bg-transparent px-3 text-sm outline-none focus:border-foreground"
+                  className="h-12 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground text-foreground"
                 >
-                  <option value="percentage">Percentage off</option>
-                  <option value="free_delivery">Free delivery</option>
-                  <option value="bogo">Buy one get one</option>
+                  <option value="percentage" className="bg-background text-foreground" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>Percentage off</option>
+                  <option value="free_delivery" className="bg-background text-foreground" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>Free delivery</option>
+                  <option value="bogo" className="bg-background text-foreground" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>Buy one get one</option>
                 </select>
               </div>
               <div className="space-y-2">
