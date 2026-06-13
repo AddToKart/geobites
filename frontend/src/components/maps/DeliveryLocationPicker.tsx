@@ -377,9 +377,9 @@ export function DeliveryLocationPicker({
               {routeCoords.length > 0 ? (
                 <MapRoute
                   coordinates={routeCoords}
-                  color="var(--color-primary)"
-                  width={5}
-                  opacity={0.88}
+                  color="#4285F4"
+                  width={6}
+                  opacity={0.85}
                   interactive={false}
                 />
               ) : null}
