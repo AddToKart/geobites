@@ -115,11 +115,11 @@ export function SellerDashboard() {
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
         {/* Editorial Header */}
-        <div className="border-b-2 border-foreground pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="border-b border-border pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Seller</p>
-            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter leading-[0.9] mb-4">Dashboard.</h1>
-            <p className="text-xl text-muted-foreground mt-4 max-w-xl">
+            <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
+            <p className="text-base text-muted-foreground mt-2 max-w-xl">
               Today's orders, active orders, and delivered revenue — all in one view.
             </p>
           </div>
@@ -129,7 +129,7 @@ export function SellerDashboard() {
         <ParallaxSection offset={8}>
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border border-b border-border py-8 mb-12">
             <div className="px-6 py-4 md:py-0 flex flex-col justify-between first:pl-0 last:pr-0">
-              <span className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground">
+              <span className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
                 {metrics.todaysOrders}
               </span>
               <div>
@@ -140,7 +140,7 @@ export function SellerDashboard() {
               </div>
             </div>
             <div className="px-6 py-4 md:py-0 flex flex-col justify-between">
-              <span className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground">
+              <span className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
                 {metrics.activeOrders}
               </span>
               <div>
@@ -151,7 +151,7 @@ export function SellerDashboard() {
               </div>
             </div>
             <div className="px-6 py-4 md:py-0 flex flex-col justify-between first:pl-0 last:pr-0">
-              <span className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground">
+              <span className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
                 {formatCurrency(metrics.revenue)}
               </span>
               <div>

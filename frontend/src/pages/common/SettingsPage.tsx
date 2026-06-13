@@ -153,11 +153,11 @@ export function SettingsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
-        <div className="border-b-2 border-foreground pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="border-b border-border pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Configure</p>
-            <h1 className="text-6xl font-medium tracking-tighter">Settings.</h1>
-            <p className="text-xl text-muted-foreground mt-4 max-w-xl">
+            <h1 className="text-4xl font-bold tracking-tight mb-2">Settings</h1>
+            <p className="text-base text-muted-foreground mt-2 max-w-xl">
               Configure your profile settings, business details, default delivery addresses, and set system preferences.
             </p>
           </div>
