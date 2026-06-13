@@ -120,7 +120,7 @@ export function BrowseVendorsPagePremium() {
   }, [coords, deferredSearch, liveVendors, sortBy]);
 
   const selectedVendor = useMemo(
-    () => browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? browseVendors[0] ?? null,
+    () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
     [browseVendors, selectedVendorId],
   );
 
@@ -130,8 +130,8 @@ export function BrowseVendorsPagePremium() {
       return;
     }
 
-    if (!selectedVendorId || !browseVendors.some((vendor) => vendor.id === selectedVendorId)) {
-      setSelectedVendorId(browseVendors[0].id);
+    if (selectedVendorId && !browseVendors.some((vendor) => vendor.id === selectedVendorId)) {
+      setSelectedVendorId(browseVendors[0]?.id ?? null);
     }
   }, [browseVendors, selectedVendorId]);
 

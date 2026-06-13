@@ -28,7 +28,7 @@ export function BrowseResultsSection({
   viewMode: BrowseViewMode;
   coords: { lat: number; lng: number };
   selectedVendor: BrowseVendor | null;
-  onSelectVendor: (vendorId: string) => void;
+  onSelectVendor: (vendorId: string | null) => void;
   onLocate: (coords: { lat: number; lng: number }) => void;
 }) {
   if (isLoading) {

@@ -35,12 +35,34 @@ function BrowseMapViewport({
   vendorPoints,
   centerPoint,
   is3D,
+  onDeselect,
 }: {
   vendorPoints: BrowseMapVendor[];
   centerPoint: { lat: number; lng: number };
   is3D: boolean;
+  onDeselect: () => void;
 }) {
   const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!isLoaded || !map) {
+      return;
+    }
+
+    const handleMapClick = (e: any) => {
+      const target = e.originalEvent?.target as HTMLElement | null;
+      if (target && (target.closest('.maplibregl-marker') || target.closest('.maplibregl-ctrl'))) {
+        return;
+      }
+      onDeselect();
+    };
+
+    map.on('click', handleMapClick);
+
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [isLoaded, map, onDeselect]);
 
   useEffect(() => {
     if (!isLoaded || !map) {
@@ -124,7 +146,7 @@ function BrowseVendorSidePanel({
   }, [vendor.id]);
 
   return (
-    <div className="absolute top-4 left-4 bottom-4 z-10 w-[380px] bg-background border border-border flex flex-col text-foreground shadow-2xl animate-in slide-in-from-left duration-300 rounded-none">
+    <div className="absolute bottom-4 left-4 z-10 w-[380px] max-h-[calc(100%-8rem)] md:max-h-[630px] bg-background border border-border flex flex-col text-foreground shadow-2xl animate-in slide-in-from-bottom duration-300 rounded-none">
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-20 h-8 w-8 flex items-center justify-center border border-border bg-background hover:bg-secondary text-foreground transition-colors cursor-pointer"
@@ -133,7 +155,7 @@ function BrowseVendorSidePanel({
         <X className="h-4 w-4" />
       </button>
 
-      <div className="h-40 w-full border-b border-border bg-secondary/10 relative overflow-hidden flex-shrink-0">
+      <div className="h-32 w-full border-b border-border bg-secondary/10 relative overflow-hidden flex-shrink-0">
         {vendor.imageUrl ? (
           <img
             src={vendor.imageUrl}
@@ -152,11 +174,11 @@ function BrowseVendorSidePanel({
         )}
       </div>
 
-      <div className="p-6 border-b border-border flex-shrink-0">
+      <div className="p-5 border-b border-border flex-shrink-0">
         <h2 className="text-2xl font-medium tracking-tighter mb-1 text-foreground pr-8 truncate">
           {vendor.name}
         </h2>
-        
+
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
           <span className="flex items-center gap-1 text-amber-500">
             <Star className="h-3.5 w-3.5 fill-amber-500" />
@@ -185,7 +207,7 @@ function BrowseVendorSidePanel({
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
         {vendor.specialties && vendor.specialties.length > 0 && (
           <div>
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3">
@@ -263,7 +285,7 @@ export function BrowseVendorMapPanel({
   vendors: BrowseMapVendor[];
   selectedVendor: BrowseMapVendor | null;
   centerPoint: { lat: number; lng: number };
-  onSelectVendor: (vendorId: string) => void;
+  onSelectVendor: (vendorId: string | null) => void;
   onLocate: (coords: { lat: number; lng: number }) => void;
 }) {
   const [style] = useState<MapStyleKey>(defaultMapStyle);
@@ -285,7 +307,15 @@ export function BrowseVendorMapPanel({
         className="h-full w-full"
         styles={selectedStyle}
       >
-        <BrowseMapViewport vendorPoints={vendors} centerPoint={centerPoint} is3D={is3D} />
+        <BrowseMapViewport
+          vendorPoints={vendors}
+          centerPoint={centerPoint}
+          is3D={is3D}
+          onDeselect={() => {
+            onSelectVendor(null);
+            setIsPanelOpen(false);
+          }}
+        />
 
         <MapMarker longitude={centerPoint.lng} latitude={centerPoint.lat} anchor="bottom" offset={[0, 6]}>
           <MarkerContent>
@@ -343,7 +373,10 @@ export function BrowseVendorMapPanel({
       {selectedVendor && isPanelOpen && (
         <BrowseVendorSidePanel
           vendor={selectedVendor}
-          onClose={() => setIsPanelOpen(false)}
+          onClose={() => {
+            setIsPanelOpen(false);
+            onSelectVendor(null);
+          }}
         />
       )}
     </div>
