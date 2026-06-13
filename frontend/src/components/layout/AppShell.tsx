@@ -137,21 +137,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background relative font-sans selection:bg-primary selection:text-primary-foreground">
-      {/* Sidebar: fixed element, overflow-hidden clips content as width animates */}
+      {/* Sidebar: fixed element, NO overflow-hidden so toggle button is not clipped */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 hidden md:flex md:flex-col border-r border-border bg-background overflow-hidden",
-          "transition-[width] duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 hidden md:flex md:flex-col border-r border-border bg-background",
+          "transition-[width] duration-200 ease-in-out",
           isCollapsed ? "w-20" : "w-72"
         )}
       >
-        <NavContent
-          items={navItems}
-          onLogout={handleLogout}
-          userName={user.name}
-          userRole={user.role}
-          isCollapsed={isCollapsed}
-        />
+        {/* Inner wrapper with overflow-hidden to clip content during sidebar width transition */}
+        <div className="w-full h-full overflow-hidden flex flex-col">
+          <NavContent
+            items={navItems}
+            onLogout={handleLogout}
+            userName={user.name}
+            userRole={user.role}
+            isCollapsed={isCollapsed}
+          />
+        </div>
         {/* Floating Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
@@ -166,10 +169,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </aside>
 
-      {/* Main content: NO transition — snaps instantly, sidebar is fixed so no reflow */}
+      {/* Main content: transition margin-left and width to slide smoothly */}
       <div className={cn(
-        "flex min-h-screen flex-col relative z-10",
-        isCollapsed ? "md:pl-20" : "md:pl-72"
+        "flex min-h-screen flex-col relative z-10 w-full transition-[margin-left,width] duration-200 ease-in-out",
+        isCollapsed ? "md:ml-20 md:w-[calc(100%-5rem)]" : "md:ml-72 md:w-[calc(100%-18rem)]"
       )}>
         {/* Stark Mobile Header */}
         <header className="fixed top-0 inset-x-0 z-50 flex h-16 items-center justify-between border-b border-border bg-background px-4 md:hidden">
@@ -272,58 +275,45 @@ function NavContent({
   isCollapsed?: boolean;
 }) {
   return (
-    <div className="flex h-full flex-col bg-background w-72">
-      {/* Brand & User — fixed 288px wide, content clips via aside overflow-hidden */}
-      <div className="border-b border-border p-5 flex flex-col gap-4 shrink-0">
-        {/* Brand row */}
+    <div className="flex h-full flex-col bg-background">
+      {/* Brand & User Block */}
+      <div className={cn("border-b border-border flex flex-col gap-6", isCollapsed ? "p-4 items-center" : "p-6")}>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-            <UtensilsCrossed className="w-5 h-5" strokeWidth={2.5} />
+          <div className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground shrink-0">
+            <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
           </div>
-          {/* Fades out as sidebar clips it */}
-          <div
-            className="transition-opacity duration-150 ease-in-out whitespace-nowrap"
-            style={{ opacity: isCollapsed ? 0 : 1 }}
-          >
-            <span className="block text-xl font-medium tracking-tighter text-foreground leading-none">
-              Geobites
-            </span>
-            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
-              Santa Maria
-            </span>
-          </div>
+          {!isCollapsed && (
+            <div>
+              <span className="block text-2xl font-medium tracking-tighter text-foreground leading-none">
+                Geobites
+              </span>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                Santa Maria
+              </span>
+            </div>
+          )}
         </div>
-
-        {/* User card — crossfade between two absolutely-positioned states, no layout change */}
-        <div className="relative h-10">
-          {/* Expanded: full name card */}
-          <div
-            className="absolute inset-0 flex items-center gap-3 bg-secondary/20 border border-border px-3 transition-opacity duration-150 ease-in-out"
-            style={{ opacity: isCollapsed ? 0 : 1, pointerEvents: isCollapsed ? 'none' : 'auto' }}
-          >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">
-              {userName.charAt(0) || "U"}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium tracking-tight text-foreground truncate">{userName}</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-primary">{userRole}</p>
-            </div>
+        {!isCollapsed ? (
+          <div className="bg-secondary/20 p-4 border border-border">
+            <p className="text-sm font-medium tracking-tight text-foreground truncate">
+              {userName}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
+              {userRole} Account
+            </p>
           </div>
-          {/* Collapsed: avatar only */}
-          <div
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-150 ease-in-out"
-            style={{ opacity: isCollapsed ? 1 : 0, pointerEvents: isCollapsed ? 'auto' : 'none' }}
+        ) : (
+          <div 
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/30 border border-border text-sm font-bold uppercase text-primary shrink-0"
             title={`${userName} (${userRole} Account)`}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-border text-primary text-sm font-bold uppercase">
-              {userName.charAt(0) || "U"}
-            </div>
+            {userName.charAt(0) || "U"}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-6">
         <nav className="flex flex-col">
           {items.map((item) => (
             <PrefetchNavLink
@@ -334,7 +324,8 @@ function NavContent({
               title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-4 pl-5 pr-4 py-3.5 border-l-4 text-sm font-bold uppercase tracking-widest whitespace-nowrap",
+                  "flex items-center transition-colors border-l-4",
+                  isCollapsed ? "justify-center py-4 px-0" : "gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest",
                   isActive
                     ? "border-primary bg-secondary/10 text-foreground"
                     : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground hover:border-foreground/30",
@@ -342,62 +333,55 @@ function NavContent({
               }
             >
               <span className="shrink-0">{item.icon}</span>
-              <span
-                className="transition-opacity duration-150 ease-in-out"
-                style={{ opacity: isCollapsed ? 0 : 1 }}
-              >
-                {item.label}
-              </span>
+              {!isCollapsed && <span>{item.label}</span>}
             </PrefetchNavLink>
           ))}
         </nav>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-border p-4 flex flex-col gap-3 shrink-0">
-        {/* Theme row */}
-        <div className="flex items-center gap-3 pl-1">
-          <span
-            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap transition-opacity duration-150 ease-in-out"
-            style={{ opacity: isCollapsed ? 0 : 1 }}
-          >
-            Theme
-          </span>
-          <ThemeToggle compact={isCollapsed} className="h-8 rounded-none border border-border w-20 shrink-0" />
+      {/* Footer Navigation */}
+      <div className={cn("border-t border-border space-y-4", isCollapsed ? "p-4 flex flex-col items-center" : "p-6")}>
+        <div className={cn("flex items-center justify-between w-full", isCollapsed && "justify-center")}>
+          {!isCollapsed && (
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Theme</span>
+          )}
+          <ThemeToggle compact={isCollapsed} className={cn("h-8 rounded-none border border-border", isCollapsed && "w-16")} />
         </div>
-
+        
         <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
           title={isCollapsed ? "Alerts" : undefined}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-4 pl-5 py-2 text-sm font-bold uppercase tracking-widest whitespace-nowrap",
-              isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              "flex items-center transition-colors w-full",
+              isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest",
+              isActive
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )
           }
         >
-          <Bell className="w-5 h-5 shrink-0" />
-          <span
-            className="transition-opacity duration-150 ease-in-out"
-            style={{ opacity: isCollapsed ? 0 : 1 }}
-          >
-            Alerts
-          </span>
+          {isCollapsed ? (
+            <Bell className="w-5 h-5" />
+          ) : (
+            <span className="flex items-center gap-3"><Bell className="w-4 h-4" /> Alerts</span>
+          )}
         </PrefetchNavLink>
-
+        
         <button
           onClick={onLogout}
           title={isCollapsed ? "Sign out" : undefined}
-          className="flex items-center gap-4 pl-5 py-2 text-sm font-bold uppercase tracking-widest text-red-500 hover:text-red-600 whitespace-nowrap w-full"
+          className={cn(
+            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full",
+            isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest"
+          )}
         >
-          <LogOut className="w-5 h-5 shrink-0" />
-          <span
-            className="transition-opacity duration-150 ease-in-out"
-            style={{ opacity: isCollapsed ? 0 : 1 }}
-          >
-            Sign out
-          </span>
+          {isCollapsed ? (
+            <LogOut className="w-5 h-5" />
+          ) : (
+            <span className="flex items-center gap-3"><LogOut className="w-4 h-4" /> Sign out</span>
+          )}
         </button>
       </div>
     </div>

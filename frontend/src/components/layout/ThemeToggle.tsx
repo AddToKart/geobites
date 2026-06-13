@@ -65,7 +65,7 @@ export function ThemeToggle({
             />
             <span
               className={cn(
-                'text-[11px] tracking-tight transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap',
+                'inline-block text-[11px] tracking-tight transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap',
                 compact
                   ? 'max-w-0 opacity-0 pointer-events-none ml-0'
                   : 'max-w-[50px] opacity-100 ml-1.5'
