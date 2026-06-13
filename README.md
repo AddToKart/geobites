@@ -10,7 +10,7 @@ Geobites is a full-stack monorepo application featuring:
 
 ## ⚡ Quick Start (Zero PostgreSQL Setup — 2 Minutes)
 
-If you want to quickly test the application or run it without installing PostgreSQL, follow these simple steps:
+If you want to quickly test the application or run it without installing PostgreSQL, you can run the backend with a local persistent **SQLite** database or an **In-Memory** database:
 
 ### 1. Copy the Environment Templates
 Run these commands in the root directory to create the configuration files:
@@ -25,11 +25,18 @@ Run these commands in the root directory to create the configuration files:
     copy frontend\.env.example frontend\.env
     ```
 
-### 2. Enable In-Memory Mode
-Open the newly created `backend/.env` file and change `USE_MEMORY_DB` to `true`:
-```env
-USE_MEMORY_DB=true
-```
+### 2. Configure Database Option (Choose One)
+Open the newly created `backend/.env` file and set the desired database:
+*   **Option A: Persistent SQLite (Recommended for Zero Setup)**:
+    Set `DB_TYPE` to `sqlite` (saves to a local `geobites.db` file):
+    ```env
+    DB_TYPE=sqlite
+    ```
+*   **Option B: Ephemeral In-Memory**:
+    Set `USE_MEMORY_DB` to `true` (runs purely in-memory, data is lost when server stops):
+    ```env
+    USE_MEMORY_DB=true
+    ```
 
 ### 3. Start Frontend & Backend Concurrently
 From the root directory, run:
@@ -41,7 +48,7 @@ This single command installs all dependencies and starts both the NestJS backend
 *   **Backend Server**: running on `http://localhost:3000`
 *   **Frontend Client**: running on `http://localhost:5173` (or the port Vite outputs)
 
-The database will run entirely in-memory, auto-initialize the Better Auth tables, and automatically seed demo food vendors and menus. No PostgreSQL install required!
+The database will auto-initialize the tables and automatically seed demo food vendors, menus, and promotions. No PostgreSQL install required!
 
 ---
 
@@ -70,19 +77,34 @@ cd geobites
 
 ---
 
-### Step 2: Database Setup (PostgreSQL)
+### Step 2: Database Setup
 
-You have two options for the database:
-1. **Option A (Recommended): Local PostgreSQL.** Install PostgreSQL on Windows. During installation, set a password for the default `postgres` user (e.g., `postgres`, `123`, or custom).
-2. **Option B (Zero Install): In-Memory Database.** Skip this database setup entirely and set `USE_MEMORY_DB=true` in `backend/.env` (see backend configuration below).
+You have three options for the database setup:
 
-To set up Option A (Local PostgreSQL):
-1. Open **pgAdmin 4** (installed with PostgreSQL) or open **SQL Shell (psql)** from the Windows Start menu.
-2. In the PostgreSQL command prompt or query tool, execute the following to create the database:
-   ```sql
-   CREATE DATABASE geobites;
-   ```
-   *(Note: The backend is configured to connect to `geobites` using your PostgreSQL credentials).*
+1. **Option A (Persistent & Production-ready): Local PostgreSQL**
+   * Install PostgreSQL on Windows (v15+ recommended). During installation, set a password for the default `postgres` user.
+   * Open **pgAdmin 4** (installed with PostgreSQL) or open **SQL Shell (psql)** from the Windows Start menu.
+   * Execute the following to create the database:
+     ```sql
+     CREATE DATABASE geobites;
+     ```
+   * Set `DB_TYPE=postgres` (default) and provide your connection credentials (`DB_PASSWORD`) in `backend/.env`.
+
+2. **Option B (Zero Install & Persistent): Local SQLite**
+   * Skip PostgreSQL installation entirely.
+   * Open `backend/.env` and set:
+     ```env
+     DB_TYPE=sqlite
+     ```
+   * The database will save automatically to a local file (`backend/geobites.db`).
+
+3. **Option C (Zero Install & Ephemeral): In-Memory Database**
+   * Runs the database entirely in memory. Useful for quick one-off testing.
+   * Open `backend/.env` and set:
+     ```env
+     USE_MEMORY_DB=true
+     ```
+   * Note that all data is reset/wiped every time the backend server restarts.
 
 ---
 
@@ -101,13 +123,16 @@ To set up Option A (Local PostgreSQL):
      ```cmd
      copy .env.example .env
      ```
-3. Open `backend/.env` and update the database configuration to match your PostgreSQL installation credentials:
-   ```env
-   DB_PASSWORD=your_postgres_password_here
-   
-   # Or enable memory DB if you didn't install PostgreSQL:
-   USE_MEMORY_DB=true
-   ```
+3. Open `backend/.env` and update the database configuration:
+    ```env
+    DB_PASSWORD=your_postgres_password_here
+    
+    # Or use SQLite (persistent, zero-setup):
+    DB_TYPE=sqlite
+    
+    # Or use In-Memory (ephemeral, reset on restart):
+    USE_MEMORY_DB=true
+    ```
 4. Install dependencies and start the backend development server:
    ```powershell
    npm install
