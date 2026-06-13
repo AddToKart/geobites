@@ -55,17 +55,7 @@ export function BrowseOverviewSection({
         )}
       </Reveal>
 
-      {!isMapMode && (
-        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">
-          <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
-            {['Offers', 'Pickup', 'Burgers', 'Asian', 'Healthy', 'Coffee', 'Desserts'].map((category, i) => (
-               <button key={category} className={`shrink-0 border border-border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all ${i === 0 ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent text-foreground hover:bg-secondary'}`}>
-                 {category}
-               </button>
-            ))}
-          </Reveal>
-        </div>
-      )}
+
 
       {activeOrder ? (
         <Reveal delay={0.15} className={`bg-foreground text-background p-6 flex flex-col md:flex-row items-center justify-between border-l-4 border-primary ${isMapMode ? 'mt-0' : 'mt-8'}`}>

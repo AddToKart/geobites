@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverviewSection';
 import { BrowseResultsSection } from '@/features/customer/browse/BrowseResultsSection';
 import type { BrowseSort, BrowseVendor, BrowseViewMode } from '@/features/customer/browse/types';
+import { Reveal } from '@/components/motion/Reveal';
 
 function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): BrowseVendor | null {
   if (
@@ -187,6 +188,17 @@ export function BrowseVendorsPagePremium() {
           browseCount={browseVendors.length}
           activeOrder={activeOrder}
         />
+
+        {/* Sticky Categories Bar */}
+        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">
+          <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
+            {['Offers', 'Pickup', 'Burgers', 'Asian', 'Healthy', 'Coffee', 'Desserts'].map((category, i) => (
+               <button key={category} className={`shrink-0 border border-border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all ${i === 0 ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent text-foreground hover:bg-secondary'}`}>
+                 {category}
+               </button>
+            ))}
+          </Reveal>
+        </div>
         
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-16 mb-4">
           <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 sm:mb-0">
