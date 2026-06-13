@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, UtensilsCrossed, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowRight, UtensilsCrossed, CheckCircle2, ShieldCheck, Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,10 @@ export function RegisterPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Verification State
   const [verifyState, setVerifyState] = useState<'idle' | 'verifying' | 'approved'>('idle');
   const [verifyMessage, setVerifyMessage] = useState('');
@@ -42,7 +45,14 @@ export function RegisterPage() {
     if (field === 'email' && !value.trim()) return 'Email is required';
     if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
     if (field === 'password' && !value) return 'Password is required';
-    if (field === 'password' && value.length < 6) return 'Password must be at least 6 characters';
+    if (field === 'password') {
+      if (value.length < 8) return 'Password must be at least 8 characters';
+      if (!/(?=.*[A-Za-z])(?=.*\d)/.test(value)) return 'Password must contain at least one letter and one number';
+    }
+    if (field === 'confirmPassword') {
+      if (!value) return 'Confirm password is required';
+      if (value !== form.password) return 'Passwords do not match';
+    }
     if (field === 'phone' && value && !/^\+63\d{10}$/.test(value.replace(/\s/g, ''))) return 'Format: +63 900 000 0000';
     
     // Role-specific validation
@@ -58,7 +68,7 @@ export function RegisterPage() {
   };
 
   const handleBlur = (field: string) => {
-    const value = form[field as keyof typeof form] as string;
+    const value = field === 'confirmPassword' ? confirmPassword : form[field as keyof typeof form] as string;
     const error = validateField(field, value);
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
@@ -91,6 +101,7 @@ export function RegisterPage() {
       name: validateField('name', form.name),
       email: validateField('email', form.email),
       password: validateField('password', form.password),
+      confirmPassword: validateField('confirmPassword', confirmPassword),
       phone: form.phone ? validateField('phone', form.phone) : undefined,
       storeName: form.role === 'seller' ? validateField('storeName', form.storeName) : undefined,
       businessPermit: form.role === 'seller' ? validateField('businessPermit', form.businessPermit) : undefined,
@@ -381,23 +392,62 @@ export function RegisterPage() {
               {errors.email && <p id="email-error" className="text-sm font-semibold text-red-500 mt-2">{errors.email}</p>}
             </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="password" className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                Create Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className={`h-14 rounded-2xl border-border bg-secondary/20 px-4 text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:border-primary transition-colors shadow-none ${errors.password ? 'border-red-500 bg-red-500/5' : ''}`}
-                value={form.password}
-                onBlur={() => handleBlur('password')}
-                onChange={(event) => { setForm({ ...form, password: event.target.value }); clearError('password'); }}
-                aria-invalid={Boolean(errors.password)}
-                aria-describedby={errors.password ? 'password-error' : undefined}
-                required
-              />
-              {errors.password && <p id="password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.password}</p>}
+            <div className="grid gap-8 sm:grid-cols-2">
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  Create Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className={`h-14 rounded-2xl border-border bg-secondary/20 pl-4 pr-12 text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:border-primary transition-colors shadow-none ${errors.password ? 'border-red-500 bg-red-500/5' : ''}`}
+                    value={form.password}
+                    onBlur={() => handleBlur('password')}
+                    onChange={(event) => { setForm({ ...form, password: event.target.value }); clearError('password'); }}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.password && <p id="password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.password}</p>}
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="confirmPassword" className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className={`h-14 rounded-2xl border-border bg-secondary/20 pl-4 pr-12 text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:border-primary transition-colors shadow-none ${errors.confirmPassword ? 'border-red-500 bg-red-500/5' : ''}`}
+                    value={confirmPassword}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    onChange={(event) => { setConfirmPassword(event.target.value); clearError('confirmPassword'); }}
+                    aria-invalid={Boolean(errors.confirmPassword)}
+                    aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p id="confirm-password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.confirmPassword}</p>}
+              </div>
             </div>
 
             <Button
