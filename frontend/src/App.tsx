@@ -28,6 +28,7 @@ import {
   loadSellerKDSPage,
   loadSellerPromotionsPage,
   loadSellerRatingsPage,
+  loadSellerWalletPage,
   loadVendorMenuPage,
   loadMockPaymentPage,
   loadWalletPage,
@@ -55,6 +56,7 @@ const SellerPayouts = lazy(loadSellerPayoutsPage);
 const SellerKDS = lazy(loadSellerKDSPage);
 const SellerPromotions = lazy(loadSellerPromotionsPage);
 const SellerRatings = lazy(loadSellerRatingsPage);
+const SellerWallet = lazy(loadSellerWalletPage);
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
@@ -118,6 +120,7 @@ function AppRoutes() {
                 <Route path="/seller/kds" element={<SellerKDS />} />
                 <Route path="/seller/promotions" element={<SellerPromotions />} />
                 <Route path="/seller/ratings" element={<SellerRatings />} />
+                <Route path="/seller/wallet" element={<SellerWallet />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['rider']} />}>

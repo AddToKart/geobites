@@ -48,6 +48,19 @@ export class PaymentsService {
         order.id,
         order.totalAmount,
       );
+
+      const orderWithVendor = await this.orderRepository.findOne({
+        where: { id: orderId },
+        relations: { vendor: true },
+      });
+      if (orderWithVendor?.vendor) {
+        await this.walletService.creditVendorFromGeoPay(
+          orderWithVendor.vendor.id,
+          order.id,
+          Number(order.totalAmount),
+        );
+      }
+
       order.paymentStatus = 'paid';
       await this.orderRepository.save(order);
       return { checkoutUrl: null, status: 'paid' };

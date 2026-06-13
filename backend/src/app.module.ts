@@ -14,6 +14,7 @@ import { Vendor } from './entities/vendor.entity';
 import { RiderLocation } from './entities/rider-location.entity';
 import { Wallet } from './entities/wallet.entity';
 import { WalletTransaction } from './entities/wallet-transaction.entity';
+import { WithdrawalRequest } from './entities/withdrawal-request.entity';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
@@ -46,6 +47,7 @@ import { WalletModule } from './wallet/wallet.module';
       RiderLocation,
       Wallet,
       WalletTransaction,
+      WithdrawalRequest,
     ]),
     VendorsModule,
     MenuModule,

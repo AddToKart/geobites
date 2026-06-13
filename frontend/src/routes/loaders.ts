@@ -138,6 +138,12 @@ export const loadSellerRatingsPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadSellerWalletPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerWalletPage').then((module) => ({
+    default: module.SellerWalletPage,
+  })),
+);
+
 const exactRouteLoaders: Record<string, RouteLoader> = {
   '/': loadLandingPage,
   '/browse': loadBrowsePage,
@@ -157,6 +163,7 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/seller/kds': loadSellerKDSPage,
   '/seller/promotions': loadSellerPromotionsPage,
   '/seller/ratings': loadSellerRatingsPage,
+  '/seller/wallet': loadSellerWalletPage,
   '/mock-payment': loadMockPaymentPage,
   '/wallet': loadWalletPage,
 };
@@ -214,6 +221,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadOrderManagementPage,
         loadSellerAnalyticsPage,
         loadSellerPayoutsPage,
+        loadSellerWalletPage,
         loadSellerKDSPage,
         loadSellerPromotionsPage,
         loadSellerRatingsPage,

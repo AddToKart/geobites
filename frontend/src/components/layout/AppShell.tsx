@@ -71,8 +71,8 @@ const SELLER_NAV: NavItem[] = [
     icon: <TrendingUp className="w-5 h-5" />,
   },
   {
-    label: "Payouts",
-    href: "/seller/payouts",
+    label: "Wallet",
+    href: "/seller/wallet",
     icon: <Wallet className="w-5 h-5" />,
   },
   { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
