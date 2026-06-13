@@ -6,10 +6,7 @@ import { ThemeToggle } from "@/components/layout/ThemeToggle";
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
-      {/* 
-        Header 
-        Re-introducing brand color subtlely via text/icon hover.
-      */}
+      {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-8 lg:px-12">
         <Link to="/" className="flex items-center gap-2 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:scale-110">
@@ -31,10 +28,7 @@ export function LandingPage() {
       </header>
 
       <main>
-        {/* 
-          Hero
-          Massive typography remains, but we add a primary color accent to ground it.
-        */}
+        {/* Hero */}
         <section className="flex min-h-[90vh] flex-col justify-end px-6 pb-24 pt-32 lg:px-12">
           <div className="max-w-[90vw] relative">
             <p className="mb-8 flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
@@ -51,10 +45,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 
-          The Manifesto
-          Accenting the community aspect with the primary color.
-        */}
+        {/* The Manifesto */}
         <section className="border-t border-border px-6 py-24 lg:px-12 lg:py-48 bg-secondary/10">
           <div className="mx-auto max-w-5xl">
             <p className="text-3xl font-medium leading-tight tracking-tight sm:text-5xl md:text-6xl md:leading-[1.1]">
@@ -63,10 +54,29 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 
-          The Roster (Features / Roles)
-          Hover states now pull from the primary color for a vibrant pop.
-        */}
+        {/* The Process (NEW: Added Information) */}
+        <section className="border-t border-border px-6 py-24 lg:px-12 lg:py-40">
+          <div className="mx-auto max-w-[90vw]">
+            <h2 className="mb-16 text-5xl font-medium tracking-tighter sm:text-7xl">
+              How it works.
+            </h2>
+            <div className="grid gap-12 lg:grid-cols-3 lg:gap-16">
+              {[
+                { step: "01", title: "Find your craving.", desc: "Browse menus from Santa Maria's top local spots. Prices are exactly what you'd pay if you walked into their store." },
+                { step: "02", title: "Pay your way.", desc: "Cash on delivery, GCash, Maya, or bank transfer. Flexible, secure, and strictly local." },
+                { step: "03", title: "Track live.", desc: "Watch your neighborhood rider bring your food in real-time. No batching, just your order straight to your door." }
+              ].map((s, i) => (
+                <div key={i} className="flex flex-col border-t border-border pt-8">
+                  <span className="mb-6 text-sm font-bold text-primary">{s.step}</span>
+                  <h3 className="mb-4 text-4xl font-medium tracking-tighter">{s.title}</h3>
+                  <p className="text-lg text-muted-foreground leading-relaxed md:text-xl">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* The Roster */}
         <section className="border-t border-border">
           {[
             {
@@ -94,11 +104,12 @@ export function LandingPage() {
             <Link 
               key={i} 
               to={row.link}
-              className="group block border-b border-border px-6 py-16 transition-all duration-500 hover:bg-primary hover:text-primary-foreground lg:px-12 lg:py-24"
+              className="group relative block border-b border-border px-6 py-16 transition-colors duration-200 hover:bg-primary hover:text-primary-foreground lg:px-12 lg:py-24"
+              style={{ willChange: 'background-color' }}
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="flex-1">
-                  <p className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary-foreground/70 transition-colors">
+                  <p className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/70">
                     {row.label}
                   </p>
                   <h2 className="text-6xl font-medium tracking-tighter sm:text-8xl lg:text-[8rem]">
@@ -106,12 +117,13 @@ export function LandingPage() {
                   </h2>
                 </div>
                 <div className="flex-1 md:max-w-sm">
-                  <p className="mb-8 text-xl text-muted-foreground group-hover:text-primary-foreground/90 md:text-2xl leading-relaxed transition-colors">
+                  <p className="mb-8 text-xl text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/90 md:text-2xl leading-relaxed">
                     {row.desc}
                   </p>
                   <div className="inline-flex items-center gap-2 text-lg font-bold">
                     {row.action}
-                    <ArrowRight className="h-6 w-6 transition-transform duration-300 group-hover:translate-x-4" strokeWidth={2.5} />
+                    {/* transition-transform only — compositor-promoted, zero paint cost */}
+                    <ArrowRight className="h-6 w-6 transition-transform duration-200 group-hover:translate-x-3" strokeWidth={2.5} />
                   </div>
                 </div>
               </div>
@@ -119,11 +131,24 @@ export function LandingPage() {
           ))}
         </section>
 
-        {/* 
-          The Metrics
-          Raw data presentation, numbers highlighted in primary color.
-        */}
-        <section className="px-6 py-24 lg:px-12 lg:py-48 bg-background">
+        {/* Editorial Quote (NEW: Social Proof) */}
+        <section className="bg-foreground text-background px-6 py-24 lg:px-12 lg:py-48">
+          <div className="mx-auto max-w-5xl text-center">
+            <p className="text-3xl font-medium leading-tight tracking-tight sm:text-5xl md:text-6xl md:leading-[1.1]">
+              "Finally, a delivery platform that actually respects Santa Maria. The riders are our neighbors, and the menus aren't inflated."
+            </p>
+            <div className="mt-16 flex items-center justify-center gap-4">
+              <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">M</div>
+              <div className="text-left">
+                <p className="font-bold text-lg">Maria Santos</p>
+                <p className="opacity-70">Poblacion Resident</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* The Metrics */}
+        <section className="px-6 py-24 lg:px-12 lg:py-48 bg-background border-b border-border">
           <div className="grid gap-12 border-l-4 border-primary pl-6 sm:grid-cols-2 md:grid-cols-4 md:pl-12">
             {[
               { val: "0%", label: "Restaurant Commission" },
@@ -139,12 +164,31 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 
-          CTA - Fixed from screenshot.
-          Instead of an empty rounded pill floating in space, 
-          it's now a full-bleed, edge-to-edge typographic block 
-          that commands the bottom of the page seamlessly.
-        */}
+        {/* Stark FAQ (NEW: Addressing user concerns) */}
+        <section className="px-6 py-24 lg:px-12 lg:py-40 bg-secondary/10">
+          <div className="grid gap-16 lg:grid-cols-[1fr_2fr]">
+            <div>
+              <h2 className="text-5xl font-medium tracking-tighter sm:text-7xl sticky top-32">
+                The details.
+              </h2>
+            </div>
+            <div className="flex flex-col">
+              {[
+                { q: "Why are your prices lower than other apps?", a: "We don't charge our partner restaurants the standard 20-30% commission. Because they save money, they don't have to mark up their menus on our platform. You pay the dine-in price." },
+                { q: "Where exactly do you deliver?", a: "We are hyper-local. We currently serve all barangays within Santa Maria, Bulacan. By focusing on one town, we ensure faster delivery times and better support." },
+                { q: "How do riders get paid?", a: "Riders keep 100% of the delivery fee you pay, plus 100% of any tips. We don't take a single cent from their hard work on the road." },
+                { q: "What payment methods do you accept?", a: "We accept Cash on Delivery (COD), GCash, and Maya. We want to make ordering as accessible as possible for everyone in town." }
+              ].map((faq, i) => (
+                <div key={i} className="border-b border-border/50 py-10 first:pt-0">
+                  <h3 className="mb-4 text-3xl font-medium tracking-tighter">{faq.q}</h3>
+                  <p className="text-xl text-muted-foreground max-w-3xl leading-relaxed">{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
         <section className="border-t border-border">
           <div className="flex flex-col lg:flex-row items-stretch min-h-[50vh]">
             <div className="flex-1 bg-primary text-primary-foreground p-12 lg:p-24 flex flex-col justify-center">
@@ -156,24 +200,25 @@ export function LandingPage() {
               </p>
             </div>
             
-            {/* The actual actions take up the other half */}
             <div className="flex-1 flex flex-col border-l-0 lg:border-l border-border bg-background">
               <Link 
                 to="/register" 
-                className="group flex-1 flex flex-col justify-center p-12 lg:p-24 border-b border-border hover:bg-secondary/30 transition-colors"
+                className="group flex-1 flex flex-col justify-center p-12 lg:p-24 border-b border-border transition-colors duration-150 hover:bg-secondary/30"
+                style={{ willChange: 'background-color' }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-3xl sm:text-4xl font-medium tracking-tighter">Create an account</span>
-                  <ArrowRight className="h-8 w-8 text-primary transition-transform group-hover:translate-x-2" />
+                  <ArrowRight className="h-8 w-8 text-primary transition-transform duration-150 group-hover:translate-x-2" />
                 </div>
               </Link>
               <Link 
                 to="/login" 
-                className="group flex-1 flex flex-col justify-center p-12 lg:p-24 hover:bg-secondary/30 transition-colors"
+                className="group flex-1 flex flex-col justify-center p-12 lg:p-24 transition-colors duration-150 hover:bg-secondary/30"
+                style={{ willChange: 'background-color' }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-3xl sm:text-4xl font-medium tracking-tighter text-muted-foreground">Sign in to existing</span>
-                  <ArrowRight className="h-8 w-8 text-muted-foreground transition-transform group-hover:translate-x-2" />
+                  <ArrowRight className="h-8 w-8 text-muted-foreground transition-transform duration-150 group-hover:translate-x-2" />
                 </div>
               </Link>
             </div>
@@ -181,28 +226,42 @@ export function LandingPage() {
         </section>
       </main>
 
-      {/* 
-        Footer
-        Minimalist, but slightly warmer.
-      */}
-      <footer className="border-t border-border bg-secondary/10 px-6 py-12 lg:px-12">
-        <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">
-          <div>
-            <Link to="/" className="mb-6 flex items-center gap-2">
-              <UtensilsCrossed className="h-5 w-5 text-primary" strokeWidth={2.5} />
-              <span className="text-2xl font-bold tracking-tight">Geobites</span>
+      {/* Footer */}
+      <footer className="border-t border-border bg-background px-6 py-16 lg:px-12 lg:py-24">
+        <div className="flex flex-col justify-between gap-12 lg:flex-row lg:items-end">
+          <div className="max-w-md">
+            <Link to="/" className="mb-8 flex items-center gap-2">
+              <UtensilsCrossed className="h-6 w-6 text-primary" strokeWidth={2.5} />
+              <span className="text-3xl font-bold tracking-tight">Geobites</span>
             </Link>
-            <p className="text-sm font-medium text-muted-foreground">
-              A fair food network for Santa Maria, Bulacan.
+            <p className="text-lg font-medium text-muted-foreground leading-relaxed">
+              We are building a fairer, localized food delivery network for the people and businesses of Santa Maria, Bulacan.
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-8 text-sm font-bold text-muted-foreground sm:gap-12">
-            <Link to="/browse" className="hover:text-primary transition-colors">Restaurants</Link>
-            <Link to="/about" className="hover:text-primary transition-colors">Our Mission</Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
-            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+          <div className="grid grid-cols-2 gap-12 sm:grid-cols-3">
+            <div className="flex flex-col gap-4">
+              <p className="font-bold text-foreground mb-2">Platform</p>
+              <Link to="/browse" className="text-muted-foreground hover:text-primary transition-colors font-medium">Restaurants</Link>
+              <Link to="/register" className="text-muted-foreground hover:text-primary transition-colors font-medium">Order Food</Link>
+              <Link to="/seller/register" className="text-muted-foreground hover:text-primary transition-colors font-medium">Partner Sign Up</Link>
+            </div>
+            <div className="flex flex-col gap-4">
+              <p className="font-bold text-foreground mb-2">Company</p>
+              <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors font-medium">Our Mission</Link>
+              <Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors font-medium">Contact Us</Link>
+            </div>
+            <div className="flex flex-col gap-4 col-span-2 sm:col-span-1">
+              <p className="font-bold text-foreground mb-2">Legal</p>
+              <Link to="/terms" className="text-muted-foreground hover:text-primary transition-colors font-medium">Terms of Service</Link>
+              <Link to="/privacy" className="text-muted-foreground hover:text-primary transition-colors font-medium">Privacy Policy</Link>
+            </div>
           </div>
+        </div>
+        
+        <div className="mt-24 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">
+          <p>&copy; {new Date().getFullYear()} Geobites.</p>
+          <p>Made for Santa Maria.</p>
         </div>
       </footer>
     </div>
