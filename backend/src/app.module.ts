@@ -8,6 +8,7 @@ import { MenuItem } from './entities/menu-item.entity';
 import { Notification } from './entities/notification.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
+import { Promotion } from './entities/promotion.entity';
 import { Rating } from './entities/rating.entity';
 import { Vendor } from './entities/vendor.entity';
 import { RiderLocation } from './entities/rider-location.entity';
@@ -16,6 +17,7 @@ import { WalletTransaction } from './entities/wallet-transaction.entity';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
+import { PromotionsModule } from './promotions/promotions.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
@@ -38,6 +40,7 @@ import { WalletModule } from './wallet/wallet.module';
       MenuItem,
       Order,
       OrderItem,
+      Promotion,
       Rating,
       Notification,
       RiderLocation,
@@ -47,6 +50,7 @@ import { WalletModule } from './wallet/wallet.module';
     VendorsModule,
     MenuModule,
     OrdersModule,
+    PromotionsModule,
     RidersModule,
     RatingsModule,
     NotificationsModule,

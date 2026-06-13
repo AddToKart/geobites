@@ -29,6 +29,13 @@ export interface User {
   deliveryLng?: string | number;
 }
 
+export interface OperatingHours {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
+
 export interface Vendor {
   id: string;
   userId: string;
@@ -41,6 +48,12 @@ export interface Vendor {
   totalRatings: number;
   imageUrl?: string;
   isActive: boolean;
+  operatingHours?: OperatingHours[];
+  businessPermit?: string;
+  businessPermitExpiry?: string;
+  foodSafetyCert?: string;
+  foodSafetyCertExpiry?: string;
+  commissionRate: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +67,11 @@ export interface MenuItem {
   category?: string;
   imageUrl?: string;
   isAvailable: boolean;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+  prepTimeMinutes?: number;
+  allergens?: string[];
+  dietaryTags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -80,6 +98,7 @@ export interface Order {
   status: OrderStatus;
   totalAmount: number;
   deliveryFee: number;
+  platformFee: number;
   deliveryAddress: string;
   street?: string;
   barangay?: string;
@@ -96,8 +115,55 @@ export interface Order {
   vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
+  prepStartTime?: string;
+  prepCompleteTime?: string;
+  actualDeliveryTime?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MenuItemAnalytics {
+  menuItemId: string;
+  name: string;
+  category?: string;
+  orderCount: number;
+  totalRevenue: number;
+  avgRating?: number;
+  totalQuantitySold: number;
+}
+
+export interface VendorAnalytics {
+  period: 'day' | 'week' | 'month';
+  totalOrders: number;
+  totalRevenue: number;
+  avgOrderValue: number;
+  completionRate: number;
+  avgPrepTimeMinutes: number;
+  topItems: MenuItemAnalytics[];
+  revenueByCategory: Record<string, number>;
+  ordersByHour: Record<number, number>;
+  ordersByDay: Record<number, number>;
+}
+
+export interface PayoutSummary {
+  period: string;
+  grossRevenue: number;
+  platformFees: number;
+  deliveryFeesCollected: number;
+  netPayout: number;
+  status: 'pending' | 'processing' | 'paid' | 'failed';
+  paidAt?: string;
+  transactions: PayoutTransaction[];
+}
+
+export interface PayoutTransaction {
+  id: string;
+  orderId: string;
+  amount: number;
+  platformFee: number;
+  deliveryFee: number;
+  netAmount: number;
+  createdAt: string;
 }
 
 export interface Rating {
@@ -106,6 +172,26 @@ export interface Rating {
   feedback?: string;
   customerName: string;
   createdAt: string;
+}
+
+export interface Promotion {
+  id: string;
+  vendorId: string;
+  name: string;
+  description?: string;
+  type: 'percentage' | 'free_delivery' | 'bogo';
+  value: number;
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  applicableTo: string;
+  applicableIds?: string[];
+  isActive: boolean;
+  startsAt: string;
+  expiresAt?: string;
+  usageLimit?: number;
+  currentUsage: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Notification {

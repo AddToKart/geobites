@@ -23,6 +23,11 @@ import {
   loadRegisterPage,
   loadRiderDashboardPage,
   loadSellerDashboardPage,
+  loadSellerAnalyticsPage,
+  loadSellerPayoutsPage,
+  loadSellerKDSPage,
+  loadSellerPromotionsPage,
+  loadSellerRatingsPage,
   loadVendorMenuPage,
   loadMockPaymentPage,
   loadWalletPage,
@@ -45,6 +50,11 @@ const RiderDashboard = lazy(loadRiderDashboardPage);
 const MenuManagementPage = lazy(loadMenuManagementPage);
 const OrderManagementPage = lazy(loadOrderManagementPage);
 const SellerDashboard = lazy(loadSellerDashboardPage);
+const SellerAnalytics = lazy(loadSellerAnalyticsPage);
+const SellerPayouts = lazy(loadSellerPayoutsPage);
+const SellerKDS = lazy(loadSellerKDSPage);
+const SellerPromotions = lazy(loadSellerPromotionsPage);
+const SellerRatings = lazy(loadSellerRatingsPage);
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
@@ -103,6 +113,11 @@ function AppRoutes() {
                 <Route path="/seller" element={<SellerDashboard />} />
                 <Route path="/seller/menu" element={<MenuManagementPage />} />
                 <Route path="/seller/orders" element={<OrderManagementPage />} />
+                <Route path="/seller/analytics" element={<SellerAnalytics />} />
+                <Route path="/seller/payouts" element={<SellerPayouts />} />
+                <Route path="/seller/kds" element={<SellerKDS />} />
+                <Route path="/seller/promotions" element={<SellerPromotions />} />
+                <Route path="/seller/ratings" element={<SellerRatings />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={['rider']} />}>

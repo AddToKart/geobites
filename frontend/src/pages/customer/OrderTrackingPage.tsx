@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MapPin, PackageCheck, ShoppingBag } from "lucide-react";
+import { MapPin, PackageCheck, ShoppingBag, Star } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,7 @@ import { updateOrderStatus, getPaymentStatus } from "../../services/orderService
 import { Order } from "../../types";
 import { ORDER_STATUS_LABELS } from "../../utils/constants";
 import { formatCurrency, formatDate } from "../../utils/helpers";
+import { RatingDialog } from "@/components/custom/RatingDialog";
 
 const timeline: string[] = [
   "pending",
@@ -27,6 +28,8 @@ export function OrderTrackingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingDone, setRatingDone] = useState(false);
 
   useEffect(() => {
     const refreshInitialOrder = async () => {
@@ -220,6 +223,40 @@ export function OrderTrackingPage() {
               </p>
             </div>
           </div>
+        )}
+
+        {/* Rating Callout */}
+        {order.status === "delivered" && !ratingDone && (
+          <div className="border border-border bg-secondary/5 p-6 md:p-8 mb-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center bg-yellow-500/10 text-yellow-500 shrink-0">
+                  <Star className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">How was your order?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Rate your experience with {order.vendor?.name || "the shop"} and help others decide.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowRating(true)}
+                className="h-12 px-8 bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs rounded-none shrink-0"
+              >
+                <Star className="h-4 w-4 mr-2" />
+                Rate this order
+              </Button>
+            </div>
+          </div>
+        )}
+        {showRating && (
+          <RatingDialog
+            orderId={order.id}
+            vendorName={order.vendor?.name}
+            onClose={() => setShowRating(false)}
+            onComplete={() => { setShowRating(false); setRatingDone(true); }}
+          />
         )}
 
         <Stagger

@@ -1,5 +1,6 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Clock3, DollarSign, MapPin, PackageCheck, ShoppingBag, Sparkles, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, CheckCircle2, ChefHat, Clock3, DollarSign, MapPin, Megaphone, MessageSquare, PackageCheck, ShoppingBag, Sparkles, Wallet, XCircle } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '@/components/ui/button';
 import { Order, OrderStatus } from '@/types';
@@ -12,6 +13,7 @@ import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders, updateOrderStatus } from '@/services/orderService';
 
 export function SellerDashboard() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -169,6 +171,58 @@ export function SellerDashboard() {
             {error}
           </div>
         ) : null}
+
+        {/* Quick-Action Nav */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-12">
+          <button
+            onClick={() => navigate('/seller/kds')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <ChefHat className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Kitchen Display</p>
+            <p className="text-xs text-muted-foreground mt-1">Live ticket queue</p>
+          </button>
+          <button
+            onClick={() => navigate('/seller/orders')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <ShoppingBag className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Order Lanes</p>
+            <p className="text-xs text-muted-foreground mt-1">Kanban management</p>
+          </button>
+          <button
+            onClick={() => navigate('/seller/promotions')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <Megaphone className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Promotions</p>
+            <p className="text-xs text-muted-foreground mt-1">Discounts & offers</p>
+          </button>
+          <button
+            onClick={() => navigate('/seller/ratings')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <MessageSquare className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Reviews</p>
+            <p className="text-xs text-muted-foreground mt-1">Customer feedback</p>
+          </button>
+          <button
+            onClick={() => navigate('/seller/analytics')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <BarChart3 className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Analytics</p>
+            <p className="text-xs text-muted-foreground mt-1">Performance metrics</p>
+          </button>
+          <button
+            onClick={() => navigate('/seller/payouts')}
+            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
+          >
+            <Wallet className="h-5 w-5 text-primary mb-3" />
+            <p className="text-sm font-bold uppercase tracking-widest">Payouts</p>
+            <p className="text-xs text-muted-foreground mt-1">Revenue & settlements</p>
+          </button>
+        </div>
 
         <div className="grid gap-12 xl:grid-cols-[minmax(0,1.15fr)_380px]">
           <Reveal>

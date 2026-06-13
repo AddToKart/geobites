@@ -5,11 +5,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   Bell,
+  ChefHat,
   History,
   Home,
   LogOut,
+  Megaphone,
   Menu,
+  MessageSquare,
   ShoppingBag,
+  TrendingUp,
   Truck,
   User,
   UtensilsCrossed,
@@ -37,6 +41,11 @@ const CUSTOMER_NAV: NavItem[] = [
 const SELLER_NAV: NavItem[] = [
   { label: "Overview", href: "/seller", icon: <Home className="w-5 h-5" /> },
   {
+    label: "KDS",
+    href: "/seller/kds",
+    icon: <ChefHat className="w-5 h-5" />,
+  },
+  {
     label: "Catalog",
     href: "/seller/menu",
     icon: <UtensilsCrossed className="w-5 h-5" />,
@@ -45,6 +54,26 @@ const SELLER_NAV: NavItem[] = [
     label: "Orders",
     href: "/seller/orders",
     icon: <ShoppingBag className="w-5 h-5" />,
+  },
+  {
+    label: "Promotions",
+    href: "/seller/promotions",
+    icon: <Megaphone className="w-5 h-5" />,
+  },
+  {
+    label: "Reviews",
+    href: "/seller/ratings",
+    icon: <MessageSquare className="w-5 h-5" />,
+  },
+  {
+    label: "Analytics",
+    href: "/seller/analytics",
+    icon: <TrendingUp className="w-5 h-5" />,
+  },
+  {
+    label: "Payouts",
+    href: "/seller/payouts",
+    icon: <Wallet className="w-5 h-5" />,
   },
   { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
@@ -238,6 +267,7 @@ function NavContent({
               key={item.href}
               to={item.href}
               onClick={onItemClick}
+              end={item.href === "/seller" || item.href === "/rider"}
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-l-4",
@@ -295,6 +325,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
           <NavLink
             key={item.href}
             to={item.href}
+            end={item.href === "/seller" || item.href === "/rider"}
             className={({ isActive }) =>
               cn(
                 "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-all",

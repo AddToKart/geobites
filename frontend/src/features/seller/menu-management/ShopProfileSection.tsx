@@ -1,9 +1,10 @@
 import { type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import { CheckCircle2, Save } from 'lucide-react';
+import { CheckCircle2, Save, Clock, ShieldCheck, Percent } from 'lucide-react';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { OperatingHoursEditor } from './OperatingHoursEditor';
 import type { VendorFormState } from './types';
 
 export function ShopProfileSection({
@@ -137,6 +138,28 @@ export function ShopProfileSection({
           />
         </div>
 
+        <div className="space-y-2 md:col-span-2">
+          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <Percent className="h-3.5 w-3.5" />
+            Platform commission rate
+          </label>
+          <Input
+            type="number"
+            min="0"
+            max="1"
+            step="0.01"
+            placeholder="0.25"
+            value={vendorForm.commissionRate}
+            onChange={(event) =>
+              setVendorForm((current) => ({ ...current, commissionRate: event.target.value }))
+            }
+            className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+          />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            Decimal value (e.g. 0.25 = 25%). This affects payout calculations.
+          </p>
+        </div>
+
         <div className="flex flex-wrap gap-4 md:col-span-2 pt-4 border-t border-border">
           <Button
             type="submit"
@@ -162,6 +185,85 @@ export function ShopProfileSection({
           </Button>
         </div>
       </form>
+
+      {/* Operating Hours Schedule */}
+      <OperatingHoursEditor
+        operatingHours={vendorForm.operatingHours}
+        onChange={(hours) =>
+          setVendorForm((current) => ({ ...current, operatingHours: hours }))
+        }
+      />
+
+      {/* Compliance & Certification */}
+      <div className="pt-6 border-t border-border space-y-6">
+        <div className="flex items-center gap-2 pb-2 border-b border-border">
+          <ShieldCheck className="h-4 w-4 text-primary" />
+          <p className="text-sm font-bold uppercase tracking-widest">
+            Compliance & certification
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground -mt-4">
+          Uploaded permits and certificates are displayed on your storefront and required for platform compliance.
+        </p>
+
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Business permit URL
+            </label>
+            <Input
+              placeholder="https://..."
+              value={vendorForm.businessPermit}
+              onChange={(event) =>
+                setVendorForm((current) => ({ ...current, businessPermit: event.target.value }))
+              }
+              className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Business permit expiry
+            </label>
+            <Input
+              type="date"
+              value={vendorForm.businessPermitExpiry}
+              onChange={(event) =>
+                setVendorForm((current) => ({ ...current, businessPermitExpiry: event.target.value }))
+              }
+              className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Food safety certificate URL
+            </label>
+            <Input
+              placeholder="https://..."
+              value={vendorForm.foodSafetyCert}
+              onChange={(event) =>
+                setVendorForm((current) => ({ ...current, foodSafetyCert: event.target.value }))
+              }
+              className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Food safety cert expiry
+            </label>
+            <Input
+              type="date"
+              value={vendorForm.foodSafetyCertExpiry}
+              onChange={(event) =>
+                setVendorForm((current) => ({ ...current, foodSafetyCertExpiry: event.target.value }))
+              }
+              className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="pt-6 border-t border-border">
         <p className="text-sm font-bold uppercase tracking-widest border-b border-border pb-2 mb-6">

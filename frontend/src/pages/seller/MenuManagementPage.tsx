@@ -3,12 +3,22 @@ import { useAuth } from '@/hooks/useAuth';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
 import { createVendor, getVendors, updateVendor } from '@/services/vendorService';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
-import { MenuItem, Vendor } from '@/types';
+import { MenuItem, Vendor, OperatingHours } from '@/types';
 import { toast } from 'sonner';
 import { MenuItemsSection } from '@/features/seller/menu-management/MenuItemsSection';
 import { ShopPreviewCard } from '@/features/seller/menu-management/ShopPreviewCard';
 import { ShopProfileSection } from '@/features/seller/menu-management/ShopProfileSection';
-import type { NewMenuItemFormState, VendorFormState } from '@/features/seller/menu-management/types';
+import type { NewMenuItemFormState, VendorFormState, OperatingHoursFormState } from '@/features/seller/menu-management/types';
+
+const defaultOperatingHours: OperatingHoursFormState[] = [
+  { dayOfWeek: 0, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 1, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 2, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 3, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 4, openTime: '08:00', closeTime: '23:00', isClosed: false },
+  { dayOfWeek: 5, openTime: '08:00', closeTime: '23:00', isClosed: false },
+  { dayOfWeek: 6, openTime: '09:00', closeTime: '22:00', isClosed: false },
+];
 
 const defaultVendorForm: VendorFormState = {
   name: '',
@@ -18,6 +28,12 @@ const defaultVendorForm: VendorFormState = {
   latitude: santaMariaBulacanCenter.lat.toFixed(6),
   longitude: santaMariaBulacanCenter.lng.toFixed(6),
   isActive: true,
+  businessPermit: '',
+  businessPermitExpiry: '',
+  foodSafetyCert: '',
+  foodSafetyCertExpiry: '',
+  commissionRate: '0.25',
+  operatingHours: defaultOperatingHours,
 };
 
 export function MenuManagementPage() {
@@ -29,6 +45,8 @@ export function MenuManagementPage() {
     description: '',
     category: '',
     price: '',
+    prepTimeMinutes: '',
+    stockQuantity: '',
   });
   const [vendorForm, setVendorForm] = useState<VendorFormState>(defaultVendorForm);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +60,13 @@ export function MenuManagementPage() {
       return;
     }
 
+    const operatingHours: OperatingHoursFormState[] = currentVendor.operatingHours?.map((oh) => ({
+      dayOfWeek: oh.dayOfWeek,
+      openTime: oh.openTime,
+      closeTime: oh.closeTime,
+      isClosed: oh.isClosed,
+    })) ?? defaultOperatingHours;
+
     setVendorForm({
       name: currentVendor.name,
       description: currentVendor.description || '',
@@ -50,6 +75,12 @@ export function MenuManagementPage() {
       latitude: Number(currentVendor.latitude).toFixed(6),
       longitude: Number(currentVendor.longitude).toFixed(6),
       isActive: currentVendor.isActive,
+      businessPermit: currentVendor.businessPermit || '',
+      businessPermitExpiry: currentVendor.businessPermitExpiry || '',
+      foodSafetyCert: currentVendor.foodSafetyCert || '',
+      foodSafetyCertExpiry: currentVendor.foodSafetyCertExpiry || '',
+      commissionRate: String(currentVendor.commissionRate ?? 0.25),
+      operatingHours,
     });
   }, []);
 
@@ -105,6 +136,12 @@ export function MenuManagementPage() {
       totalRatings: vendor?.totalRatings ?? 42,
       imageUrl: vendorForm.imageUrl || undefined,
       isActive: vendorForm.isActive,
+      commissionRate: Number(vendorForm.commissionRate) || 0.25,
+      operatingHours: vendorForm.operatingHours,
+      businessPermit: vendorForm.businessPermit || undefined,
+      businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
+      foodSafetyCert: vendorForm.foodSafetyCert || undefined,
+      foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
       createdAt: vendor?.createdAt ?? new Date().toISOString(),
       updatedAt: vendor?.updatedAt ?? new Date().toISOString(),
     }),
@@ -124,6 +161,17 @@ export function MenuManagementPage() {
       latitude: vendorCoordinates.lat,
       longitude: vendorCoordinates.lng,
       isActive: vendorForm.isActive,
+      operatingHours: vendorForm.operatingHours.map((oh) => ({
+        dayOfWeek: oh.dayOfWeek,
+        openTime: oh.openTime,
+        closeTime: oh.closeTime,
+        isClosed: oh.isClosed,
+      })),
+      businessPermit: vendorForm.businessPermit || undefined,
+      businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
+      foodSafetyCert: vendorForm.foodSafetyCert || undefined,
+      foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
+      commissionRate: Number(vendorForm.commissionRate) || 0.25,
     });
 
     setVendor(createdVendor);
@@ -145,6 +193,17 @@ export function MenuManagementPage() {
         latitude: vendorCoordinates.lat,
         longitude: vendorCoordinates.lng,
         isActive: vendorForm.isActive,
+        operatingHours: vendorForm.operatingHours.map((oh) => ({
+          dayOfWeek: oh.dayOfWeek,
+          openTime: oh.openTime,
+          closeTime: oh.closeTime,
+          isClosed: oh.isClosed,
+        })),
+        businessPermit: vendorForm.businessPermit.trim() || undefined,
+        businessPermitExpiry: vendorForm.businessPermitExpiry.trim() || undefined,
+        foodSafetyCert: vendorForm.foodSafetyCert.trim() || undefined,
+        foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry.trim() || undefined,
+        commissionRate: Number(vendorForm.commissionRate) || 0.25,
       };
 
       const savedVendor = vendor
@@ -178,8 +237,10 @@ export function MenuManagementPage() {
         category: newItem.category,
         price: Number(newItem.price),
         isAvailable: true,
+        prepTimeMinutes: newItem.prepTimeMinutes ? Number(newItem.prepTimeMinutes) : undefined,
+        stockQuantity: newItem.stockQuantity ? Number(newItem.stockQuantity) : undefined,
       });
-      setNewItem({ name: '', description: '', category: '', price: '' });
+      setNewItem({ name: '', description: '', category: '', price: '', prepTimeMinutes: '', stockQuantity: '' });
       toast.success('Menu item added');
       await loadData();
     } catch (caughtError) {
@@ -200,6 +261,18 @@ export function MenuManagementPage() {
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : 'Failed to update item';
+      setError(message);
+      toast.error(message);
+    }
+  };
+
+  const updateStock = async (itemId: string, quantity: number) => {
+    try {
+      await updateMenuItem(itemId, { stockQuantity: quantity });
+      await loadData();
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Failed to update stock';
       setError(message);
       toast.error(message);
     }
@@ -285,6 +358,7 @@ export function MenuManagementPage() {
             menuItems={menuItems}
             onToggleAvailability={(item) => void toggleAvailability(item)}
             onRemoveItem={(itemId) => void removeItem(itemId)}
+            onUpdateStock={(itemId, qty) => void updateStock(itemId, qty)}
           />
         )}
       </div>

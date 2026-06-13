@@ -10,6 +10,7 @@ import {
 import { decimalNumberTransformer } from '../database/decimal-number.transformer';
 import { MenuItem } from './menu-item.entity';
 import { Order } from './order.entity';
+import { Promotion } from './promotion.entity';
 import { Rating } from './rating.entity';
 
 @Entity('vendors')
@@ -80,4 +81,7 @@ export class Vendor {
 
   @OneToMany(() => Rating, (rating) => rating.vendor)
   ratings!: Rating[];
+
+  @OneToMany(() => Promotion, (promotion) => promotion.vendor)
+  promotions!: Promotion[];
 }

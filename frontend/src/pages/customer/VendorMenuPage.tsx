@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Star, Gift, Bike, Percent, MessageSquare } from "lucide-react";
 import {
   getDemoVendorById,
   isDemoVendorId,
@@ -15,7 +15,10 @@ import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
 import { getVendorMenu } from "@/services/menuService";
 import { getVendorById } from "@/services/vendorService";
-import { MenuItem, Vendor } from "@/types";
+import { getActivePromotions } from "@/services/promotionService";
+import { getVendorRatings } from "@/services/ratingService";
+import { MenuItem, Vendor, Promotion, Rating } from "@/types";
+import { formatCurrency } from "@/utils/helpers";
 import { toast } from "sonner";
 import { VendorMenuFilters } from "@/features/customer/vendor-menu/VendorMenuFilters";
 import { VendorMenuSections } from "@/features/customer/vendor-menu/VendorMenuSections";
@@ -31,6 +34,10 @@ export function VendorMenuPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalRatingCount, setTotalRatingCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const deferredMenuSearch = useDeferredValue(menuSearch);
@@ -45,12 +52,18 @@ export function VendorMenuPage() {
       setError(null);
 
       try {
-        const [vendorData, menuData] = await Promise.all([
+        const [vendorData, menuData, promoData, ratingData] = await Promise.all([
           getVendorById(id),
           getVendorMenu(id),
+          getActivePromotions(id).catch(() => [] as Promotion[]),
+          getVendorRatings(id).catch(() => ({ averageScore: 0, totalRatings: 0, ratings: [] })),
         ]);
         setVendor(vendorData);
         setMenuItems(menuData);
+        setPromotions(promoData);
+        setRatings(ratingData.ratings);
+        setAvgRating(ratingData.averageScore);
+        setTotalRatingCount(ratingData.totalRatings);
       } catch (caughtError) {
         setError(
           caughtError instanceof Error
@@ -225,12 +238,75 @@ export function VendorMenuPage() {
               />
             </Reveal>
 
+            {/* Active Promotions */}
+            {promotions.length > 0 && (
+              <div className="space-y-3">
+                {promotions.map((promo) => {
+                  const Icon = promo.type === 'percentage' ? Percent : promo.type === 'free_delivery' ? Bike : Gift;
+                  return (
+                    <div key={promo.id} className="border border-primary/20 bg-primary/5 p-4 flex items-center gap-4">
+                      <Icon className="h-5 w-5 text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{promo.name}</p>
+                        {promo.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{promo.description}</p>
+                        )}
+                      </div>
+                      {promo.minOrderAmount && promo.minOrderAmount > 0 && (
+                        <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-muted-foreground shrink-0 border border-border px-2 py-1">
+                          Min. {formatCurrency(promo.minOrderAmount)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <VendorMenuSections
               groupedItems={groupedItems}
               getItemQuantity={getItemQuantity}
               onAddItem={handleAddItem}
               onUpdateQuantity={updateQuantity}
             />
+
+            {/* Customer Reviews */}
+            {ratings.length > 0 && (
+              <div className="border-t border-border pt-12 mt-12">
+                <div className="flex items-end justify-between mb-8">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Reviews</p>
+                    <h2 className="text-3xl font-medium tracking-tighter">What customers say</h2>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold tracking-tight">{avgRating.toFixed(1)}</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`h-3 w-3 ${i < Math.round(avgRating) ? 'text-yellow-400' : 'text-muted-foreground/30'}`} fill={i < Math.round(avgRating) ? 'currentColor' : 'none'} />
+                      ))}
+                      <span className="text-[10px] text-muted-foreground ml-1">({totalRatingCount})</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {ratings.slice(0, 5).map((rating) => (
+                    <div key={rating.id} className="border border-border p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} className={`h-3 w-3 ${i < rating.score ? 'text-yellow-400' : 'text-muted-foreground/30'}`} fill={i < rating.score ? 'currentColor' : 'none'} />
+                        ))}
+                      </div>
+                      {rating.feedback && (
+                        <p className="text-sm text-muted-foreground leading-relaxed">"{rating.feedback}"</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground/60 mt-2 font-bold uppercase tracking-widest">
+                        {rating.customerName}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-border xl:border-none pt-12 xl:pt-0">

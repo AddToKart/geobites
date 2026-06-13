@@ -108,6 +108,36 @@ export const loadSellerDashboardPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadSellerAnalyticsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerAnalytics').then((module) => ({
+    default: module.SellerAnalytics,
+  })),
+);
+
+export const loadSellerPayoutsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerPayouts').then((module) => ({
+    default: module.SellerPayouts,
+  })),
+);
+
+export const loadSellerKDSPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerKDS').then((module) => ({
+    default: module.SellerKDS,
+  })),
+);
+
+export const loadSellerPromotionsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerPromotions').then((module) => ({
+    default: module.SellerPromotions,
+  })),
+);
+
+export const loadSellerRatingsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerRatings').then((module) => ({
+    default: module.SellerRatings,
+  })),
+);
+
 const exactRouteLoaders: Record<string, RouteLoader> = {
   '/': loadLandingPage,
   '/browse': loadBrowsePage,
@@ -122,6 +152,11 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/seller': loadSellerDashboardPage,
   '/seller/menu': loadMenuManagementPage,
   '/seller/orders': loadOrderManagementPage,
+  '/seller/analytics': loadSellerAnalyticsPage,
+  '/seller/payouts': loadSellerPayoutsPage,
+  '/seller/kds': loadSellerKDSPage,
+  '/seller/promotions': loadSellerPromotionsPage,
+  '/seller/ratings': loadSellerRatingsPage,
   '/mock-payment': loadMockPaymentPage,
   '/wallet': loadWalletPage,
 };
@@ -177,6 +212,11 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadSellerDashboardPage,
         loadMenuManagementPage,
         loadOrderManagementPage,
+        loadSellerAnalyticsPage,
+        loadSellerPayoutsPage,
+        loadSellerKDSPage,
+        loadSellerPromotionsPage,
+        loadSellerRatingsPage,
         ...commonLoaders,
       ];
     case 'rider':
