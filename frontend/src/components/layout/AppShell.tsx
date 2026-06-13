@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background relative font-sans selection:bg-primary selection:text-primary-foreground">
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 hidden p-0 md:block border-r border-border bg-background transition-all duration-300 ease-in-out",
+        "fixed inset-y-0 left-0 z-50 hidden p-0 md:block border-r border-border bg-background",
         isCollapsed ? "w-20" : "w-72"
       )}>
         <NavContent
@@ -163,7 +163,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className={cn(
-        "flex min-h-screen flex-col relative z-10 w-full transition-all duration-300 ease-in-out",
+        "flex min-h-screen flex-col relative z-10 w-full",
         isCollapsed ? "md:ml-20 md:w-[calc(100%-5rem)]" : "md:ml-72 md:w-[calc(100%-18rem)]"
       )}>
         {/* Stark Mobile Header */}
