@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MapPin, PackageCheck, ShoppingBag } from "lucide-react";
+import { MapPin, PackageCheck, ShoppingBag, Star } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Reveal, Stagger } from "@/components/motion/Reveal";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
-import { getOrder, updateOrderStatus } from "../../services/orderService";
+import { updateOrderStatus, getPaymentStatus } from "../../services/orderService";
 import { Order } from "../../types";
 import { ORDER_STATUS_LABELS } from "../../utils/constants";
 import { formatCurrency, formatDate } from "../../utils/helpers";
+import { RatingDialog } from "@/components/custom/RatingDialog";
 
 const timeline: string[] = [
   "pending",
@@ -29,6 +28,8 @@ export function OrderTrackingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [ratingDone, setRatingDone] = useState(false);
 
   useEffect(() => {
     const refreshInitialOrder = async () => {
@@ -38,7 +39,7 @@ export function OrderTrackingPage() {
 
       setIsLoading(true);
       try {
-        const response = await getOrder(id);
+        const response = await getPaymentStatus(id);
         setOrder(response);
         setError(null);
       } catch (caughtError) {
@@ -62,7 +63,7 @@ export function OrderTrackingPage() {
       }
 
       try {
-        const response = await getOrder(id);
+        const response = await getPaymentStatus(id);
         setOrder(response);
         setError(null);
       } catch (caughtError) {
@@ -120,133 +121,200 @@ export function OrderTrackingPage() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">Loading order...</CardContent>
-      </Card>
+      <div className="w-full max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <Skeleton className="h-44 rounded-none border-b border-border" />
+        <div className="grid gap-6 md:grid-cols-3 mt-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-none border border-border" />
+          ))}
+        </div>
+        <Skeleton className="h-80 rounded-none border border-border mt-8" />
+        <div className="grid gap-12 xl:grid-cols-[minmax(0,1.15fr)_420px] mt-12">
+          <Skeleton className="h-96 rounded-none border border-border" />
+          <div className="space-y-6">
+            <Skeleton className="h-48 rounded-none border border-border" />
+            <Skeleton className="h-32 rounded-none border border-border" />
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (!order) {
     return (
-      <Card>
-        <CardContent className="p-6 text-sm text-[color:var(--color-danger)]">
-          {error || "Order not found"}
-        </CardContent>
-      </Card>
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center border-b border-border bg-secondary/5">
+        <h1 className="text-4xl font-medium tracking-tighter mb-4 text-red-500">Order not found</h1>
+        <p className="text-lg text-muted-foreground">{error || "Could not retrieve order details."}</p>
+      </div>
     );
   }
 
   const currentStep = displayTimeline.indexOf(order.status);
 
   return (
-    <div className="page-stack">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-        <div>
-          <p className="eyebrow">Tracking</p>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Order #{order.id.slice(0, 8)}
-          </h1>
-          <p className="subtle-copy mt-2 max-w-2xl">
-            Placed {formatDate(order.createdAt)}. Keep this page open for the
-            clearest view of progress and delivery details.
-          </p>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b-2 border-foreground pb-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Tracking</p>
+            <h1 className="text-5xl font-medium tracking-tighter">
+              Order #{order.id.slice(0, 8)}
+            </h1>
+            <p className="text-muted-foreground mt-4 text-lg">
+              Placed {formatDate(order.createdAt)}. Track live status, payment, and delivery progress.
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="border border-border bg-secondary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest">
+              {ORDER_STATUS_LABELS[order.status] ?? order.status}
+            </div>
+            {order.status === "pending" ? (
+              <Button
+                variant="outline"
+                onClick={() => void cancelOrder()}
+                disabled={isCancelling}
+                className="rounded-none border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+              >
+                {isCancelling ? "Cancelling..." : "Cancel order"}
+              </Button>
+            ) : null}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={order.status} />
-          {order.status === "pending" ? (
-            <Button
-              variant="destructive"
-              onClick={() => void cancelOrder()}
-              disabled={isCancelling}
-              className="rounded-[18px]"
-            >
-              {isCancelling ? "Cancelling..." : "Cancel order"}
-            </Button>
-          ) : null}
-        </div>
-      </div>
 
-      {error ? (
-        <Card>
-          <CardContent className="p-5 text-sm text-[color:var(--color-danger)]">
+        {error ? (
+          <div className="border border-red-500 bg-red-500/10 p-6 mb-8 text-sm font-bold text-red-500">
             {error}
-          </CardContent>
-        </Card>
-      ) : null}
+          </div>
+        ) : null}
 
-      <Stagger
-        className="grid gap-6 md:grid-cols-3"
-        delayChildren={0.04}
-        stagger={0.06}
-      >
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
-          <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+        {order.paymentMethod !== "COD" && order.paymentStatus === "pending" && (
+          <div className="border-l-4 border-orange-500 bg-secondary/5 p-6 md:p-8 flex items-start gap-6 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center bg-orange-500/10 text-orange-500 shrink-0">
               <ShoppingBag className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Total
+              <h3 className="text-2xl font-medium tracking-tighter text-orange-500">
+                Payment Pending Verification ({order.paymentMethod})
+              </h3>
+              <p className="text-lg font-medium text-muted-foreground mt-2">
+                Reference Number: <strong className="text-foreground">{order.paymentSessionId || "N/A"}</strong>
               </p>
-              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                {formatCurrency(order.totalAmount)}
+              <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mt-4">
+                The seller is verifying your transfer. Your order will be prepared once confirmed.
               </p>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
-          <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+          </div>
+        )}
+
+        {order.paymentMethod !== "COD" && order.paymentStatus === "paid" && (
+          <div className="border-l-4 border-green-500 bg-secondary/5 p-6 md:p-8 flex items-start gap-6 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center bg-green-500/10 text-green-500 shrink-0">
               <PackageCheck className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Items
+              <h3 className="text-2xl font-medium tracking-tighter text-green-500">
+                Payment Verified ({order.paymentMethod})
+              </h3>
+              <p className="text-lg font-medium text-muted-foreground mt-2">
+                Reference Number: <strong className="text-foreground">{order.paymentSessionId || "N/A"}</strong>
               </p>
-              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                {order.items.length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
-          <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
-              <MapPin className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Address
-              </p>
-              <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
-                {order.street} {order.barangay}
+              <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mt-4">
+                Your payment of {formatCurrency(order.totalAmount)} was successfully verified by the seller.
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </Stagger>
+          </div>
+        )}
 
-      <Reveal delay={0.08}>
-        <LazyOrderRouteMap
-          order={order}
-          title="Live route"
-          description="This map shows the shop, your pinned drop-off point, and rider progress whenever rider coordinates are available."
-        />
-      </Reveal>
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
-        <Reveal>
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
-            <CardContent className="space-y-6 p-6 md:p-8">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  Progress
-                </h2>
-                <p className="text-sm font-medium text-slate-500 mt-2">
-                  Each completed step stays highlighted.
-                </p>
+        {/* Rating Callout */}
+        {order.status === "delivered" && !ratingDone && (
+          <div className="border border-border bg-secondary/5 p-6 md:p-8 mb-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center bg-yellow-500/10 text-yellow-500 shrink-0">
+                  <Star className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">How was your order?</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Rate your experience with {order.vendor?.name || "the shop"} and help others decide.
+                  </p>
+                </div>
               </div>
-              <ol className="space-y-4">
+              <Button
+                onClick={() => setShowRating(true)}
+                className="h-12 px-8 bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs rounded-none shrink-0"
+              >
+                <Star className="h-4 w-4 mr-2" />
+                Rate this order
+              </Button>
+            </div>
+          </div>
+        )}
+        {showRating && (
+          <RatingDialog
+            orderId={order.id}
+            vendorName={order.vendor?.name}
+            onClose={() => setShowRating(false)}
+            onComplete={() => { setShowRating(false); setRatingDone(true); }}
+          />
+        )}
+
+        <Stagger
+          className="grid gap-6 md:grid-cols-3 mb-12"
+          delayChildren={0.04}
+          stagger={0.06}
+        >
+          <StaggerItem>
+            <div className="flex items-center gap-6 p-8 border border-border bg-background">
+              <div className="flex h-12 w-12 items-center justify-center bg-secondary/20 shrink-0 text-muted-foreground">
+                <ShoppingBag className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Total</p>
+                <p className="text-3xl font-medium tracking-tighter mt-1">{formatCurrency(order.totalAmount)}</p>
+              </div>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="flex items-center gap-6 p-8 border border-border bg-background">
+              <div className="flex h-12 w-12 items-center justify-center bg-secondary/20 shrink-0 text-muted-foreground">
+                <PackageCheck className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Items</p>
+                <p className="text-3xl font-medium tracking-tighter mt-1">{order.items?.length || 0}</p>
+              </div>
+            </div>
+          </StaggerItem>
+          <StaggerItem>
+            <div className="flex items-center gap-6 p-8 border border-border bg-background">
+              <div className="flex h-12 w-12 items-center justify-center bg-secondary/20 shrink-0 text-muted-foreground">
+                <MapPin className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Address</p>
+                <p className="text-lg font-medium tracking-tight mt-1 line-clamp-1">{order.street} {order.barangay}</p>
+              </div>
+            </div>
+          </StaggerItem>
+        </Stagger>
+
+        <Reveal delay={0.08} className="mb-16 border border-border bg-background">
+          <LazyOrderRouteMap
+            order={order}
+            title="Live route"
+            description="This map shows the shop, your pinned drop-off point, and rider progress whenever rider coordinates are available."
+          />
+        </Reveal>
+
+        <section className="grid gap-12 xl:grid-cols-[minmax(0,1.15fr)_420px]">
+          <Reveal>
+            <div className="border border-border bg-background p-8 md:p-12">
+              <div className="mb-12 border-b border-border pb-6">
+                <h2 className="text-4xl font-medium tracking-tighter">Progress</h2>
+                <p className="text-muted-foreground mt-4 text-lg">Track your order from placement to delivery.</p>
+              </div>
+              <ol className="space-y-6">
                 {displayTimeline.map((status, index) => {
                   const active = index <= currentStep;
                   const current = status === order.status;
@@ -254,36 +322,22 @@ export function OrderTrackingPage() {
                   return (
                     <li
                       key={status}
-                      className={
+                      className={`p-6 border transition-colors ${
                         active
-                          ? "rounded-[24px] bg-orange-500 text-white px-6 py-5 shadow-[0_8px_16px_rgba(249,115,22,0.2)] transition-all transform hover:-translate-y-1"
-                          : "rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 transition-all opacity-80"
-                      }
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-secondary/5 text-muted-foreground opacity-70"
+                      }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                          <p
-                            className={`text-lg font-bold tracking-tight ${active ? "text-white" : "text-slate-600 dark:text-slate-400"}`}
-                          >
+                          <p className={`text-2xl font-medium tracking-tighter ${active ? "text-background" : ""}`}>
                             {ORDER_STATUS_LABELS[status] ?? status}
                           </p>
-                          <p
-                            className={`mt-1 text-[11px] font-bold uppercase tracking-widest ${active ? "text-white/80" : "text-slate-400"}`}
-                          >
-                            {current
-                              ? "Current step"
-                              : active
-                                ? "Completed"
-                                : "Waiting"}
+                          <p className={`mt-2 text-xs font-bold uppercase tracking-widest ${current ? "text-primary" : active ? "text-background/70" : "text-muted-foreground"}`}>
+                            {current ? "Current step" : active ? "Completed" : "Waiting"}
                           </p>
                         </div>
-                        <span
-                          className={
-                            active
-                              ? "rounded-full bg-white/20 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md"
-                              : "rounded-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 shadow-sm"
-                          }
-                        >
+                        <span className={`text-sm font-bold uppercase tracking-widest ${active ? "text-background/50" : "text-muted-foreground/50"}`}>
                           Step {index + 1}
                         </span>
                       </div>
@@ -291,48 +345,36 @@ export function OrderTrackingPage() {
                   );
                 })}
               </ol>
-            </CardContent>
-          </Card>
-        </Reveal>
+            </div>
+          </Reveal>
 
-        <Reveal className="space-y-6" delay={0.1}>
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
-            <CardContent className="space-y-6 p-6 md:p-8">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Summary
-              </h2>
-              <div className="space-y-3 rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-5">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="text-orange-500">{item.quantity}x</span>{" "}
+          <Reveal className="space-y-12" delay={0.1}>
+            <div className="border border-border bg-background p-8">
+              <h2 className="text-2xl font-medium tracking-tighter mb-8 border-b border-border pb-4">Summary</h2>
+              <div className="space-y-4">
+                {(order.items || []).map((item) => (
+                  <div key={item.id} className="flex items-start justify-between gap-6 border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                    <span className="font-medium text-lg leading-snug">
+                      <span className="text-primary font-bold">{item.quantity}x</span>{" "}
                       {item.name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white tracking-tight">
+                    <span className="font-bold text-lg tracking-tighter shrink-0">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
-            <CardContent className="space-y-4 p-6 md:p-8">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Notes
-              </h2>
-              <p className="text-sm font-medium leading-relaxed text-slate-500">
-                {order.notes ||
-                  "No delivery notes were provided for this order."}
+            <div className="border border-border bg-background p-8">
+              <h2 className="text-2xl font-medium tracking-tighter mb-6 border-b border-border pb-4">Notes</h2>
+              <p className="text-lg leading-relaxed text-muted-foreground">
+                {order.notes || "No delivery notes were provided for this order."}
               </p>
-            </CardContent>
-          </Card>
-        </Reveal>
-      </section>
+            </div>
+          </Reveal>
+        </section>
+      </div>
     </div>
   );
 }

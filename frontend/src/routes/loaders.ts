@@ -28,8 +28,8 @@ export const loadNotificationsPage = memoizeRouteLoader(() =>
   })),
 );
 
-export const loadProfilePage = memoizeRouteLoader(() =>
-  import('@/pages/common/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+export const loadSettingsPage = memoizeRouteLoader(() =>
+  import('@/pages/common/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 );
 
 export const loadBrowsePage = memoizeRouteLoader(() =>
@@ -57,6 +57,24 @@ export const loadOrderTrackingPage = memoizeRouteLoader(() =>
 export const loadVendorMenuPage = memoizeRouteLoader(() =>
   import('@/pages/customer/VendorMenuPage').then((module) => ({
     default: module.VendorMenuPage,
+  })),
+);
+
+export const loadMockPaymentPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/MockPaymentPage').then((module) => ({
+    default: module.MockPaymentPage,
+  })),
+);
+
+export const loadLandingPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/LandingPage').then((module) => ({
+    default: module.LandingPage,
+  })),
+);
+
+export const loadWalletPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/WalletPage').then((module) => ({
+    default: module.WalletPage,
   })),
 );
 
@@ -90,19 +108,64 @@ export const loadSellerDashboardPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadSellerAnalyticsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerAnalytics').then((module) => ({
+    default: module.SellerAnalytics,
+  })),
+);
+
+export const loadSellerPayoutsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerPayouts').then((module) => ({
+    default: module.SellerPayouts,
+  })),
+);
+
+export const loadSellerKDSPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerKDS').then((module) => ({
+    default: module.SellerKDS,
+  })),
+);
+
+export const loadSellerPromotionsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerPromotions').then((module) => ({
+    default: module.SellerPromotions,
+  })),
+);
+
+export const loadSellerRatingsPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerRatings').then((module) => ({
+    default: module.SellerRatings,
+  })),
+);
+
+export const loadSellerWalletPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerWalletPage').then((module) => ({
+    default: module.SellerWalletPage,
+  })),
+);
+
 const exactRouteLoaders: Record<string, RouteLoader> = {
+  '/': loadLandingPage,
   '/browse': loadBrowsePage,
   '/cart': loadCartPage,
   '/login': loadLoginPage,
   '/notifications': loadNotificationsPage,
   '/orders': loadOrderHistoryPage,
-  '/profile': loadProfilePage,
+  '/settings': loadSettingsPage,
   '/register': loadRegisterPage,
   '/rider': loadRiderDashboardPage,
   '/rider/deliveries': loadRiderDashboardPage,
   '/seller': loadSellerDashboardPage,
   '/seller/menu': loadMenuManagementPage,
   '/seller/orders': loadOrderManagementPage,
+  '/seller/analytics': loadSellerAnalyticsPage,
+  '/seller/payouts': loadSellerPayoutsPage,
+  '/seller/kds': loadSellerKDSPage,
+  '/seller/promotions': loadSellerPromotionsPage,
+  '/seller/ratings': loadSellerRatingsPage,
+  '/seller/wallet': loadSellerWalletPage,
+  '/mock-payment': loadMockPaymentPage,
+  '/wallet': loadWalletPage,
 };
 
 const dynamicRouteLoaders: Array<{
@@ -144,10 +207,10 @@ export function preloadRoute(pathname: string) {
 }
 
 export function getWarmupLoadersForRole(role: UserRole | null) {
-  const commonLoaders = [loadNotificationsPage, loadProfilePage];
+  const commonLoaders = [loadNotificationsPage, loadSettingsPage];
 
   if (!role) {
-    return [loadLoginPage, loadRegisterPage];
+    return [loadLandingPage, loadLoginPage, loadRegisterPage];
   }
 
   switch (role) {
@@ -156,6 +219,12 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadSellerDashboardPage,
         loadMenuManagementPage,
         loadOrderManagementPage,
+        loadSellerAnalyticsPage,
+        loadSellerPayoutsPage,
+        loadSellerWalletPage,
+        loadSellerKDSPage,
+        loadSellerPromotionsPage,
+        loadSellerRatingsPage,
         ...commonLoaders,
       ];
     case 'rider':
@@ -167,6 +236,8 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadCartPage,
         loadOrderHistoryPage,
         loadOrderTrackingPage,
+        loadWalletPage,
+        loadMockPaymentPage,
         ...commonLoaders,
       ];
   }

@@ -1,3 +1,10 @@
+export type OperatingHoursFormState = {
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+};
+
 export type VendorFormState = {
   name: string;
   description: string;
@@ -6,6 +13,12 @@ export type VendorFormState = {
   latitude: string;
   longitude: string;
   isActive: boolean;
+  businessPermit: string;
+  businessPermitExpiry: string;
+  foodSafetyCert: string;
+  foodSafetyCertExpiry: string;
+  commissionRate: string;
+  operatingHours: OperatingHoursFormState[];
 };
 
 export type NewMenuItemFormState = {
@@ -13,4 +26,6 @@ export type NewMenuItemFormState = {
   description: string;
   category: string;
   price: string;
+  prepTimeMinutes: string;
+  stockQuantity: string;
 };

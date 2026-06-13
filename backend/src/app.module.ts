@@ -8,17 +8,23 @@ import { MenuItem } from './entities/menu-item.entity';
 import { Notification } from './entities/notification.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
+import { Promotion } from './entities/promotion.entity';
 import { Rating } from './entities/rating.entity';
 import { Vendor } from './entities/vendor.entity';
 import { RiderLocation } from './entities/rider-location.entity';
+import { Wallet } from './entities/wallet.entity';
+import { WalletTransaction } from './entities/wallet-transaction.entity';
+import { WithdrawalRequest } from './entities/withdrawal-request.entity';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
+import { PromotionsModule } from './promotions/promotions.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -35,18 +41,24 @@ import { PaymentsModule } from './payments/payments.module';
       MenuItem,
       Order,
       OrderItem,
+      Promotion,
       Rating,
       Notification,
       RiderLocation,
+      Wallet,
+      WalletTransaction,
+      WithdrawalRequest,
     ]),
     VendorsModule,
     MenuModule,
     OrdersModule,
+    PromotionsModule,
     RidersModule,
     RatingsModule,
     NotificationsModule,
     TrackingModule,
     PaymentsModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],

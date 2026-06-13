@@ -1,15 +1,24 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
 import { createVendor, getVendors, updateVendor } from '@/services/vendorService';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
-import { MenuItem, Vendor } from '@/types';
+import { MenuItem, Vendor, OperatingHours } from '@/types';
 import { toast } from 'sonner';
 import { MenuItemsSection } from '@/features/seller/menu-management/MenuItemsSection';
 import { ShopPreviewCard } from '@/features/seller/menu-management/ShopPreviewCard';
 import { ShopProfileSection } from '@/features/seller/menu-management/ShopProfileSection';
-import type { NewMenuItemFormState, VendorFormState } from '@/features/seller/menu-management/types';
+import type { NewMenuItemFormState, VendorFormState, OperatingHoursFormState } from '@/features/seller/menu-management/types';
+
+const defaultOperatingHours: OperatingHoursFormState[] = [
+  { dayOfWeek: 0, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 1, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 2, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 3, openTime: '08:00', closeTime: '22:00', isClosed: false },
+  { dayOfWeek: 4, openTime: '08:00', closeTime: '23:00', isClosed: false },
+  { dayOfWeek: 5, openTime: '08:00', closeTime: '23:00', isClosed: false },
+  { dayOfWeek: 6, openTime: '09:00', closeTime: '22:00', isClosed: false },
+];
 
 const defaultVendorForm: VendorFormState = {
   name: '',
@@ -19,6 +28,12 @@ const defaultVendorForm: VendorFormState = {
   latitude: santaMariaBulacanCenter.lat.toFixed(6),
   longitude: santaMariaBulacanCenter.lng.toFixed(6),
   isActive: true,
+  businessPermit: '',
+  businessPermitExpiry: '',
+  foodSafetyCert: '',
+  foodSafetyCertExpiry: '',
+  commissionRate: '0.25',
+  operatingHours: defaultOperatingHours,
 };
 
 export function MenuManagementPage() {
@@ -30,17 +45,27 @@ export function MenuManagementPage() {
     description: '',
     category: '',
     price: '',
+    prepTimeMinutes: '',
+    stockQuantity: '',
   });
   const [vendorForm, setVendorForm] = useState<VendorFormState>(defaultVendorForm);
   const [error, setError] = useState<string | null>(null);
   const [isSavingVendor, setIsSavingVendor] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'profile' | 'menu'>('profile');
 
-  const syncVendorForm = (currentVendor: Vendor | null) => {
+  const syncVendorForm = useCallback((currentVendor: Vendor | null) => {
     if (!currentVendor) {
       setVendorForm(defaultVendorForm);
       return;
     }
+
+    const operatingHours: OperatingHoursFormState[] = currentVendor.operatingHours?.map((oh) => ({
+      dayOfWeek: oh.dayOfWeek,
+      openTime: oh.openTime,
+      closeTime: oh.closeTime,
+      isClosed: oh.isClosed,
+    })) ?? defaultOperatingHours;
 
     setVendorForm({
       name: currentVendor.name,
@@ -50,10 +75,16 @@ export function MenuManagementPage() {
       latitude: Number(currentVendor.latitude).toFixed(6),
       longitude: Number(currentVendor.longitude).toFixed(6),
       isActive: currentVendor.isActive,
+      businessPermit: currentVendor.businessPermit || '',
+      businessPermitExpiry: currentVendor.businessPermitExpiry || '',
+      foodSafetyCert: currentVendor.foodSafetyCert || '',
+      foodSafetyCertExpiry: currentVendor.foodSafetyCertExpiry || '',
+      commissionRate: String(currentVendor.commissionRate ?? 0.25),
+      operatingHours,
     });
-  };
+  }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) {
       return;
     }
@@ -76,11 +107,11 @@ export function MenuManagementPage() {
       setError(message);
       toast.error(message);
     }
-  };
+  }, [user, syncVendorForm]);
 
   useEffect(() => {
     void loadData();
-  }, [user]);
+  }, [loadData]);
 
   const vendorCoordinates = useMemo(
     () => ({
@@ -105,6 +136,12 @@ export function MenuManagementPage() {
       totalRatings: vendor?.totalRatings ?? 42,
       imageUrl: vendorForm.imageUrl || undefined,
       isActive: vendorForm.isActive,
+      commissionRate: Number(vendorForm.commissionRate) || 0.25,
+      operatingHours: vendorForm.operatingHours,
+      businessPermit: vendorForm.businessPermit || undefined,
+      businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
+      foodSafetyCert: vendorForm.foodSafetyCert || undefined,
+      foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
       createdAt: vendor?.createdAt ?? new Date().toISOString(),
       updatedAt: vendor?.updatedAt ?? new Date().toISOString(),
     }),
@@ -124,6 +161,17 @@ export function MenuManagementPage() {
       latitude: vendorCoordinates.lat,
       longitude: vendorCoordinates.lng,
       isActive: vendorForm.isActive,
+      operatingHours: vendorForm.operatingHours.map((oh) => ({
+        dayOfWeek: oh.dayOfWeek,
+        openTime: oh.openTime,
+        closeTime: oh.closeTime,
+        isClosed: oh.isClosed,
+      })),
+      businessPermit: vendorForm.businessPermit || undefined,
+      businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
+      foodSafetyCert: vendorForm.foodSafetyCert || undefined,
+      foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
+      commissionRate: Number(vendorForm.commissionRate) || 0.25,
     });
 
     setVendor(createdVendor);
@@ -145,6 +193,17 @@ export function MenuManagementPage() {
         latitude: vendorCoordinates.lat,
         longitude: vendorCoordinates.lng,
         isActive: vendorForm.isActive,
+        operatingHours: vendorForm.operatingHours.map((oh) => ({
+          dayOfWeek: oh.dayOfWeek,
+          openTime: oh.openTime,
+          closeTime: oh.closeTime,
+          isClosed: oh.isClosed,
+        })),
+        businessPermit: vendorForm.businessPermit.trim() || undefined,
+        businessPermitExpiry: vendorForm.businessPermitExpiry.trim() || undefined,
+        foodSafetyCert: vendorForm.foodSafetyCert.trim() || undefined,
+        foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry.trim() || undefined,
+        commissionRate: Number(vendorForm.commissionRate) || 0.25,
       };
 
       const savedVendor = vendor
@@ -178,8 +237,10 @@ export function MenuManagementPage() {
         category: newItem.category,
         price: Number(newItem.price),
         isAvailable: true,
+        prepTimeMinutes: newItem.prepTimeMinutes ? Number(newItem.prepTimeMinutes) : undefined,
+        stockQuantity: newItem.stockQuantity ? Number(newItem.stockQuantity) : undefined,
       });
-      setNewItem({ name: '', description: '', category: '', price: '' });
+      setNewItem({ name: '', description: '', category: '', price: '', prepTimeMinutes: '', stockQuantity: '' });
       toast.success('Menu item added');
       await loadData();
     } catch (caughtError) {
@@ -205,6 +266,18 @@ export function MenuManagementPage() {
     }
   };
 
+  const updateStock = async (itemId: string, quantity: number) => {
+    try {
+      await updateMenuItem(itemId, { stockQuantity: quantity });
+      await loadData();
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Failed to update stock';
+      setError(message);
+      toast.error(message);
+    }
+  };
+
   const removeItem = async (itemId: string) => {
     try {
       await deleteMenuItem(itemId);
@@ -219,41 +292,76 @@ export function MenuManagementPage() {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Seller"
-        title="Shop customization"
-        description="Edit the storefront customers actually browse: shop name, live status, address, hero image, and the exact Santa Maria pin."
-      />
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_380px]">
-        <div className="space-y-6">
-          <ShopProfileSection
-            vendorForm={vendorForm}
-            setVendorForm={setVendorForm}
-            onSubmit={saveVendorProfile}
-            isSavingVendor={isSavingVendor}
-            vendorCoordinates={vendorCoordinates}
-          />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        {/* Editorial Header */}
+        <div className="border-b border-border pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Seller</p>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">Shop customization</h1>
+            <p className="text-base text-muted-foreground mt-2 max-w-xl">
+              Edit the storefront customers actually browse: shop name, live status, address, hero image, and the exact Santa Maria pin.
+            </p>
+          </div>
         </div>
 
-        <ShopPreviewCard
-          vendorPreview={vendorPreview}
-          vendorForm={vendorForm}
-          vendorCoordinates={vendorCoordinates}
-          error={error}
-        />
-      </section>
+        {/* Workspace Navigation Tabs */}
+        <div className="flex border-b border-border mb-12 overflow-x-auto" role="tablist" aria-label="Catalog Workspace">
+          {[
+            { id: 'profile' as const, label: 'Shop Profile' },
+            { id: 'menu' as const, label: 'Menu Catalog' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeWorkspaceTab === tab.id}
+              onClick={() => setActiveWorkspaceTab(tab.id)}
+              className={`px-8 py-4 text-xs font-bold uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                activeWorkspaceTab === tab.id
+                  ? 'border-foreground text-foreground bg-secondary/10'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <MenuItemsSection
-        newItem={newItem}
-        setNewItem={setNewItem}
-        onSubmit={addMenuItem}
-        isAddingItem={isAddingItem}
-        menuItems={menuItems}
-        onToggleAvailability={(item) => void toggleAvailability(item)}
-        onRemoveItem={(itemId) => void removeItem(itemId)}
-      />
+        {/* Tab Content */}
+        {activeWorkspaceTab === 'profile' && (
+          <section className="grid gap-12 xl:grid-cols-[minmax(0,1.2fr)_380px] mb-12">
+            <div className="space-y-6">
+              <ShopProfileSection
+                vendorForm={vendorForm}
+                setVendorForm={setVendorForm}
+                onSubmit={saveVendorProfile}
+                isSavingVendor={isSavingVendor}
+                vendorCoordinates={vendorCoordinates}
+              />
+            </div>
+
+            <ShopPreviewCard
+              vendorPreview={vendorPreview}
+              vendorForm={vendorForm}
+              vendorCoordinates={vendorCoordinates}
+              error={error}
+            />
+          </section>
+        )}
+
+        {activeWorkspaceTab === 'menu' && (
+          <MenuItemsSection
+            newItem={newItem}
+            setNewItem={setNewItem}
+            onSubmit={addMenuItem}
+            isAddingItem={isAddingItem}
+            menuItems={menuItems}
+            onToggleAvailability={(item) => void toggleAvailability(item)}
+            onRemoveItem={(itemId) => void removeItem(itemId)}
+            onUpdateStock={(itemId, qty) => void updateStock(itemId, qty)}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { haversineKm, calculateDeliveryFee } from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -108,22 +109,41 @@ export class OrdersService {
           };
         });
 
-        const totalAmount = orderItems.reduce(
+        const subtotal = orderItems.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
+
+        // Compute distance-based delivery fee
+        let deliveryFee = 0;
+        if (
+          createOrderDto.deliveryLat !== undefined &&
+          createOrderDto.deliveryLng !== undefined
+        ) {
+          const distanceKm = haversineKm(
+            vendor.latitude,
+            vendor.longitude,
+            createOrderDto.deliveryLat,
+            createOrderDto.deliveryLng,
+          );
+          deliveryFee = calculateDeliveryFee(distanceKm);
+        }
+
+        const totalAmount = subtotal + deliveryFee;
 
         const order = orderRepository.create({
           customerId,
           vendorId: createOrderDto.vendorId,
           status: 'pending',
           totalAmount,
+          deliveryFee,
           street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,
           floorOrGate: createOrderDto.floorOrGate,
           paymentMethod: createOrderDto.paymentMethod || 'COD',
           paymentStatus: 'pending',
+          paymentSessionId: createOrderDto.paymentReference || undefined,
           deliveryLat: createOrderDto.deliveryLat,
           deliveryLng: createOrderDto.deliveryLng,
           notes: createOrderDto.notes,
@@ -381,5 +401,110 @@ export class OrdersService {
     }
 
     return updatedOrder;
+  }
+
+  async getAvailableRiders() {
+    const isSqlite =
+      this.dataSource.options.type === 'better-sqlite3' ||
+      this.dataSource.options.type === 'sqljs';
+    const query = isSqlite
+      ? `
+        SELECT 
+          u.id, 
+          u.name, 
+          u.phone,
+          rl.lat, 
+          rl.lng, 
+          rl.updatedAt as lastActive,
+          CASE WHEN rl.orderId IS NULL THEN 'available' ELSE 'busy' END as status
+        FROM user u
+        LEFT JOIN rider_locations rl ON rl.riderId = u.id
+        WHERE u.role = 'rider'
+      `
+      : `
+        SELECT 
+          u.id, 
+          u.name, 
+          u.phone,
+          rl.lat, 
+          rl.lng, 
+          rl."updatedAt" as "lastActive",
+          CASE WHEN rl."orderId" IS NULL THEN 'available' ELSE 'busy' END as status
+        FROM "user" u
+        LEFT JOIN "rider_locations" rl ON rl."riderId" = u.id
+        WHERE u.role = 'rider'
+      `;
+    return this.dataSource.query(query);
+  }
+
+  async assignRider(
+    id: string,
+    riderId: string,
+    sellerId: string,
+  ): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: { vendor: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const sellerVendor = await this.vendorRepository.findOne({
+      where: { userId: sellerId },
+    });
+
+    if (!sellerVendor || sellerVendor.id !== order.vendorId) {
+      throw new ForbiddenException(
+        'You can only assign riders to your own orders',
+      );
+    }
+
+    if (
+      order.status === 'pending' ||
+      order.status === 'rejected' ||
+      order.status === 'cancelled' ||
+      order.status === 'delivered'
+    ) {
+      throw new BadRequestException(
+        'Cannot assign a rider to this order in its current status',
+      );
+    }
+
+    const isSqlite =
+      this.dataSource.options.type === 'better-sqlite3' ||
+      this.dataSource.options.type === 'sqljs';
+    const query = isSqlite
+      ? `SELECT id FROM user WHERE id = ? AND role = 'rider'`
+      : `SELECT id FROM "user" WHERE id = $1 AND role = 'rider'`;
+
+    const params = [riderId];
+    const riderExists = await this.dataSource.query(query, params);
+
+    if (!riderExists || riderExists.length === 0) {
+      throw new BadRequestException('Invalid rider');
+    }
+
+    order.riderId = riderId;
+    const updated = await this.orderRepository.save(order);
+
+    await this.notificationsService.create({
+      userId: riderId,
+      title: 'New Delivery Assigned',
+      message: `You have been assigned to deliver order #${order.id.slice(0, 8)}`,
+      type: 'delivery_request',
+      referenceId: order.id,
+    });
+
+    await this.notificationsService.create({
+      userId: order.customerId,
+      title: 'Rider Assigned',
+      message: 'A rider has been assigned to deliver your order',
+      type: 'order_update',
+      referenceId: order.id,
+    });
+
+    return updated;
   }
 }

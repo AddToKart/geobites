@@ -1,6 +1,6 @@
 import { IsIn } from 'class-validator';
 
 export class UpdateDeliveryStatusDto {
-  @IsIn(['picked_up', 'delivering', 'delivered'])
-  status!: 'picked_up' | 'delivering' | 'delivered';
+  @IsIn(['ready_for_pickup', 'picked_up', 'delivering', 'delivered'])
+  status!: 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered';
 }

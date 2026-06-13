@@ -111,20 +111,23 @@ export function StaggerItem({
   children,
   className,
   y = 10,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
   y?: number;
+  onClick?: () => void;
 }) {
   const shouldReduceMotion = useReducedMotion();
 
   if (shouldReduceMotion) {
-    return <div className={className}>{children}</div>;
+    return <div className={className} onClick={onClick}>{children}</div>;
   }
 
   return (
     <m.div
       className={cn(className)}
+      onClick={onClick}
       variants={{
         hidden: { opacity: 0, y },
         visible: {

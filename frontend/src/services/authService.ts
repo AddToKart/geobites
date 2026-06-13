@@ -7,6 +7,10 @@ export interface SignUpPayload {
   password: string;
   role: UserRole;
   phone?: string;
+  storeName?: string;
+  businessPermit?: string;
+  vehicleType?: string;
+  licenseNumber?: string;
 }
 
 export async function signIn(email: string, password: string): Promise<User> {
@@ -28,6 +32,10 @@ export async function signUp(payload: SignUpPayload): Promise<User> {
     name: payload.name,
     role: payload.role,
     phone: payload.phone,
+    storeName: payload.storeName,
+    businessPermit: payload.businessPermit,
+    vehicleType: payload.vehicleType,
+    licenseNumber: payload.licenseNumber,
   });
   const session = await getSession();
   if (!session?.user) {
@@ -43,4 +51,25 @@ export async function signOut() {
 export async function getSession(): Promise<SessionPayload | null> {
   const response = await api.get<SessionPayload | null>('/auth/get-session');
   return response.data;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  phone?: string;
+  street?: string;
+  barangay?: string;
+  landmark?: string;
+  deliveryLat?: string | number;
+  deliveryLng?: string | number;
+  storeName?: string;
+  businessPermit?: string;
+}
+
+export async function updateProfile(payload: UpdateProfilePayload): Promise<User> {
+  await api.post('/auth/update-user', payload);
+  const session = await getSession();
+  if (!session?.user) {
+    throw new Error('Unable to fetch session after profile update');
+  }
+  return session.user;
 }

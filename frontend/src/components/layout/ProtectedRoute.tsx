@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { UserRole } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { AppShell } from './AppShell';
@@ -9,11 +9,15 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-[var(--color-text-soft)]">
-        Loading session...
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-border border-t-primary" />
+          <span className="text-sm font-medium text-text-soft">Checking session...</span>
+        </div>
       </div>
     );
   }
@@ -30,6 +34,12 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
       return <Navigate to="/rider" replace />;
     }
     return <Navigate to="/browse" replace />;
+  }
+
+  const isFullscreenRoute = location.pathname === '/mock-payment';
+
+  if (isFullscreenRoute) {
+    return <Outlet />;
   }
 
   return (

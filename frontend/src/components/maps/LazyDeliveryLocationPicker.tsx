@@ -1,5 +1,4 @@
 import { Suspense, lazy, type ComponentProps } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const DeliveryLocationPicker = lazy(() =>
@@ -14,16 +13,19 @@ type DeliveryLocationPickerProps = ComponentProps<
 
 function DeliveryPickerFallback() {
   return (
-    <Card>
-      <CardContent className="space-y-4 p-5">
-        <div className="space-y-2">
-          <Skeleton className="h-6 w-32 rounded-full" />
-          <Skeleton className="h-4 w-full max-w-md rounded-full" />
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-24 rounded-none" />
+        <Skeleton className="h-4 w-16 rounded-none" />
+      </div>
+      <div className="border border-border p-4 bg-secondary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-5 w-2/3 rounded-none" />
+          <Skeleton className="h-3.5 w-1/2 rounded-none" />
         </div>
-        <Skeleton className="h-24 rounded-[24px]" />
-        <Skeleton className="h-11 w-40 rounded-2xl" />
-      </CardContent>
-    </Card>
+        <Skeleton className="h-11 w-24 rounded-none shrink-0" />
+      </div>
+    </div>
   );
 }
 

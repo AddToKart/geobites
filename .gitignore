@@ -1,5 +1,6 @@
 # Antigravity/Gemini specific
 .agent/
+.agents/
 .gemini/
 .opencode/
 GEMINI.md
@@ -92,3 +93,6 @@ yarn.lock
 
 # Project specific
 openspec
+
+# SQLite database files (auto-generated)
+*.db

@@ -1,23 +1,27 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   Bell,
+  ChefHat,
   History,
   Home,
   LogOut,
+  Megaphone,
   Menu,
+  MessageSquare,
   ShoppingBag,
+  TrendingUp,
   Truck,
   User,
   UtensilsCrossed,
+  Wallet,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
-import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { preloadRoute } from "@/routes/loaders";
 
 interface NavItem {
@@ -27,16 +31,22 @@ interface NavItem {
 }
 
 const CUSTOMER_NAV: NavItem[] = [
-  { label: "Browse", href: "/browse", icon: <Home className="w-5 h-5" /> },
+  { label: "Directory", href: "/browse", icon: <Home className="w-5 h-5" /> },
   { label: "Cart", href: "/cart", icon: <ShoppingBag className="w-5 h-5" /> },
-  { label: "Orders", href: "/orders", icon: <History className="w-5 h-5" /> },
-  { label: "Profile", href: "/profile", icon: <User className="w-5 h-5" /> },
+  { label: "History", href: "/orders", icon: <History className="w-5 h-5" /> },
+  { label: "Wallet", href: "/wallet", icon: <Wallet className="w-5 h-5" /> },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 const SELLER_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/seller", icon: <Home className="w-5 h-5" /> },
+  { label: "Overview", href: "/seller", icon: <Home className="w-5 h-5" /> },
   {
-    label: "Menu",
+    label: "KDS",
+    href: "/seller/kds",
+    icon: <ChefHat className="w-5 h-5" />,
+  },
+  {
+    label: "Catalog",
     href: "/seller/menu",
     icon: <UtensilsCrossed className="w-5 h-5" />,
   },
@@ -45,17 +55,37 @@ const SELLER_NAV: NavItem[] = [
     href: "/seller/orders",
     icon: <ShoppingBag className="w-5 h-5" />,
   },
-  { label: "Profile", href: "/profile", icon: <User className="w-5 h-5" /> },
+  {
+    label: "Promotions",
+    href: "/seller/promotions",
+    icon: <Megaphone className="w-5 h-5" />,
+  },
+  {
+    label: "Reviews",
+    href: "/seller/ratings",
+    icon: <MessageSquare className="w-5 h-5" />,
+  },
+  {
+    label: "Analytics",
+    href: "/seller/analytics",
+    icon: <TrendingUp className="w-5 h-5" />,
+  },
+  {
+    label: "Wallet",
+    href: "/seller/wallet",
+    icon: <Wallet className="w-5 h-5" />,
+  },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 const RIDER_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/rider", icon: <Home className="w-5 h-5" /> },
+  { label: "Dispatch", href: "/rider", icon: <Home className="w-5 h-5" /> },
   {
-    label: "Deliveries",
+    label: "Routes",
     href: "/rider/deliveries",
     icon: <Truck className="w-5 h-5" />,
   },
-  { label: "Profile", href: "/profile", icon: <User className="w-5 h-5" /> },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -78,19 +108,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const initials = React.useMemo(() => {
-    if (!user?.name) {
-      return "G";
-    }
-
-    return user.name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-  }, [user?.name]);
-
   const handleLogout = async () => {
     try {
       await signOut();
@@ -106,51 +123,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-background)] relative">
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-80 p-0 md:block border-r border-slate-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[var(--shadow-panel)]">
+    <div className="min-h-screen bg-background relative font-sans selection:bg-primary selection:text-primary-foreground">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-72 p-0 md:block border-r border-border bg-background">
         <NavContent
           items={navItems}
           onLogout={handleLogout}
           userName={user.name}
           userRole={user.role}
-          initials={initials}
         />
       </aside>
 
-      <div className="flex min-h-screen flex-col md:ml-80 relative z-10 w-full md:w-[calc(100%-20rem)]">
-        <header className="fixed top-0 inset-x-0 z-50 flex h-[70px] items-center justify-between border-b border-slate-200/50 bg-white/80 backdrop-blur-xl px-4 md:hidden dark:border-gray-800/50 dark:bg-gray-900/80">
+      <div className="flex min-h-screen flex-col md:ml-72 relative z-10 w-full md:w-[calc(100%-18rem)]">
+        {/* Stark Mobile Header */}
+        <header className="fixed top-0 inset-x-0 z-50 flex h-16 items-center justify-between border-b border-border bg-background px-4 md:hidden">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[18px] bg-black text-sm font-bold text-white shadow-sm">
-              {initials}
+            <div className="flex h-8 w-8 items-center justify-center bg-foreground text-background">
+              <span className="font-bold text-lg">G</span>
             </div>
             <div>
-              <p className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">
+              <p className="text-sm font-bold tracking-tighter text-foreground uppercase">
                 Geobites
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                {user.role}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle
-              compact
-              className="rounded-[18px] shadow-sm bg-white"
-            />
+          <div className="flex items-center gap-4">
+            <ThemeToggle compact className="h-8 w-8 rounded-none border border-border" />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-[18px] border-slate-200 dark:border-gray-700 shadow-sm bg-white"
-                >
-                  <Menu className="w-5 h-5" />
+                <button className="flex h-8 w-8 items-center justify-center border border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-colors">
+                  <Menu className="w-4 h-4" />
                   <span className="sr-only">Toggle menu</span>
-                </Button>
+                </button>
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-80 border-none bg-white dark:bg-gray-900 p-0 shadow-2xl"
+                className="w-72 border-r border-border bg-background p-0 shadow-none"
               >
                 <NavContent
                   items={navItems}
@@ -158,14 +165,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onItemClick={() => setOpen(false)}
                   userName={user.name}
                   userRole={user.role}
-                  initials={initials}
                 />
               </SheetContent>
             </Sheet>
           </div>
         </header>
 
-        <main className="flex w-full flex-1 pt-[70px] md:pt-0 px-4 md:px-8 pb-28 md:pb-12">
+        <main className="flex w-full flex-1 pt-16 md:pt-0 pb-20 md:pb-0">
           <div className="h-full w-full">{children}</div>
         </main>
 
@@ -192,21 +198,18 @@ function PrefetchNavLink({
       to={to}
       onFocus={(event) => {
         onFocus?.(event);
-
         if (!event.defaultPrevented) {
           handlePrefetch();
         }
       }}
       onMouseEnter={(event) => {
         onMouseEnter?.(event);
-
         if (!event.defaultPrevented) {
           handlePrefetch();
         }
       }}
       onTouchStart={(event) => {
         onTouchStart?.(event);
-
         if (!event.defaultPrevented) {
           handlePrefetch();
         }
@@ -222,92 +225,93 @@ function NavContent({
   onItemClick,
   userName,
   userRole,
-  initials,
 }: {
   items: NavItem[];
   onLogout: () => void;
   onItemClick?: () => void;
   userName: string;
   userRole: string;
-  initials: string;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
-      <div className="border-b border-slate-100 dark:border-gray-800 px-6 py-8">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-black text-white text-lg font-bold shadow-sm">
-            {initials}
+    <div className="flex h-full flex-col bg-background">
+      {/* Brand & User Block */}
+      <div className="border-b border-border p-6 flex flex-col gap-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground">
+            <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
           </div>
-          <div className="space-y-1">
-            <span className="block text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <div>
+            <span className="block text-2xl font-medium tracking-tighter text-foreground leading-none">
               Geobites
             </span>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {userName}
-            </p>
-            <p className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-gray-800 text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
-              {userRole}
-            </p>
+            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+              Santa Maria
+            </span>
           </div>
+        </div>
+        <div className="bg-secondary/20 p-4 border border-border">
+          <p className="text-sm font-medium tracking-tight text-foreground truncate">
+            {userName}
+          </p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
+            {userRole} Account
+          </p>
         </div>
       </div>
 
-      <Stagger
-        className="flex-1 space-y-1 overflow-y-auto px-4 py-6"
-        delayChildren={0.02}
-        stagger={0.05}
-      >
-        {items.map((item) => (
-          <StaggerItem key={item.href} y={10}>
+      {/* Main Navigation */}
+      <div className="flex-1 overflow-y-auto py-6">
+        <nav className="flex flex-col">
+          {items.map((item) => (
             <PrefetchNavLink
+              key={item.href}
               to={item.href}
               onClick={onItemClick}
+              end={item.href === "/seller" || item.href === "/rider"}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold transition-all duration-200",
+                  "flex items-center gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-l-4",
                   isActive
-                    ? "bg-slate-100 text-primary dark:bg-gray-800/80 dark:text-primary shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800/50 dark:hover:text-white",
+                    ? "border-primary bg-secondary/10 text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground hover:border-foreground/30",
                 )
               }
             >
               {item.icon}
               {item.label}
             </PrefetchNavLink>
-          </StaggerItem>
-        ))}
-      </Stagger>
+          ))}
+        </nav>
+      </div>
 
-      <div className="space-y-2 border-t border-slate-100 dark:border-gray-800 p-4">
-        <div className="px-1 pb-2">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Settings
-          </p>
-          <ThemeToggle className="w-full justify-between" />
+      {/* Footer Navigation */}
+      <div className="border-t border-border p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Theme</span>
+          <ThemeToggle className="h-8 rounded-none border border-border" />
         </div>
+        
         <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold transition-colors",
+              "flex items-center justify-between py-2 text-sm font-bold uppercase tracking-widest transition-colors",
               isActive
-                ? "bg-slate-100 text-primary dark:bg-gray-800/80 dark:text-primary shadow-sm"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800/50 dark:hover:text-white",
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )
           }
         >
-          <Bell className="w-5 h-5" />
-          Notifications
+          <span className="flex items-center gap-3"><Bell className="w-4 h-4" /> Alerts</span>
         </PrefetchNavLink>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 h-auto"
+        
+        <button
           onClick={onLogout}
+          className="flex w-full items-center justify-between py-2 text-sm font-bold uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
         >
-          <LogOut className="w-5 h-5" />
-          Logout
-        </Button>
+          <span className="flex items-center gap-3"><LogOut className="w-4 h-4" /> Sign out</span>
+        </button>
       </div>
     </div>
   );
@@ -315,34 +319,26 @@ function NavContent({
 
 function MobileBottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-gray-800/50 pb-safe">
-      <div className="flex h-[64px] items-center justify-around px-2">
-        {items.slice(0, 4).map((item) => (
+    <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-background border-t border-border pb-safe">
+      <div className="flex h-16 items-stretch justify-between">
+        {items.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
+            end={item.href === "/seller" || item.href === "/rider"}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center justify-center gap-1 w-16 h-14 text-[10px] font-bold transition-all duration-200",
+                "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-all",
                 isActive
-                  ? "text-black dark:text-white"
-                  : "text-slate-500 dark:text-slate-400",
+                  ? "border-primary text-foreground bg-secondary/10"
+                  : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground",
               )
             }
           >
-            {({ isActive }) => (
-              <>
-                <div
-                  className={cn(
-                    "p-1.5 rounded-[16px] transition-colors",
-                    isActive && "bg-primary/10 text-primary dark:bg-primary/20",
-                  )}
-                >
-                  {item.icon}
-                </div>
-                <span className="truncate">{item.label}</span>
-              </>
-            )}
+            {item.icon}
+            <span className="text-[9px] font-bold uppercase tracking-widest mt-1 hidden sm:block">
+              {item.label}
+            </span>
           </NavLink>
         ))}
       </div>

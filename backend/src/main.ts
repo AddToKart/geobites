@@ -1,3 +1,4 @@
+// Trigger compilation reload after schema type change
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -40,6 +41,21 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(cookieParser());
+  app.use((req: any, res: any, next: any) => {
+    if (req.headers.cookie) {
+      req.headers.cookie = req.headers.cookie
+        .split(';')
+        .map((c: string) => c.trim())
+        .filter((c: string) => {
+          const name = c.split('=')[0].trim();
+          return (
+            !name.endsWith('session_data') && !name.endsWith('account_data')
+          );
+        })
+        .join('; ');
+    }
+    next();
+  });
   app.enableCors({
     origin: parseCorsOrigins(),
     credentials: true,
@@ -67,17 +83,17 @@ async function bootstrap() {
   await seedDemoData(dataSource);
 
   // Graceful shutdown
-  process.on('SIGTERM', async () => {
+  process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully...');
-    server.close(async () => {
+    server.close(() => {
       console.log('Server closed');
       process.exit(0);
     });
   });
 
-  process.on('SIGINT', async () => {
+  process.on('SIGINT', () => {
     console.log('SIGINT received, shutting down gracefully...');
-    server.close(async () => {
+    server.close(() => {
       console.log('Server closed');
       process.exit(0);
     });

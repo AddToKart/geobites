@@ -17,12 +17,18 @@ export function ThemeToggle({
     setMounted(true);
   }, []);
 
-  const activeTheme = mounted ? resolvedTheme ?? 'light' : 'light';
+  if (!mounted) {
+    return (
+      <div className="h-8 w-16 animate-pulse rounded-xl bg-muted/30" />
+    );
+  }
+
+  const activeTheme = resolvedTheme ?? 'light';
 
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-2xl border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] p-1 shadow-[var(--shadow-soft)]',
+        'inline-flex items-center gap-0.5 rounded-xl bg-muted/40 p-0.5 border-none',
         className,
       )}
       role="group"
@@ -41,15 +47,22 @@ export function ThemeToggle({
             onClick={() => setTheme(key)}
             aria-pressed={isActive}
             className={cn(
-              'inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-              compact && 'px-2.5',
+              'inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-200 border-none outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ring',
               isActive
-                ? 'bg-[color:var(--color-surface-2)] text-[color:var(--color-text)] shadow-[inset_0_0_0_1px_var(--color-border)]'
-                : 'text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]',
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-text-muted hover:text-foreground hover:bg-muted/20',
+              compact && 'px-1.5 py-1',
+              className?.includes('w-full') && 'flex-1',
             )}
           >
-            <Icon className="h-4 w-4" />
-            {compact ? <span className="sr-only">{label}</span> : <span>{label}</span>}
+            <Icon
+              className={cn(
+                'h-3.5 w-3.5 transition-colors duration-200',
+                isActive && key === 'light' ? 'text-amber-500 fill-amber-500/10' : '',
+                isActive && key === 'dark' ? 'text-indigo-400 fill-indigo-400/10' : '',
+              )}
+            />
+            {compact ? null : <span className="text-[11px] tracking-tight">{label}</span>}
           </button>
         );
       })}
