@@ -34,6 +34,7 @@ export function MenuManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSavingVendor, setIsSavingVendor] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'profile' | 'menu'>('profile');
 
   const syncVendorForm = useCallback((currentVendor: Vendor | null) => {
     if (!currentVendor) {
@@ -231,34 +232,61 @@ export function MenuManagementPage() {
           </div>
         </div>
 
-        <section className="grid gap-12 xl:grid-cols-[minmax(0,1.2fr)_380px] mb-12">
-          <div className="space-y-6">
-            <ShopProfileSection
+        {/* Workspace Navigation Tabs */}
+        <div className="flex border-b border-border mb-12 overflow-x-auto" role="tablist" aria-label="Catalog Workspace">
+          {[
+            { id: 'profile' as const, label: 'Shop Profile' },
+            { id: 'menu' as const, label: 'Menu Catalog' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeWorkspaceTab === tab.id}
+              onClick={() => setActiveWorkspaceTab(tab.id)}
+              className={`px-8 py-4 text-xs font-bold uppercase tracking-widest transition-colors border-b-2 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                activeWorkspaceTab === tab.id
+                  ? 'border-foreground text-foreground bg-secondary/10'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        {activeWorkspaceTab === 'profile' && (
+          <section className="grid gap-12 xl:grid-cols-[minmax(0,1.2fr)_380px] mb-12">
+            <div className="space-y-6">
+              <ShopProfileSection
+                vendorForm={vendorForm}
+                setVendorForm={setVendorForm}
+                onSubmit={saveVendorProfile}
+                isSavingVendor={isSavingVendor}
+                vendorCoordinates={vendorCoordinates}
+              />
+            </div>
+
+            <ShopPreviewCard
+              vendorPreview={vendorPreview}
               vendorForm={vendorForm}
-              setVendorForm={setVendorForm}
-              onSubmit={saveVendorProfile}
-              isSavingVendor={isSavingVendor}
               vendorCoordinates={vendorCoordinates}
+              error={error}
             />
-          </div>
+          </section>
+        )}
 
-          <ShopPreviewCard
-            vendorPreview={vendorPreview}
-            vendorForm={vendorForm}
-            vendorCoordinates={vendorCoordinates}
-            error={error}
+        {activeWorkspaceTab === 'menu' && (
+          <MenuItemsSection
+            newItem={newItem}
+            setNewItem={setNewItem}
+            onSubmit={addMenuItem}
+            isAddingItem={isAddingItem}
+            menuItems={menuItems}
+            onToggleAvailability={(item) => void toggleAvailability(item)}
+            onRemoveItem={(itemId) => void removeItem(itemId)}
           />
-        </section>
-
-        <MenuItemsSection
-          newItem={newItem}
-          setNewItem={setNewItem}
-          onSubmit={addMenuItem}
-          isAddingItem={isAddingItem}
-          menuItems={menuItems}
-          onToggleAvailability={(item) => void toggleAvailability(item)}
-          onRemoveItem={(itemId) => void removeItem(itemId)}
-        />
+        )}
       </div>
     </div>
   );

@@ -101,6 +101,7 @@ export function OrderManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [activeLane, setActiveLane] = useState<'pending' | 'kitchen' | 'closed'>('pending');
 
   const loadOrders = useCallback(async () => {
     try {
@@ -234,27 +235,58 @@ export function OrderManagementPage() {
           </label>
         </div>
 
+        {/* Mobile Tab Switcher */}
+        <div className="flex border-b border-border mb-8 lg:hidden" role="tablist" aria-label="Order Status Lanes">
+          {[
+            { id: 'pending' as const, label: `Needs action (${pendingOrders.length})` },
+            { id: 'kitchen' as const, label: `Kitchen flow (${kitchenOrders.length})` },
+            { id: 'closed' as const, label: `Closed (${closedOrders.length})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeLane === tab.id}
+              onClick={() => setActiveLane(tab.id)}
+              className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest text-center transition-colors border-b-2 outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                activeLane === tab.id
+                  ? 'border-foreground text-foreground bg-secondary/10'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* 3-Column Kanban Grid */}
         <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div className="grid gap-8 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border">
             {([
               {
+                id: 'pending' as const,
                 title: 'Needs action',
                 description: 'Pending orders waiting on an accept or reject decision.',
                 orders: pendingOrders,
               },
               {
+                id: 'kitchen' as const,
                 title: 'Kitchen flow',
                 description: 'Accepted, preparing, and ready-for-pickup orders.',
                 orders: kitchenOrders,
               },
               {
+                id: 'closed' as const,
                 title: 'Closed / handoff',
                 description: 'Picked up, delivered, or otherwise finished orders.',
                 orders: closedOrders,
               },
-            ] as Array<{ title: string; description: string; orders: Order[] }>).map((column, idx) => (
-              <div key={column.title} className={`space-y-6 ${idx === 0 ? 'lg:pr-4' : idx === 2 ? 'lg:pl-4' : 'lg:px-4'}`}>
+            ] as Array<{ id: 'pending' | 'kitchen' | 'closed'; title: string; description: string; orders: Order[] }>).map((column, idx) => (
+              <div
+                key={column.title}
+                className={`space-y-6 ${idx === 0 ? 'lg:pr-4' : idx === 2 ? 'lg:pl-4' : 'lg:px-4'} ${
+                  activeLane === column.id ? 'block' : 'hidden lg:block'
+                }`}
+              >
                 <div className="border-b border-border pb-4">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">{column.title}</h3>
                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{column.description}</p>
@@ -281,164 +313,186 @@ export function OrderManagementPage() {
             ))}
           </div>
 
-          {/* Details Sidebar */}
-          <div className="space-y-6">
+          {/* Details Sidebar / Drawer */}
+          <div className="xl:block">
             {selectedOrder ? (
               <>
-                <div className="border border-border p-4 bg-background">
-                  <LazyOrderRouteMap
-                    order={selectedOrder}
-                    title={`Focused order #${selectedOrder.id.slice(0, 8)}`}
-                    description="Route map and key details for the selected order."
-                    compact
-                  />
-                </div>
+                {/* Backdrop for mobile/tablet */}
+                <div
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 xl:hidden"
+                  onClick={() => setSelectedOrderId(null)}
+                  aria-hidden="true"
+                />
 
-                <div className="border border-border p-6 bg-background space-y-6">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Order detail</p>
-                    <h2 className="mt-2 text-3xl font-medium tracking-tighter">#{selectedOrder.id.slice(0, 8)}</h2>
+                {/* Sliding drawer on mobile, static sidebar on desktop */}
+                <div className="fixed top-0 right-0 h-full w-full max-w-[450px] bg-background border-l border-border z-50 p-6 overflow-y-auto shadow-2xl xl:shadow-none xl:border-0 xl:p-0 xl:static xl:h-auto xl:w-auto xl:max-w-none xl:z-0 xl:bg-transparent space-y-6">
+                  {/* Header with Close trigger for mobile */}
+                  <div className="flex items-center justify-between pb-4 border-b border-border xl:hidden">
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Details</span>
+                    <button
+                      onClick={() => setSelectedOrderId(null)}
+                      className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                      aria-label="Close details drawer"
+                    >
+                      <XCircle className="h-6 w-6" />
+                    </button>
                   </div>
 
-                  <div className="grid gap-4">
-                    <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                      <PackageCheck className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Items
-                        </p>
-                        <p className="text-base font-semibold text-foreground">
-                          {selectedOrder.items.length} items
-                        </p>
-                      </div>
-                    </div>
-                    <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                      <Clock3 className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Status
-                        </p>
-                        <p className="text-base font-semibold text-foreground">
-                          {ORDER_STATUS_LABELS[selectedOrder.status]}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                      <div>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Amount
-                        </p>
-                        <p className="text-base font-semibold text-foreground">
-                          {formatCurrency(selectedOrder.totalAmount)}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="border border-border p-4 bg-background">
+                    <LazyOrderRouteMap
+                      order={selectedOrder}
+                      title={`Focused order #${selectedOrder.id.slice(0, 8)}`}
+                      description="Route map and key details for the selected order."
+                      compact
+                    />
                   </div>
 
-                  <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 text-primary shrink-0" />
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {selectedOrder.deliveryAddress}
+                  <div className="border border-border p-6 bg-background space-y-6">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Order detail</p>
+                      <h2 className="mt-2 text-3xl font-medium tracking-tighter">#{selectedOrder.id.slice(0, 8)}</h2>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <PackageCheck className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Items
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {selectedOrder.items.length} items
+                          </p>
+                        </div>
+                      </div>
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <Clock3 className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Status
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {ORDER_STATUS_LABELS[selectedOrder.status]}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Amount
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {formatCurrency(selectedOrder.totalAmount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 text-primary shrink-0" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {selectedOrder.deliveryAddress}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground border-t border-border/60 pt-3">
+                        {selectedOrder.notes || 'No customer notes were added to this order.'}
                       </p>
                     </div>
-                    <p className="text-xs text-muted-foreground border-t border-border/60 pt-3">
-                      {selectedOrder.notes || 'No customer notes were added to this order.'}
-                    </p>
-                  </div>
 
-                  {/* Payment Details Panel */}
-                  <div className="border border-border space-y-4 px-4 py-4 bg-secondary/5">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Payment Details
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between border-b border-border/40 pb-2">
-                        <span className="text-muted-foreground">Method:</span>
-                        <span className="font-semibold">{selectedOrder.paymentMethod}</span>
-                      </div>
-                      <div className="flex justify-between border-b border-border/40 pb-2">
-                        <span className="text-muted-foreground">Status:</span>
-                        <span className={`font-bold ${selectedOrder.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
-                          {selectedOrder.paymentStatus.toUpperCase()}
-                        </span>
-                      </div>
-                      {selectedOrder.paymentMethod !== 'COD' && (
-                        <div className="flex justify-between pt-2">
-                          <span className="text-muted-foreground">Ref Number:</span>
-                          <span className="font-mono font-bold text-foreground">
-                            {selectedOrder.paymentSessionId || 'None'}
+                    {/* Payment Details Panel */}
+                    <div className="border border-border space-y-4 px-4 py-4 bg-secondary/5">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Payment Details
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between border-b border-border/40 pb-2">
+                          <span className="text-muted-foreground">Method:</span>
+                          <span className="font-semibold">{selectedOrder.paymentMethod}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-border/40 pb-2">
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className={`font-bold ${selectedOrder.paymentStatus === 'paid' ? 'text-emerald-500' : 'text-orange-500'}`}>
+                            {selectedOrder.paymentStatus.toUpperCase()}
                           </span>
                         </div>
+                        {selectedOrder.paymentMethod !== 'COD' && (
+                          <div className="flex justify-between pt-2">
+                            <span className="text-muted-foreground">Ref Number:</span>
+                            <span className="font-mono font-bold text-foreground">
+                              {selectedOrder.paymentSessionId || 'None'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Verification Button for Sellers */}
+                      {selectedOrder.paymentMethod !== 'COD' && selectedOrder.paymentStatus === 'pending' && (
+                        <Button
+                          size="sm"
+                          className="w-full mt-2 rounded-none font-bold uppercase tracking-widest text-xs border border-foreground bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                          onClick={async () => {
+                            try {
+                              await verifyManualPayment(selectedOrder.id);
+                              toast.success("Payment verified successfully!");
+                              void loadOrders();
+                            } catch (err) {
+                              toast.error(err instanceof Error ? err.message : "Failed to verify payment");
+                            }
+                          }}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Confirm Manual Payment
+                        </Button>
                       )}
                     </div>
 
-                    {/* Verification Button for Sellers */}
-                    {selectedOrder.paymentMethod !== 'COD' && selectedOrder.paymentStatus === 'pending' && (
-                      <Button
-                        size="sm"
-                        className="w-full mt-2 rounded-none font-bold uppercase tracking-widest text-xs border border-foreground bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                        onClick={async () => {
-                          try {
-                            await verifyManualPayment(selectedOrder.id);
-                            toast.success("Payment verified successfully!");
-                            void loadOrders();
-                          } catch (err) {
-                            toast.error(err instanceof Error ? err.message : "Failed to verify payment");
-                          }
-                        }}
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Confirm Manual Payment
-                      </Button>
-                    )}
-                  </div>
+                    {/* Rider Status Panel */}
+                    {selectedOrder.status !== 'pending' &&
+                      selectedOrder.status !== 'rejected' &&
+                      selectedOrder.status !== 'cancelled' && (
+                        <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
+                          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+                            <Bike className="h-4 w-4 text-primary shrink-0" />
+                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                              Rider status
+                            </h4>
+                          </div>
 
-                  {/* Rider Status Panel */}
-                  {selectedOrder.status !== 'pending' &&
-                    selectedOrder.status !== 'rejected' &&
-                    selectedOrder.status !== 'cancelled' && (
-                      <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
-                        <div className="flex items-center gap-2 border-b border-border/40 pb-2">
-                          <Bike className="h-4 w-4 text-primary shrink-0" />
-                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            Rider status
-                          </h4>
-                        </div>
-
-                        {selectedOrder.riderId ? (
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Rider ID</span>
-                              <span className="font-mono text-xs font-bold text-primary">
-                                #{selectedOrder.riderId.slice(0, 8).toUpperCase()}
-                              </span>
+                          {selectedOrder.riderId ? (
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Rider ID</span>
+                                <span className="font-mono text-xs font-bold text-primary">
+                                  #{selectedOrder.riderId.slice(0, 8).toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+                                A rider has claimed this delivery from the booking pool.
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
-                              A rider has claimed this delivery from the booking pool.
-                            </p>
-                          </div>
-                        ) : selectedOrder.status === 'accepted' ? (
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-primary animate-pulse">
-                              Waiting for a rider...
-                            </p>
+                          ) : selectedOrder.status === 'accepted' ? (
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-primary animate-pulse">
+                                Waiting for a rider...
+                              </p>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                This order is in the global booking pool. Any available rider can claim it.
+                              </p>
+                            </div>
+                          ) : (
                             <p className="text-xs text-muted-foreground leading-relaxed">
-                              This order is in the global booking pool. Any available rider can claim it.
+                              Rider will be assigned once you accept and the order enters the pool.
                             </p>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Rider will be assigned once you accept and the order enters the pool.
-                          </p>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
+                  </div>
                 </div>
               </>
             ) : (
-              <div className="border border-border p-8 text-center text-sm text-muted-foreground bg-secondary/5">
+              <div className="hidden xl:block border border-border p-8 text-center text-sm text-muted-foreground bg-secondary/5 h-fit">
                 Select an order to view its details.
               </div>
             )}

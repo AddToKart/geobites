@@ -250,83 +250,106 @@ export function SellerDashboard() {
             </div>
           </Reveal>
 
-          <Reveal className="space-y-6" delay={0.1}>
+
+          <div className="xl:block">
             {selectedOrder ? (
-              <div className="border border-border p-4 bg-background">
-                <LazyOrderRouteMap
-                  order={selectedOrder}
-                  title={`Order map #${selectedOrder.id.slice(0, 8)}`}
-                  description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
-                  compact
+              <>
+                {/* Backdrop for mobile/tablet */}
+                <div
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 xl:hidden"
+                  onClick={() => setSelectedOrderId(null)}
+                  aria-hidden="true"
                 />
-              </div>
+
+                {/* Sliding drawer on mobile, static sidebar on desktop */}
+                <div className="fixed top-0 right-0 h-full w-full max-w-[450px] bg-background border-l border-border z-50 p-6 overflow-y-auto shadow-2xl xl:shadow-none xl:border-0 xl:p-0 xl:static xl:h-auto xl:w-auto xl:max-w-none xl:z-0 xl:bg-transparent space-y-6">
+                  {/* Header with Close trigger for mobile */}
+                  <div className="flex items-center justify-between pb-4 border-b border-border xl:hidden">
+                    <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Order Overview</span>
+                    <button
+                      onClick={() => setSelectedOrderId(null)}
+                      className="p-2 -mr-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary outline-none"
+                      aria-label="Close details drawer"
+                    >
+                      <XCircle className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  <div className="border border-border p-4 bg-background">
+                    <LazyOrderRouteMap
+                      order={selectedOrder}
+                      title={`Order map #${selectedOrder.id.slice(0, 8)}`}
+                      description="Track the delivery address pin, your shop location, and rider progress from the seller dashboard."
+                      compact
+                    />
+                  </div>
+
+                  <div className="border border-border p-6 bg-background space-y-6">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Focused order</p>
+                      <h2 className="mt-2 text-3xl font-medium tracking-tighter">#{selectedOrder.id.slice(0, 8)}</h2>
+                      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                        Order details, delivery address, and the next step to move this order forward.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <DollarSign className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Amount
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {formatCurrency(selectedOrder.totalAmount)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <PackageCheck className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Items
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {selectedOrder.items.length} items
+                          </p>
+                        </div>
+                      </div>
+                      <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
+                        <Clock3 className="h-4 w-4 text-primary shrink-0" />
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Placed
+                          </p>
+                          <p className="text-base font-semibold text-foreground">
+                            {new Date(selectedOrder.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 text-primary shrink-0" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {selectedOrder.deliveryAddress}
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2 border-t border-border/60 pt-3 mt-3">
+                        <Sparkles className="mt-0.5 h-4 w-4 text-primary shrink-0" />
+                        <p className="text-sm text-muted-foreground leading-relaxed">{nextCheckpoint}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             ) : (
-              <div className="border border-border p-8 text-center text-sm text-muted-foreground bg-secondary/5">
-                Select an order to view its map.
+              <div className="hidden xl:block border border-border p-8 text-center text-sm text-muted-foreground bg-secondary/5 h-fit">
+                Select an order to view its map and details.
               </div>
             )}
-
-            {selectedOrder ? (
-              <div className="border border-border p-6 bg-background space-y-6">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Focused order</p>
-                  <h2 className="mt-2 text-3xl font-medium tracking-tighter">#{selectedOrder.id.slice(0, 8)}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    Order details, delivery address, and the next step to move this order forward.
-                  </p>
-                </div>
-
-                <div className="grid gap-4">
-                  <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                    <DollarSign className="h-4 w-4 text-primary shrink-0" />
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Amount
-                      </p>
-                      <p className="text-base font-semibold text-foreground">
-                        {formatCurrency(selectedOrder.totalAmount)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                    <PackageCheck className="h-4 w-4 text-primary shrink-0" />
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Items
-                      </p>
-                      <p className="text-base font-semibold text-foreground">
-                        {selectedOrder.items.length} items
-                      </p>
-                    </div>
-                  </div>
-                  <div className="border border-border flex items-center gap-3 px-4 py-4 bg-secondary/5">
-                    <Clock3 className="h-4 w-4 text-primary shrink-0" />
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Placed
-                      </p>
-                      <p className="text-base font-semibold text-foreground">
-                        {new Date(selectedOrder.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border border-border space-y-3 px-4 py-4 bg-secondary/5">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 text-primary shrink-0" />
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {selectedOrder.deliveryAddress}
-                    </p>
-                  </div>
-                  <div className="flex items-start gap-2 border-t border-border/60 pt-3 mt-3">
-                    <Sparkles className="mt-0.5 h-4 w-4 text-primary shrink-0" />
-                    <p className="text-sm text-muted-foreground leading-relaxed">{nextCheckpoint}</p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </Reveal>
+          </div>
         </div>
       </div>
     </div>
