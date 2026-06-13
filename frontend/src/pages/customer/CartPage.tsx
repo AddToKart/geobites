@@ -334,6 +334,12 @@ export function CartPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                   />
+                  <div className="pt-2">
+                    <LazyDeliveryLocationPicker
+                      value={deliveryPin}
+                      onChange={setDeliveryPin}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -429,12 +435,6 @@ export function CartPage() {
                 </div>
               )}
 
-              <div className="mb-8 p-4 border border-border bg-secondary/5 text-sm font-bold uppercase tracking-widest text-center text-muted-foreground">
-                {deliveryPin
-                  ? `Pin set: ${deliveryPin.lat.toFixed(4)}, ${deliveryPin.lng.toFixed(4)}`
-                  : "Place a pin on the map below"}
-              </div>
-
               <button
                 type="submit"
                 className="w-full h-16 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
@@ -443,13 +443,6 @@ export function CartPage() {
                 {isSubmitting ? "Processing..." : "Place order"}
                 <ArrowRight className="h-5 w-5" />
               </button>
-            </div>
-
-            <div className="border border-border h-96 relative">
-              <LazyDeliveryLocationPicker
-                value={deliveryPin}
-                onChange={setDeliveryPin}
-              />
             </div>
           </form>
         </div>
