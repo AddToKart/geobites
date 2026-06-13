@@ -22,6 +22,11 @@ export interface User {
   businessPermit?: string;
   vehicleType?: string;
   licenseNumber?: string;
+  street?: string;
+  barangay?: string;
+  landmark?: string;
+  deliveryLat?: number;
+  deliveryLng?: number;
 }
 
 export interface Vendor {

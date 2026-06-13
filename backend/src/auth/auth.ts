@@ -88,6 +88,26 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
       },
+      street: {
+        type: 'string',
+        required: false,
+      },
+      barangay: {
+        type: 'string',
+        required: false,
+      },
+      landmark: {
+        type: 'string',
+        required: false,
+      },
+      deliveryLat: {
+        type: 'number',
+        required: false,
+      },
+      deliveryLng: {
+        type: 'number',
+        required: false,
+      },
     },
   },
 });

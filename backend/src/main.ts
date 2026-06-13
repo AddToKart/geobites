@@ -1,3 +1,4 @@
+// Trigger migration runner reload
 import * as dotenv from 'dotenv';
 dotenv.config();
 

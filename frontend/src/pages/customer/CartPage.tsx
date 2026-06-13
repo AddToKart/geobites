@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
 import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/utils/helpers";
 import { placeOrder, initiatePayment } from "@/services/orderService";
 import { getWallet } from "@/services/walletService";
@@ -16,18 +17,38 @@ import type { Vendor } from "@/types";
 
 export function CartPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { items, total, updateQuantity, removeItem, clearCart, vendorId } =
     useCart();
-  const [street, setStreet] = useState("");
-  const [barangay, setBarangay] = useState("");
-  const [landmark, setLandmark] = useState("");
+  const [street, setStreet] = useState(user?.street || "");
+  const [barangay, setBarangay] = useState(user?.barangay || "");
+  const [landmark, setLandmark] = useState(user?.landmark || "");
   const [paymentMethod, setPaymentMethod] = useState<
     "COD" | "GCASH" | "MAYA" | "QRPH" | "GEOPAY"
   >("COD");
   const [deliveryPin, setDeliveryPin] = useState<{
     lat: number;
     lng: number;
-  } | null>(null);
+  } | null>(
+    user?.deliveryLat && user?.deliveryLng
+      ? { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) }
+      : null
+  );
+
+  useEffect(() => {
+    if (user) {
+      setStreet((prev) => prev || user.street || "");
+      setBarangay((prev) => prev || user.barangay || "");
+      setLandmark((prev) => prev || user.landmark || "");
+      setDeliveryPin((prev) => {
+        if (prev) return prev;
+        if (user.deliveryLat && user.deliveryLng) {
+          return { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) };
+        }
+        return null;
+      });
+    }
+  }, [user]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ street?: string; barangay?: string; paymentRef?: string }>({});
