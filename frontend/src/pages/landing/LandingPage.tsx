@@ -77,6 +77,13 @@ export function LandingPage() {
         </section>
 
         {/* The Roster */}
+        {/*
+          PERF: The orange fill uses an opacity-animated overlay div (absolute, inset-0).
+          Opacity is the ONLY CSS property that is 100% GPU-composited — zero paint, zero layout.
+          background-color transitions always trigger a repaint on every frame no matter what.
+          Text colors switch instantly (no transition class) — cascaded color animation through
+          all child text nodes is expensive; an instant switch costs one single repaint at start.
+        */}
         <section className="border-t border-border">
           {[
             {
@@ -101,29 +108,37 @@ export function LandingPage() {
               action: "Become a rider"
             }
           ].map((row, i) => (
-            <Link 
-              key={i} 
+            <Link
+              key={i}
               to={row.link}
-              className="group relative block border-b border-border px-6 py-16 transition-colors duration-200 hover:bg-primary hover:text-primary-foreground lg:px-12 lg:py-24"
-              style={{ willChange: 'background-color' }}
+              className="group relative block overflow-hidden border-b border-border px-6 py-16 lg:px-12 lg:py-24"
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+              {/* Orange fill: opacity-only transition = GPU compositor, zero paint cost */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                style={{ willChange: 'opacity' }}
+              />
+
+              {/* Content sits above the overlay */}
+              <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="flex-1">
-                  <p className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/70">
+                  {/* Instant color switch (no transition) — one repaint at hover-start, not 12fps worth */}
+                  <p className="mb-4 text-sm font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary-foreground/70">
                     {row.label}
                   </p>
-                  <h2 className="text-6xl font-medium tracking-tighter sm:text-8xl lg:text-[8rem]">
+                  <h2 className="text-6xl font-medium tracking-tighter group-hover:text-primary-foreground sm:text-8xl lg:text-[8rem]">
                     {row.title}
                   </h2>
                 </div>
                 <div className="flex-1 md:max-w-sm">
-                  <p className="mb-8 text-xl text-muted-foreground transition-colors duration-200 group-hover:text-primary-foreground/90 md:text-2xl leading-relaxed">
+                  <p className="mb-8 text-xl text-muted-foreground group-hover:text-primary-foreground/90 md:text-2xl leading-relaxed">
                     {row.desc}
                   </p>
-                  <div className="inline-flex items-center gap-2 text-lg font-bold">
+                  <div className="inline-flex items-center gap-2 text-lg font-bold group-hover:text-primary-foreground">
                     {row.action}
-                    {/* transition-transform only — compositor-promoted, zero paint cost */}
-                    <ArrowRight className="h-6 w-6 transition-transform duration-200 group-hover:translate-x-3" strokeWidth={2.5} />
+                    {/* translate is compositor-only — free */}
+                    <ArrowRight className="h-6 w-6 transition-transform duration-200 group-hover:translate-x-3 group-hover:text-primary-foreground" strokeWidth={2.5} />
                   </div>
                 </div>
               </div>
