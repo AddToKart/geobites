@@ -137,10 +137,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background relative font-sans selection:bg-primary selection:text-primary-foreground">
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 hidden p-0 md:block border-r border-border bg-background transition-[width] duration-300 ease-in-out",
-        isCollapsed ? "w-20" : "w-72"
-      )}>
+      {/* Sidebar: fixed element, overflow-hidden clips content as width animates */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 hidden md:flex md:flex-col border-r border-border bg-background overflow-hidden",
+          "transition-[width] duration-300 ease-in-out",
+          isCollapsed ? "w-20" : "w-72"
+        )}
+      >
         <NavContent
           items={navItems}
           onLogout={handleLogout}
@@ -162,9 +166,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
       </aside>
 
+      {/* Main content: NO transition — snaps instantly, sidebar is fixed so no reflow */}
       <div className={cn(
-        "flex min-h-screen flex-col relative z-10 w-full transition-[margin-left,width] duration-300 ease-in-out",
-        isCollapsed ? "md:ml-20 md:w-[calc(100%-5rem)]" : "md:ml-72 md:w-[calc(100%-18rem)]"
+        "flex min-h-screen flex-col relative z-10",
+        isCollapsed ? "md:pl-20" : "md:pl-72"
       )}>
         {/* Stark Mobile Header */}
         <header className="fixed top-0 inset-x-0 z-50 flex h-16 items-center justify-between border-b border-border bg-background px-4 md:hidden">
@@ -267,61 +272,58 @@ function NavContent({
   isCollapsed?: boolean;
 }) {
   return (
-    <div className="flex h-full flex-col bg-background">
-      {/* Brand & User Block */}
-      <div className={cn(
-        "border-b border-border flex flex-col gap-6 transition-[padding] duration-300 ease-in-out",
-        isCollapsed ? "p-4" : "p-6"
-      )}>
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground shrink-0">
-            <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
+    <div className="flex h-full flex-col bg-background w-72">
+      {/* Brand & User — fixed 288px wide, content clips via aside overflow-hidden */}
+      <div className="border-b border-border p-5 flex flex-col gap-4 shrink-0">
+        {/* Brand row */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+            <UtensilsCrossed className="w-5 h-5" strokeWidth={2.5} />
           </div>
-          <div className={cn(
-            "transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap flex flex-col",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[150px] opacity-100"
-          )}>
-            <span className="block text-2xl font-medium tracking-tighter text-foreground leading-none">
+          {/* Fades out as sidebar clips it */}
+          <div
+            className="transition-opacity duration-150 ease-in-out whitespace-nowrap"
+            style={{ opacity: isCollapsed ? 0 : 1 }}
+          >
+            <span className="block text-xl font-medium tracking-tighter text-foreground leading-none">
               Geobites
             </span>
-            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
               Santa Maria
             </span>
           </div>
         </div>
 
-        <div className={cn(
-          "border border-border transition-[width,height,padding,border-radius] duration-300 ease-in-out flex items-center overflow-hidden shrink-0",
-          isCollapsed
-            ? "rounded-full w-10 h-10 p-0 justify-center bg-primary/10 text-primary font-bold"
-            : "w-full p-4 gap-3 rounded-none bg-secondary/20"
-        )}
-        title={isCollapsed ? `${userName} (${userRole} Account)` : undefined}
-        >
-          {/* Avatar container */}
-          <div className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm uppercase transition-[background-color] duration-300 ease-in-out",
-            isCollapsed ? "bg-transparent text-primary" : "bg-primary/10 text-primary font-bold"
-          )}>
-            {userName.charAt(0) || "U"}
+        {/* User card — crossfade between two absolutely-positioned states, no layout change */}
+        <div className="relative h-10">
+          {/* Expanded: full name card */}
+          <div
+            className="absolute inset-0 flex items-center gap-3 bg-secondary/20 border border-border px-3 transition-opacity duration-150 ease-in-out"
+            style={{ opacity: isCollapsed ? 0 : 1, pointerEvents: isCollapsed ? 'none' : 'auto' }}
+          >
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold uppercase">
+              {userName.charAt(0) || "U"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium tracking-tight text-foreground truncate">{userName}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-primary">{userRole}</p>
+            </div>
           </div>
-          {/* Text details */}
-          <div className={cn(
-            "transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap flex flex-col min-w-0",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[150px] opacity-100"
-          )}>
-            <p className="text-sm font-medium tracking-tight text-foreground truncate">
-              {userName}
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
-              {userRole} Account
-            </p>
+          {/* Collapsed: avatar only */}
+          <div
+            className="absolute inset-0 flex items-center justify-center transition-opacity duration-150 ease-in-out"
+            style={{ opacity: isCollapsed ? 1 : 0, pointerEvents: isCollapsed ? 'auto' : 'none' }}
+            title={`${userName} (${userRole} Account)`}
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-border text-primary text-sm font-bold uppercase">
+              {userName.charAt(0) || "U"}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto py-6">
+      <div className="flex-1 overflow-y-auto py-4">
         <nav className="flex flex-col">
           {items.map((item) => (
             <PrefetchNavLink
@@ -332,8 +334,7 @@ function NavContent({
               title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center transition-[padding,color] duration-300 ease-in-out border-l-4 py-4 text-sm font-bold uppercase tracking-widest",
-                  isCollapsed ? "pl-[26px] pr-0 gap-0" : "pl-8 pr-4 gap-4",
+                  "flex items-center gap-4 pl-5 pr-4 py-3.5 border-l-4 text-sm font-bold uppercase tracking-widest whitespace-nowrap",
                   isActive
                     ? "border-primary bg-secondary/10 text-foreground"
                     : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground hover:border-foreground/30",
@@ -341,10 +342,10 @@ function NavContent({
               }
             >
               <span className="shrink-0">{item.icon}</span>
-              <span className={cn(
-                "transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap",
-                isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[150px] opacity-100"
-              )}>
+              <span
+                className="transition-opacity duration-150 ease-in-out"
+                style={{ opacity: isCollapsed ? 0 : 1 }}
+              >
                 {item.label}
               </span>
             </PrefetchNavLink>
@@ -352,63 +353,49 @@ function NavContent({
         </nav>
       </div>
 
-      {/* Footer Navigation */}
-      <div className={cn(
-        "border-t border-border space-y-4 transition-[padding] duration-300 ease-in-out",
-        isCollapsed ? "p-4 flex flex-col items-center" : "p-6"
-      )}>
-        <div className="flex items-center justify-between w-full">
-          <span className={cn(
-            "text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap pl-2",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[100px] opacity-100"
-          )}>
+      {/* Footer */}
+      <div className="border-t border-border p-4 flex flex-col gap-3 shrink-0">
+        {/* Theme row */}
+        <div className="flex items-center gap-3 pl-1">
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap transition-opacity duration-150 ease-in-out"
+            style={{ opacity: isCollapsed ? 0 : 1 }}
+          >
             Theme
           </span>
-          <ThemeToggle
-            compact={isCollapsed}
-            className={cn(
-              "h-8 rounded-none border border-border transition-[width] duration-300 ease-in-out",
-              isCollapsed ? "w-12" : "w-28"
-            )}
-          />
+          <ThemeToggle compact={isCollapsed} className="h-8 rounded-none border border-border w-20 shrink-0" />
         </div>
-        
+
         <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
           title={isCollapsed ? "Alerts" : undefined}
           className={({ isActive }) =>
             cn(
-              "flex items-center transition-[padding,color] duration-300 ease-in-out w-full py-2 text-sm font-bold uppercase tracking-widest",
-              isCollapsed ? "pl-[14px] pr-0 gap-0" : "pl-2 pr-2 gap-3",
-              isActive
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+              "flex items-center gap-4 pl-5 py-2 text-sm font-bold uppercase tracking-widest whitespace-nowrap",
+              isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )
           }
         >
           <Bell className="w-5 h-5 shrink-0" />
-          <span className={cn(
-            "transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[150px] opacity-100"
-          )}>
+          <span
+            className="transition-opacity duration-150 ease-in-out"
+            style={{ opacity: isCollapsed ? 0 : 1 }}
+          >
             Alerts
           </span>
         </PrefetchNavLink>
-        
+
         <button
           onClick={onLogout}
           title={isCollapsed ? "Sign out" : undefined}
-          className={cn(
-            "flex items-center text-red-500 hover:text-red-600 transition-[padding,color] duration-300 ease-in-out w-full py-2 text-sm font-bold uppercase tracking-widest",
-            isCollapsed ? "pl-[14px] pr-0 gap-0" : "pl-2 pr-2 gap-3"
-          )}
+          className="flex items-center gap-4 pl-5 py-2 text-sm font-bold uppercase tracking-widest text-red-500 hover:text-red-600 whitespace-nowrap w-full"
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          <span className={cn(
-            "transition-[max-width,opacity] duration-300 ease-in-out overflow-hidden whitespace-nowrap",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[150px] opacity-100"
-          )}>
+          <span
+            className="transition-opacity duration-150 ease-in-out"
+            style={{ opacity: isCollapsed ? 0 : 1 }}
+          >
             Sign out
           </span>
         </button>
