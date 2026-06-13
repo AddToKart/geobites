@@ -183,7 +183,7 @@ export function CartPage() {
         </div>
 
         <div className="grid gap-16 xl:grid-cols-[minmax(0,1fr)_480px]">
-          <div className="space-y-8">
+          <div className="xl:sticky xl:top-12 xl:self-start space-y-8">
             {items.map((item) => (
               <article
                 key={item.menuItem.id}
