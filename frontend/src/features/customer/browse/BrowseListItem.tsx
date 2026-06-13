@@ -95,7 +95,7 @@ export function BrowseListItem({
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ETA</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Arrives in</span>
               <span className="text-sm font-bold text-foreground">
                 {vendor.etaMinutes || '20-35 min'}
               </span>

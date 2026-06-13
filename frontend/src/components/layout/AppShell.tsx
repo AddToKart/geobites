@@ -31,7 +31,7 @@ interface NavItem {
 }
 
 const CUSTOMER_NAV: NavItem[] = [
-  { label: "Directory", href: "/browse", icon: <Home className="w-5 h-5" /> },
+  { label: "Browse", href: "/browse", icon: <Home className="w-5 h-5" /> },
   { label: "Cart", href: "/cart", icon: <ShoppingBag className="w-5 h-5" /> },
   { label: "History", href: "/orders", icon: <History className="w-5 h-5" /> },
   { label: "Wallet", href: "/wallet", icon: <Wallet className="w-5 h-5" /> },

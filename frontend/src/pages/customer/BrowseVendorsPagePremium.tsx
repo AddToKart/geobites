@@ -190,7 +190,7 @@ export function BrowseVendorsPagePremium() {
         
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-16 mb-4">
           <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 sm:mb-0">
-            Explore {viewMode === 'list' ? 'directory' : 'catalog'}
+            Explore local kitchens
           </h2>
           <div className="flex items-center border border-border">
             <button className={`px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${viewMode === 'grid' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`} onClick={() => setViewMode('grid')}>
