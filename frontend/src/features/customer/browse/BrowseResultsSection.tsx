@@ -1,4 +1,6 @@
 import { Suspense, lazy } from "react";
+import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { VendorCardPremium } from "@/components/custom/VendorCardPremium";
@@ -46,8 +48,16 @@ export function BrowseResultsSection({
           No shops found
         </p>
         <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-          Try a different search term or reset back to the Santa Maria anchor.
+          Try a different search term or browse available categories above.
         </p>
+        <Button
+          variant="outline"
+          className="mt-6 rounded-full"
+          onClick={() => window.location.reload()}
+        >
+          <Search className="h-4 w-4 mr-2" />
+          Reset search
+        </Button>
       </section>
     );
   }
@@ -97,22 +107,22 @@ export function BrowseResultsSection({
         {browseVendors.slice(0, 3).map((vendor) => (
           <StaggerItem
             key={`${vendor.id}-feature`}
-            className="group relative flex flex-col justify-between h-full overflow-hidden rounded-[32px] bg-slate-50/60 dark:bg-gray-800/40 backdrop-blur-sm border border-slate-200/50 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-900 hover:shadow-[0_16px_40px_rgb(249,115,22,0.06)] hover:-translate-y-1 transition-all duration-500 cursor-pointer p-8"
+            className="group bento-card flex flex-col justify-between h-full cursor-pointer p-8"
             onClick={() => onSelectVendor(vendor.id)}
           >
-            <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+            <div className="bento-accent transition-opacity duration-700 opacity-0 group-hover:opacity-100" />
 
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <span className="h-1.5 w-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 group-hover:text-orange-500 transition-colors">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[var(--shadow-glow)]" />
+                <p className="eyebrow group-hover:text-primary transition-colors">
                   {vendor.spotlight || "Featured nearby"}
                 </p>
               </div>
-              <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-white mb-3">
+              <h2 className="text-[22px] font-bold tracking-tight text-foreground mb-3">
                 {vendor.name}
               </h2>
-              <p className="text-[14px] leading-relaxed font-medium text-slate-500 dark:text-slate-400 line-clamp-3">
+              <p className="subtle-copy line-clamp-3">
                 {vendor.description ||
                   "Discover our most popular picks from this top-rated local vendor."}
               </p>
@@ -122,7 +132,7 @@ export function BrowseResultsSection({
               {(vendor.specialties || []).slice(0, 3).map((specialty) => (
                 <span
                   key={specialty}
-                  className="rounded-full bg-white dark:bg-gray-800 px-3.5 py-1.5 text-[12px] font-semibold text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 border-b-slate-200 dark:border-gray-700/50 transition-colors group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700 dark:group-hover:border-orange-900/30 dark:group-hover:bg-orange-900/20 dark:group-hover:text-orange-300"
+                  className="rounded-full bg-surface px-3.5 py-1.5 text-[12px] font-semibold text-text-soft shadow-sm border border-white/30 dark:border-white/5 transition-colors group-hover:border-primary/30 group-hover:bg-primary/10 group-hover:text-primary"
                 >
                   {specialty}
                 </span>

@@ -1,6 +1,6 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { useCallback, startTransition, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bike, Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
+import { Bike, Clock3, MapPin, PackageCheck, Sparkles, CheckCircle2 } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -10,23 +10,19 @@ import { ParallaxSection } from '@/components/motion/Parallax';
 import { Reveal, Stagger } from '@/components/motion/Reveal';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
-import { acceptDelivery, getDeliveries } from '../../services/riderService';
+import { getDeliveries, updateDeliveryStatus } from '../../services/riderService';
+import { ORDER_STATUS_LABELS } from '@/utils/constants';
 import { Order } from '../../types';
 
 export function RiderDashboard() {
-  const [available, setAvailable] = useState<Order[]>([]);
   const [active, setActive] = useState<Order[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
-      const [availableOrders, activeOrders] = await Promise.all([
-        getDeliveries('available'),
-        getDeliveries('active'),
-      ]);
+      const activeOrders = await getDeliveries('active');
       startTransition(() => {
-        setAvailable(availableOrders);
         setActive(activeOrders);
         setError(null);
       });
@@ -40,19 +36,16 @@ export function RiderDashboard() {
   useVisiblePolling(loadData, 15000);
 
   useEffect(() => {
-    const nextSelectedOrder =
-      active[0]?.id ??
-      available[0]?.id ??
-      null;
+    const nextSelectedOrder = active[0]?.id ?? null;
 
-    if (!selectedOrderId || ![...active, ...available].some((order) => order.id === selectedOrderId)) {
+    if (!selectedOrderId || !active.some((order) => order.id === selectedOrderId)) {
       setSelectedOrderId(nextSelectedOrder);
     }
-  }, [active, available, selectedOrderId]);
+  }, [active, selectedOrderId]);
 
   const focusedOrder = useMemo(
-    () => [...active, ...available].find((order) => order.id === selectedOrderId) ?? active[0] ?? available[0] ?? null,
-    [active, available, selectedOrderId],
+    () => active.find((order) => order.id === selectedOrderId) ?? active[0] ?? null,
+    [active, selectedOrderId],
   );
 
   const liveCoords = useRiderLocationTracking({
@@ -64,13 +57,15 @@ export function RiderDashboard() {
     ),
   });
 
-  const mappedOrder = focusedOrder
-    ? {
-        ...focusedOrder,
-        riderLat: liveCoords?.lat ?? focusedOrder.riderLat,
-        riderLng: liveCoords?.lng ?? focusedOrder.riderLng,
-      }
-    : null;
+  const mappedOrder = useMemo(() => {
+    return focusedOrder
+      ? {
+          ...focusedOrder,
+          riderLat: liveCoords?.lat ?? focusedOrder.riderLat,
+          riderLng: liveCoords?.lng ?? focusedOrder.riderLng,
+        }
+      : null;
+  }, [focusedOrder, liveCoords]);
 
   const focusMessage = useMemo(() => {
     if (!mappedOrder) {
@@ -78,6 +73,9 @@ export function RiderDashboard() {
     }
 
     switch (mappedOrder.status) {
+      case 'accepted':
+      case 'preparing':
+        return 'Wait for the shop to prepare the order. You can head there now.';
       case 'ready_for_pickup':
         return 'Head to the shop and confirm pickup once the order is in hand.';
       case 'picked_up':
@@ -89,21 +87,31 @@ export function RiderDashboard() {
     }
   }, [mappedOrder]);
 
-  const accept = async (orderId: string) => {
+  const changeStatus = useCallback(async (orderId: string, status: 'picked_up' | 'delivering' | 'delivered') => {
     try {
-      await acceptDelivery(orderId);
+      await updateDeliveryStatus(orderId, status);
       await loadData();
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Failed to accept delivery');
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to update delivery');
     }
+  }, []);
+
+  const riderTransitions: Record<string, Array<'picked_up' | 'delivering' | 'delivered'>> = {
+    ready_for_pickup: ['picked_up'],
+    picked_up: ['delivering'],
+    delivering: ['delivered'],
   };
+
+  const preparingCount = active.filter(o => ['accepted', 'preparing'].includes(o.status)).length;
+  const readyCount = active.filter(o => o.status === 'ready_for_pickup').length;
+  const transitCount = active.filter(o => ['picked_up', 'delivering'].includes(o.status)).length;
 
   return (
     <div className="page-stack">
       <PageHeader
         eyebrow="Rider"
         title="Delivery dashboard"
-        description="Available runs and active deliveries sit on the same screen so you can claim the next job without extra noise."
+        description="View and track your assigned deliveries and manage drop-offs."
       />
 
       {error ? (
@@ -116,20 +124,20 @@ export function RiderDashboard() {
         <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
           <Card>
             <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Available</p>
-              <p className="mt-2 text-3xl font-semibold">{available.length}</p>
+              <p className="text-sm text-[color:var(--color-text-soft)]">Preparing</p>
+              <p className="mt-2 text-3xl font-semibold">{preparingCount}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Active</p>
-              <p className="mt-2 text-3xl font-semibold">{active.length}</p>
+              <p className="text-sm text-[color:var(--color-text-soft)]">Ready for Pickup</p>
+              <p className="mt-2 text-3xl font-semibold">{readyCount}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Focus</p>
-              <p className="mt-2 text-lg font-semibold">Keep status moving</p>
+              <p className="text-sm text-[color:var(--color-text-soft)]">In Transit</p>
+              <p className="mt-2 text-3xl font-semibold">{transitCount}</p>
             </CardContent>
           </Card>
         </Stagger>
@@ -140,69 +148,54 @@ export function RiderDashboard() {
           <Card>
             <CardContent className="space-y-4 p-5">
               <div>
-                <h2 className="text-2xl font-semibold">Available deliveries</h2>
-                <p className="subtle-copy">Claim the next run from this list.</p>
-              </div>
-              {available.map((order) => (
-                <div
-                  key={order.id}
-                  className={
-                    order.id === selectedOrderId
-                      ? 'flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                      : 'panel-muted flex flex-wrap items-center justify-between gap-4 px-4 py-4'
-                  }
-                  onClick={() => setSelectedOrderId(order.id)}
-                >
-                  <div className="space-y-2">
-                    <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
-                    <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-                      <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                      <span>{order.deliveryAddress}</span>
-                    </div>
-                  </div>
-                  <Button size="sm" onClick={() => void accept(order.id)}>
-                    <Bike className="h-4 w-4" />
-                    Accept
-                  </Button>
-                </div>
-              ))}
-              {available.length === 0 ? (
-                <p className="text-sm text-[color:var(--color-text-soft)]">No available deliveries.</p>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="space-y-4 p-5">
-              <div>
                 <h2 className="text-2xl font-semibold">My active deliveries</h2>
                 <p className="subtle-copy">Keep the current run moving and update status as you go.</p>
               </div>
-              {active.map((order) => (
-                <div
-                  key={order.id}
-                  className={
-                    order.id === selectedOrderId
-                      ? 'space-y-3 rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                      : 'panel-muted space-y-3 px-4 py-4'
-                  }
-                  onClick={() => setSelectedOrderId(order.id)}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
-                    <StatusBadge status={order.status} />
-                  </div>
-                  <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-                    <Clock3 className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <span>{order.deliveryAddress}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/rider/delivery/${order.id}`}>Open delivery detail</Link>
-                  </Button>
-                </div>
-              ))}
+              {active.map((order) => {
+                  const nextActions = riderTransitions[order.status] ?? [];
+
+                  return (
+                    <div
+                      key={order.id}
+                      className={
+                        order.id === selectedOrderId
+                          ? 'space-y-3 rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
+                          : 'panel-muted space-y-3 px-4 py-4'
+                      }
+                      onClick={() => setSelectedOrderId(order.id)}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
+                        <StatusBadge status={order.status} />
+                      </div>
+                      <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
+                        <Clock3 className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+                        <span>{order.deliveryAddress}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+                        {nextActions.map((action) => (
+                          <Button
+                            key={action}
+                            size="sm"
+                            className="rounded-full text-xs h-8"
+                            onClick={() => void changeStatus(order.id, action)}
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {ORDER_STATUS_LABELS[action]}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/rider/delivery/${order.id}`}>Open delivery detail</Link>
+                      </Button>
+                    </div>
+                  );
+                })}
               {active.length === 0 ? (
-                <p className="text-sm text-[color:var(--color-text-soft)]">No active deliveries.</p>
+                <div className="text-center py-4">
+                  <p className="text-sm text-[color:var(--color-text-soft)]">No active deliveries.</p>
+                  <p className="text-xs text-[color:var(--color-text-muted)] mt-1">Wait for a seller to assign a run to you.</p>
+                </div>
               ) : null}
             </CardContent>
           </Card>

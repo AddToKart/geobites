@@ -1,11 +1,51 @@
 import { Client } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import Database from 'better-sqlite3';
 
 export async function ensureDatabaseExists() {
-  const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
-  if (useMemoryDb) {
-    console.log('[Memory DB] Skipping PostgreSQL database existence check.');
+  const useSqlite = process.env.DB_TYPE === 'sqlite';
+  if (useSqlite) {
+    const dbPath = process.env.SQLITE_PATH || 'geobites.db';
+    console.log(`[SQLite] Checking database at: ${dbPath}`);
+    const db = new Database(dbPath);
+    try {
+      const tableCheck = db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='user'",
+        )
+        .get();
+
+      if (!tableCheck) {
+        console.log(
+          '[SQLite] Better Auth tables missing. Running auto-initialization...',
+        );
+        const migrationDir = path.join(process.cwd(), 'better-auth_migrations');
+        if (fs.existsSync(migrationDir)) {
+          const files = fs
+            .readdirSync(migrationDir)
+            .filter((f) => f.endsWith('.sql'))
+            .sort();
+
+          for (const file of files) {
+            console.log(`[SQLite] Running migration: ${file}`);
+            const sqlPath = path.join(migrationDir, file);
+            const sql = fs.readFileSync(sqlPath, 'utf8');
+            db.exec(sql);
+            console.log(`[SQLite] Migration ${file} completed successfully`);
+          }
+        } else {
+          console.warn('[SQLite] better-auth_migrations directory not found.');
+        }
+      } else {
+        console.log('[SQLite] Better Auth tables already exist.');
+      }
+    } catch (err) {
+      console.error('[SQLite] Error ensuring database tables exist:', err);
+      throw err;
+    } finally {
+      db.close();
+    }
     return;
   }
 

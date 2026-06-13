@@ -44,5 +44,5 @@ export function useVisiblePolling(
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, intervalMs, onTick, runOnMount]);
+  }, [enabled, intervalMs, runOnMount]);
 }

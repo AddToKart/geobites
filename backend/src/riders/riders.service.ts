@@ -22,9 +22,15 @@ export class RidersService {
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
     const type = query.type ?? 'available';
 
+    if (type === 'available') {
+      return [];
+    }
+
     if (type === 'active') {
       return this.orderRepository.find({
         where: [
+          { riderId, status: 'accepted' },
+          { riderId, status: 'preparing' },
           { riderId, status: 'ready_for_pickup' },
           { riderId, status: 'picked_up' },
           { riderId, status: 'delivering' },
@@ -36,18 +42,7 @@ export class RidersService {
       });
     }
 
-    return this.orderRepository.find({
-      where: {
-        status: 'ready_for_pickup',
-        riderId: IsNull(),
-      },
-      relations: {
-        vendor: true,
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
+    return [];
   }
 
   async acceptDelivery(orderId: string, riderId: string) {

@@ -46,7 +46,7 @@ export function OrderCard({ order }: { order: Order }) {
           </div>
           <Link
             to={`/orders/${order.id}`}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)] shadow-[var(--shadow-soft)] transition hover:text-[color:var(--color-primary)]"
+            className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)] shadow-[var(--shadow-soft)] transition hover:text-[color:var(--color-primary)]"
           >
             View details
             <ArrowRight className="h-4 w-4" />

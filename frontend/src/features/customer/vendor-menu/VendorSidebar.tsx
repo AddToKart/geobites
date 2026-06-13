@@ -78,9 +78,9 @@ export function VendorSidebar({
           <div>
             <p className="eyebrow">Cart</p>
             <h2 className="mt-2 text-2xl font-semibold">{cartCount} item(s)</h2>
-            <p className="subtle-copy">
-              Keep everything from one vendor together and check out when you are ready.
-            </p>
+              <p className="subtle-copy">
+                Items from this vendor will appear here. Check out when you're ready.
+              </p>
           </div>
           <div className="panel-muted space-y-3 px-4 py-4">
             <div className="flex items-center justify-between text-sm">
@@ -115,7 +115,7 @@ export function VendorSidebar({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl font-semibold">Shop map</h2>
-              <p className="subtle-copy">See the pickup point customers and riders use.</p>
+              <p className="subtle-copy">See the vendor location and nearby area.</p>
             </div>
             <Badge>{vendorMeta?.neighborhood || 'Local shop'}</Badge>
           </div>

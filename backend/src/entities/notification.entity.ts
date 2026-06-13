@@ -24,7 +24,7 @@ export class Notification {
   message!: string;
 
   @Column({
-    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: ['order_update', 'delivery_request', 'rating', 'system'],
   })
   type!: 'order_update' | 'delivery_request' | 'rating' | 'system';

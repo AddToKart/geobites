@@ -39,7 +39,7 @@ export function BrowseVendorsPagePremium() {
   const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<BrowseSort>('distance');
+  const [sortBy] = useState<BrowseSort>('distance');
   const [coords, setCoords] = useState(santaMariaBulacanCenter);
   const [viewMode, setViewMode] = useState<BrowseViewMode>('grid');
   const [isLoading, setIsLoading] = useState(true);
@@ -136,16 +136,9 @@ export function BrowseVendorsPagePremium() {
     }
   }, [browseVendors, selectedVendorId]);
 
-  const topRatedCount = useMemo(
-    () => browseVendors.filter((vendor) => vendor.rating >= 4.7).length,
-    [browseVendors],
-  );
-
-  const featuredCount = demoVendors.length;
-
   if (viewMode === 'map') {
     return (
-      <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-slate-100">
+      <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-background">
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
@@ -163,28 +156,19 @@ export function BrowseVendorsPagePremium() {
             <BrowseOverviewSection
               search={search}
               onSearchChange={setSearch}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              onResetArea={() => {
-                setCoords(santaMariaBulacanCenter);
-                toast.success('Centered back on Santa Maria, Bulacan');
-              }}
               browseCount={browseVendors.length}
-              topRatedCount={topRatedCount}
-              featuredCount={featuredCount}
-              selectedVendor={selectedVendor}
               activeOrder={activeOrder}
             />
           </div>
         </div>
-        <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-full shadow-[var(--shadow-panel)] border border-slate-100 dark:border-gray-800 p-1">
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('grid')}>
+        <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-card/90 backdrop-blur-md rounded-full shadow-[var(--shadow-panel)] border border-border p-1">
+          <Button variant="ghost" size="sm" className="rounded-full px-4 text-text-soft" onClick={() => setViewMode('grid')}>
             <Store className="h-4 w-4 mr-2" /> Grid
           </Button>
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('list')}>
+          <Button variant="ghost" size="sm" className="rounded-full px-4 text-text-soft" onClick={() => setViewMode('list')}>
             <List className="h-4 w-4 mr-2" /> List
           </Button>
-          <Button variant="default" size="sm" className="rounded-full px-4 bg-primary text-white shadow-sm" onClick={() => setViewMode('map')}>
+            <Button variant="default" size="sm" className="rounded-full px-4 bg-primary text-primary-foreground shadow-sm" onClick={() => setViewMode('map')}>
             <MapIcon className="h-4 w-4 mr-2" /> Map
           </Button>
         </div>
@@ -198,29 +182,20 @@ export function BrowseVendorsPagePremium() {
         <BrowseOverviewSection
           search={search}
           onSearchChange={setSearch}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onResetArea={() => {
-            setCoords(santaMariaBulacanCenter);
-            toast.success('Centered back on Santa Maria, Bulacan');
-          }}
           browseCount={browseVendors.length}
-          topRatedCount={topRatedCount}
-          featuredCount={featuredCount}
-          selectedVendor={selectedVendor}
           activeOrder={activeOrder}
         />
         
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-gray-800">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">All Restaurants</h2>
-          <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-1">
-            <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('grid')}>
+        <div className="flex items-center justify-between pb-4 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground">All Restaurants</h2>
+          <div className="flex items-center bg-muted rounded-full p-1">
+            <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'grid' ? 'bg-card text-foreground shadow-sm' : 'text-text-muted'}`} onClick={() => setViewMode('grid')}>
               <Store className="h-4 w-4 mr-1.5" /> Grid
             </Button>
-            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('list')}>
+            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'list' ? 'bg-card text-foreground shadow-sm' : 'text-text-muted'}`} onClick={() => setViewMode('list')}>
               <List className="h-4 w-4 mr-1.5" /> List
             </Button>
-            <Button variant="ghost" size="sm" className="rounded-full px-4 h-8 text-slate-500" onClick={() => setViewMode('map')}>
+            <Button variant="ghost" size="sm" className="rounded-full px-4 h-8 text-text-muted" onClick={() => setViewMode('map')}>
               <MapIcon className="h-4 w-4 mr-1.5" /> Map
             </Button>
           </div>

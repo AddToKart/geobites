@@ -7,7 +7,6 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryColumn,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { decimalNumberTransformer } from '../database/decimal-number.transformer';

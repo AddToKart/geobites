@@ -1,5 +1,6 @@
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
+import { IsNull } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RidersService } from './riders.service';
@@ -11,6 +12,7 @@ describe('RidersService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     save: jest.fn(),
+    update: jest.fn(),
   };
   const notificationsService = {
     create: jest.fn(),
@@ -37,23 +39,22 @@ describe('RidersService', () => {
   });
 
   it('notifies both customer and seller when a rider accepts a delivery', async () => {
+    orderRepository.update.mockResolvedValue({ affected: 1 });
     orderRepository.findOne.mockResolvedValue({
       id: 'order-1',
       customerId: 'customer-1',
       status: 'ready_for_pickup',
-      riderId: null,
+      riderId: 'rider-1',
       vendor: {
         userId: 'seller-1',
       },
     });
-    orderRepository.save.mockImplementation(async (order) => order);
 
     await service.acceptDelivery('order-1', 'rider-1');
 
-    expect(orderRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        riderId: 'rider-1',
-      }),
+    expect(orderRepository.update).toHaveBeenCalledWith(
+      { id: 'order-1', status: 'ready_for_pickup', riderId: IsNull() },
+      { riderId: 'rider-1' },
     );
     expect(notificationsService.create).toHaveBeenCalledTimes(2);
     expect(notificationsService.create).toHaveBeenNthCalledWith(

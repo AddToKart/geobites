@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import Database from 'better-sqlite3';
 import { Pool } from 'pg';
 
 type Role = 'customer' | 'seller' | 'rider';
@@ -25,12 +26,13 @@ function parseTrustedOrigins(): string[] {
   return [...new Set([...parsedOrigins, ...defaultOrigins])];
 }
 
-const useMemoryDb = process.env.USE_MEMORY_DB === 'true';
+const useSqlite = process.env.DB_TYPE === 'sqlite';
 
 let databaseConfig: any;
-if (useMemoryDb) {
-  console.log('[Memory DB] Using Better Auth fallback in-memory database adapter...');
-  databaseConfig = undefined;
+if (useSqlite) {
+  const dbPath = process.env.SQLITE_PATH || 'geobites.db';
+  console.log(`[SQLite] Using Better Auth with persistent database: ${dbPath}`);
+  databaseConfig = new Database(dbPath);
 } else {
   databaseConfig = new Pool({
     host: process.env.DB_HOST || 'localhost',

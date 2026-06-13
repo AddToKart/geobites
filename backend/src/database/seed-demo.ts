@@ -2,8 +2,6 @@ import { DataSource } from 'typeorm';
 import { Vendor } from '../entities/vendor.entity';
 import { MenuItem } from '../entities/menu-item.entity';
 
-const timestamp = new Date().toISOString();
-
 const demoVendors = [
   {
     id: 'demo-kape-baryo',
@@ -46,7 +44,8 @@ const demoMenus: Record<string, any[]> = {
     {
       id: 'demo-kape-baryo-pandesal-set',
       name: 'Pandesal Breakfast Box',
-      description: 'Fresh pandesal, kesong puti spread, and brewed barako coffee.',
+      description:
+        'Fresh pandesal, kesong puti spread, and brewed barako coffee.',
       price: 120,
       category: 'Breakfast plates',
       isAvailable: true,
@@ -62,7 +61,8 @@ const demoMenus: Record<string, any[]> = {
     {
       id: 'demo-kape-baryo-chicken-arroz',
       name: 'Chicken Arroz Caldo',
-      description: 'Slow-cooked rice porridge with toasted garlic and boiled egg.',
+      description:
+        'Slow-cooked rice porridge with toasted garlic and boiled egg.',
       price: 130,
       category: 'Comfort bowls',
       isAvailable: true,
@@ -81,7 +81,7 @@ export async function seedDemoData(dataSource: DataSource) {
     if (!existing) {
       console.log(`Creating vendor: ${v.name}`);
       await vendorRepo.save(v);
-      
+
       const items = demoMenus[v.id] || [];
       for (const item of items) {
         await menuRepo.save({ ...item, vendorId: v.id });

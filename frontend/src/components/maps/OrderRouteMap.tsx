@@ -23,7 +23,7 @@ type OrderWithRoute = Pick<
 type RoutePoint = {
   lat: number;
   lng: number;
-  label: 'Shop' | 'Customer' | 'Rider';
+  label: 'Shop' | 'Customer' | 'Rider' | 'Available Rider';
   title: string;
   subtitle: string;
   color: string;
@@ -83,7 +83,7 @@ function RouteViewportController({
 }) {
   const { map, isLoaded } = useMap();
   const viewportKey = useMemo(() => {
-    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const structuralPoints = points.filter((point) => point.label !== 'Rider' && point.label !== 'Available Rider');
     const focusPoints = structuralPoints.length ? structuralPoints : points;
 
     return focusPoints
@@ -96,7 +96,7 @@ function RouteViewportController({
       return;
     }
 
-    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const structuralPoints = points.filter((point) => point.label !== 'Rider' && point.label !== 'Available Rider');
     const focusPoints = structuralPoints.length ? structuralPoints : points;
 
     if (focusPoints.length === 1) {
@@ -170,14 +170,18 @@ function RouteMarker({ point }: { point: RoutePoint }) {
   );
 }
 
+import { AvailableRider } from '@/services/orderService';
+
 export function OrderRouteMap({
   order,
+  availableRiders = [],
   title = 'Delivery map',
   description = 'Shop, customer pin, and rider progress appear here when coordinates are available.',
   className,
   compact = false,
 }: {
   order: OrderWithRoute;
+  availableRiders?: AvailableRider[];
   title?: string;
   description?: string;
   className?: string;
@@ -234,9 +238,22 @@ export function OrderRouteMap({
     };
   }, [order]);
 
+  const riderPoints = useMemo<RoutePoint[]>(() => {
+    return availableRiders
+      .filter((r) => typeof r.lat === 'number' && typeof r.lng === 'number')
+      .map((r) => ({
+        lat: r.lat!,
+        lng: r.lng!,
+        label: 'Available Rider' as const,
+        title: r.name,
+        subtitle: `Rider Status: ${r.status.toUpperCase()}${r.phone ? ` • ${r.phone}` : ''}`,
+        color: r.status === 'available' ? '#8b5cf6' : '#6b7280',
+      }));
+  }, [availableRiders]);
+
   const points = useMemo(
-    () => [vendorPoint, customerPoint, riderPoint].filter(Boolean) as RoutePoint[],
-    [customerPoint, riderPoint, vendorPoint],
+    () => [vendorPoint, customerPoint, riderPoint, ...riderPoints].filter(Boolean) as RoutePoint[],
+    [customerPoint, riderPoint, vendorPoint, riderPoints],
   );
 
   const routeCoordinates = useMemo<[number, number][]>(

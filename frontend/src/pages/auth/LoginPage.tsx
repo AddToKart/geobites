@@ -1,12 +1,12 @@
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, ShieldCheck, ShoppingBag, Truck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { Reveal } from "@/components/motion/Reveal";
 import { toast } from "sonner";
 
 export function LoginPage() {
@@ -15,6 +15,25 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+  const validateField = (field: 'email' | 'password', value: string) => {
+    if (field === 'email' && !value.trim()) return 'Email is required';
+    if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
+    if (field === 'password' && !value) return 'Password is required';
+    if (field === 'password' && value.length < 6) return 'Password must be at least 6 characters';
+    return undefined;
+  };
+
+  const handleBlur = (field: 'email' | 'password') => {
+    const value = field === 'email' ? email : password;
+    const error = validateField(field, value);
+    setErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
+  const clearError = (field: 'email' | 'password') => {
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
 
   if (!isLoading && user) {
     const destination =
@@ -28,6 +47,15 @@ export function LoginPage() {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
+
+    const emailError = validateField('email', email);
+    const passwordError = validateField('password', password);
+    setErrors({ email: emailError, password: passwordError });
+
+    if (emailError || passwordError) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -42,117 +70,139 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-background)] px-4 py-8 md:px-6">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="flex items-start justify-end lg:col-span-2">
-          <ThemeToggle />
-        </div>
-        <section className="page-hero flex flex-col justify-between">
-          <div className="space-y-4">
-            <p className="eyebrow">Geobites</p>
-            <h1>Sign in to a calmer dashboard</h1>
-            <p className="max-w-xl subtle-copy">
-              Cleaner ordering for customers, clearer operations for sellers,
-              and a rider view that keeps the next action obvious.
-            </p>
-          </div>
+    <div className="relative min-h-screen overflow-hidden bg-[color:var(--color-background)] selection:bg-primary/30">
+      {/* Signature Background Element */}
+      <div className="absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 overflow-hidden">
+        <div className="absolute inset-0 animate-[pulse_8s_ease-in-out_infinite] bg-primary/20 rounded-full blur-[120px] transform-gpu will-change-[transform,opacity]" />
+        <div className="absolute inset-10 animate-[pulse_12s_ease-in-out_infinite_1s] bg-primary/10 rounded-full blur-[120px] transform-gpu will-change-[transform,opacity]" />
+      </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <FeatureCard
-              icon={<ShoppingBag className="h-5 w-5" />}
-              title="Cleaner ordering"
-              description="Browse, cart, and tracking now follow the same layout language."
-            />
-            <FeatureCard
-              icon={<ShieldCheck className="h-5 w-5" />}
-              title="Role aware"
-              description="The app routes you straight into the right dashboard for your account."
-            />
-            <FeatureCard
-              icon={<Truck className="h-5 w-5" />}
-              title="Useful status"
-              description="Delivery and order state are visible without hunting through tabs."
-            />
-          </div>
-        </section>
-
-        <Card className="self-center">
-          <CardContent className="space-y-6 p-6 md:p-8">
-            <div className="space-y-2">
-              <p className="eyebrow">Welcome back</p>
-              <h2 className="text-3xl font-semibold">Sign in</h2>
-              <p className="subtle-copy">
-                Use the account you already created for Geobites.
-              </p>
+      <header className="fixed top-0 flex w-full items-center justify-between px-6 py-4 backdrop-blur-sm">
+        <Reveal delay={0.1}>
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-glow">
+              <span className="text-lg font-bold">G</span>
             </div>
+            <span className="text-xl font-bold tracking-tight">Geobites</span>
+          </Link>
+        </Reveal>
+        <Reveal delay={0.2}>
+          <ThemeToggle />
+        </Reveal>
+      </header>
 
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                />
+      <main className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-[420px] space-y-8">
+          <div className="text-center">
+            <Reveal delay={0.3}>
+              <p className="eyebrow inline-block">Security First</p>
+            </Reveal>
+            <Reveal delay={0.4}>
+              <h1 className="mt-2 text-4xl font-extrabold tracking-tight md:text-5xl">
+                Welcome back
+              </h1>
+            </Reveal>
+            <Reveal delay={0.5}>
+              <p className="mt-4 subtle-copy">
+                Sign in to manage your orders, deliveries, and business with
+                clarity.
+              </p>
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.6}>
+            <div className="glass panel-card p-8 shadow-panel">
+              <form onSubmit={onSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="email"
+                    className="text-xs font-bold uppercase tracking-widest text-text-soft"
+                  >
+                    Email address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@geobites.com"
+                    className={`h-12 border-none bg-surface-2 focus-visible:ring-primary ${errors.email ? 'ring-2 ring-danger/40 bg-danger-soft/20' : ''}`}
+                    value={email}
+                    onBlur={() => handleBlur('email')}
+                    onChange={(event) => { setEmail(event.target.value); clearError('email'); }}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
+                    required
+                  />
+                  {errors.email ? <p id="email-error" className="text-xs font-semibold text-danger mt-1.5">{errors.email}</p> : null}
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="password"
+                      className="text-xs font-bold uppercase tracking-widest text-text-soft"
+                    >
+                      Password
+                    </Label>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className={`h-12 border-none bg-surface-2 focus-visible:ring-primary ${errors.password ? 'ring-2 ring-danger/40 bg-danger-soft/20' : ''}`}
+                    value={password}
+                    onBlur={() => handleBlur('password')}
+                    onChange={(event) => { setPassword(event.target.value); clearError('password'); }}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
+                    required
+                  />
+                  {errors.password ? <p id="password-error" className="text-xs font-semibold text-danger mt-1.5">{errors.password}</p> : null}
+                </div>
+                <Button
+                  className="group relative w-full h-12 overflow-hidden rounded-xl bg-primary text-primary-foreground shadow-glow transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting}
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2 font-bold">
+                    {isSubmitting ? "Authenticating..." : "Continue to Dashboard"}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                  <div className="absolute inset-0 z-0 bg-gradient-to-r from-primary-light to-primary opacity-0 transition-opacity group-hover:opacity-100" />
+                </Button>
+              </form>
+
+              <div className="mt-8 flex flex-col items-center gap-4 pt-8 border-t border-white/10">
+                <p className="text-sm text-text-soft">
+                  New to Geobites?{" "}
+                  <Link
+                    to="/register"
+                    className="font-bold text-primary-dark hover:text-primary transition-colors"
+                  >
+                    Create an account
+                  </Link>
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
-              </div>
-              <Button
-                className="w-full"
-                type="submit"
-                size="lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Signing in..." : "Sign in"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </form>
+            </div>
+          </Reveal>
 
-            <p className="text-sm text-[color:var(--color-text-soft)]">
-              Need an account?{" "}
-              <Link
-                className="font-medium text-[color:var(--color-primary-dark)]"
-                to="/register"
-              >
-                Create one here
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="panel-card p-4">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--color-primary-soft)] text-[color:var(--color-primary-dark)]">
-        {icon}
-      </div>
-      <h3 className="mt-4 text-base font-semibold">{title}</h3>
-      <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-        {description}
-      </p>
+          <Reveal delay={0.8}>
+            <div className="flex justify-center gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-text-soft/50">
+              <span className="flex items-center gap-1">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                Secure
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                Encrypted
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="h-1 w-1 rounded-full bg-primary" />
+                Private
+              </span>
+            </div>
+          </Reveal>
+        </div>
+      </main>
     </div>
   );
 }

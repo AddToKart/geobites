@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
 import { getVendorMenu } from "@/services/menuService";
@@ -185,9 +184,6 @@ export function VendorMenuPage() {
       </Card>
     );
   }
-
-  const visibleCategoryCount = Object.keys(groupedItems).length;
-
   return (
     <div className="page-stack pb-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
@@ -196,7 +192,7 @@ export function VendorMenuPage() {
           <h1 className="text-3xl font-bold tracking-tight">{vendor.name}</h1>
           <p className="subtle-copy mt-2 max-w-2xl">
             {vendor.description ||
-              "Search the menu, filter by category, and order from a cleaner storefront instead of a long unstructured list."}
+              "Browse the menu, filter by category, and add items to your cart."}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -224,7 +220,6 @@ export function VendorMenuPage() {
             <VendorStorefrontHero
               vendor={vendor}
               vendorMeta={vendorMeta}
-              categoryCount={categories.length - 1}
               filteredCount={filteredItems.length}
             />
           </Reveal>
@@ -240,7 +235,6 @@ export function VendorMenuPage() {
               categories={categories}
               activeCategory={activeCategory}
               onActiveCategoryChange={setActiveCategory}
-              visibleCategoryCount={visibleCategoryCount}
             />
           </Reveal>
 

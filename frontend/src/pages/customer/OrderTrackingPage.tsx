@@ -4,11 +4,11 @@ import { MapPin, PackageCheck, ShoppingBag } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal, Stagger } from "@/components/motion/Reveal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
-import { getOrder, updateOrderStatus } from "../../services/orderService";
+import { updateOrderStatus, getPaymentStatus } from "../../services/orderService";
 import { Order } from "../../types";
 import { ORDER_STATUS_LABELS } from "../../utils/constants";
 import { formatCurrency, formatDate } from "../../utils/helpers";
@@ -38,7 +38,7 @@ export function OrderTrackingPage() {
 
       setIsLoading(true);
       try {
-        const response = await getOrder(id);
+        const response = await getPaymentStatus(id);
         setOrder(response);
         setError(null);
       } catch (caughtError) {
@@ -62,7 +62,7 @@ export function OrderTrackingPage() {
       }
 
       try {
-        const response = await getOrder(id);
+        const response = await getPaymentStatus(id);
         setOrder(response);
         setError(null);
       } catch (caughtError) {
@@ -120,9 +120,22 @@ export function OrderTrackingPage() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">Loading order...</CardContent>
-      </Card>
+      <div className="page-stack">
+        <Skeleton className="h-44 rounded-[28px]" />
+        <div className="grid gap-6 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 rounded-[28px]" />
+          ))}
+        </div>
+        <Skeleton className="h-80 rounded-[32px]" />
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
+          <Skeleton className="h-96 rounded-[32px]" />
+          <div className="space-y-6">
+            <Skeleton className="h-48 rounded-[32px]" />
+            <Skeleton className="h-32 rounded-[32px]" />
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -147,8 +160,7 @@ export function OrderTrackingPage() {
             Order #{order.id.slice(0, 8)}
           </h1>
           <p className="subtle-copy mt-2 max-w-2xl">
-            Placed {formatDate(order.createdAt)}. Keep this page open for the
-            clearest view of progress and delivery details.
+            Placed {formatDate(order.createdAt)}. Track live status, payment, and delivery progress.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -174,51 +186,93 @@ export function OrderTrackingPage() {
         </Card>
       ) : null}
 
+      {order.paymentMethod !== "COD" && order.paymentStatus === "pending" && (
+        <Card className="rounded-[28px] border border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-900/50 shadow-sm overflow-hidden mb-2">
+          <CardContent className="flex items-center gap-4 p-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 shrink-0">
+              <ShoppingBag className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-orange-950 dark:text-orange-200">
+                Payment Pending Verification ({order.paymentMethod})
+              </h3>
+              <p className="text-sm font-medium text-orange-700/80 dark:text-orange-400/80 mt-0.5">
+                Reference Number: <strong className="text-text font-mono">{order.paymentSessionId || "N/A"}</strong>
+              </p>
+              <p className="text-xs font-semibold text-text-muted mt-1">
+                The seller is verifying your transfer. Your order will be prepared once confirmed.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {order.paymentMethod !== "COD" && order.paymentStatus === "paid" && (
+        <Card className="rounded-[28px] border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-900/50 shadow-sm overflow-hidden mb-2">
+          <CardContent className="flex items-center gap-4 p-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 shrink-0">
+              <PackageCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-emerald-950 dark:text-emerald-200">
+                Payment Verified ({order.paymentMethod})
+              </h3>
+              <p className="text-sm font-medium text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                Reference Number: <strong className="text-text font-mono">{order.paymentSessionId || "N/A"}</strong>
+              </p>
+              <p className="text-xs font-semibold text-text-muted mt-1">
+                Your payment of {formatCurrency(order.totalAmount)} was successfully verified by the seller.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Stagger
         className="grid gap-6 md:grid-cols-3"
         delayChildren={0.04}
         stagger={0.06}
       >
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+        <Card className="rounded-[28px] border border-border shadow-[var(--shadow-card)]">
           <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-primary-soft text-primary shrink-0">
               <ShoppingBag className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Total
               </p>
-              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
+              <p className="text-2xl font-bold tracking-tight text-foreground mt-0.5">
                 {formatCurrency(order.totalAmount)}
               </p>
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+        <Card className="rounded-[28px] border border-border shadow-[var(--shadow-card)]">
           <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-primary-soft text-primary shrink-0">
               <PackageCheck className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Items
               </p>
-              <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-0.5">
-                {order.items.length}
+              <p className="text-2xl font-bold tracking-tight text-foreground mt-0.5">
+                {order.items?.length || 0}
               </p>
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-[28px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-card)]">
+        <Card className="rounded-[28px] border border-border shadow-[var(--shadow-card)]">
           <CardContent className="flex items-center gap-5 p-6 md:p-8">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-orange-50 text-orange-500 shrink-0">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-primary-soft text-primary shrink-0">
               <MapPin className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 Address
               </p>
-              <p className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
+              <p className="line-clamp-2 text-sm font-semibold text-foreground mt-0.5">
                 {order.street} {order.barangay}
               </p>
             </div>
@@ -236,14 +290,14 @@ export function OrderTrackingPage() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_420px]">
         <Reveal>
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+          <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)]">
             <CardContent className="space-y-6 p-6 md:p-8">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   Progress
                 </h2>
-                <p className="text-sm font-medium text-slate-500 mt-2">
-                  Each completed step stays highlighted.
+                <p className="text-sm font-medium text-text-muted mt-2">
+                  Track your order from placement to delivery.
                 </p>
               </div>
               <ol className="space-y-4">
@@ -256,19 +310,19 @@ export function OrderTrackingPage() {
                       key={status}
                       className={
                         active
-                          ? "rounded-[24px] bg-orange-500 text-white px-6 py-5 shadow-[0_8px_16px_rgba(249,115,22,0.2)] transition-all transform hover:-translate-y-1"
-                          : "rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 px-6 py-5 transition-all opacity-80"
+                          ? "rounded-[24px] bg-primary text-primary-foreground px-6 py-5 shadow-glow transition-all transform hover:-translate-y-1"
+                          : "rounded-[24px] border border-border bg-muted px-6 py-5 transition-all opacity-80"
                       }
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p
-                            className={`text-lg font-bold tracking-tight ${active ? "text-white" : "text-slate-600 dark:text-slate-400"}`}
+                            className={`text-lg font-bold tracking-tight ${active ? "text-white" : "text-text-soft"}`}
                           >
                             {ORDER_STATUS_LABELS[status] ?? status}
                           </p>
                           <p
-                            className={`mt-1 text-[11px] font-bold uppercase tracking-widest ${active ? "text-white/80" : "text-slate-400"}`}
+                            className={`mt-1 text-[11px] font-bold uppercase tracking-widest ${active ? "text-white/80" : "text-text-muted"}`}
                           >
                             {current
                               ? "Current step"
@@ -281,7 +335,7 @@ export function OrderTrackingPage() {
                           className={
                             active
                               ? "rounded-full bg-white/20 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-md"
-                              : "rounded-full bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-400 shadow-sm"
+                              : "rounded-full bg-card border border-border px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-text-muted shadow-sm"
                           }
                         >
                           Step {index + 1}
@@ -296,22 +350,22 @@ export function OrderTrackingPage() {
         </Reveal>
 
         <Reveal className="space-y-6" delay={0.1}>
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+          <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)]">
             <CardContent className="space-y-6 p-6 md:p-8">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 Summary
               </h2>
-              <div className="space-y-3 rounded-[24px] border border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-800/50 p-5">
-                {order.items.map((item) => (
+              <div className="space-y-3 rounded-[24px] border border-border bg-muted p-5">
+                {(order.items || []).map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between gap-3 text-sm"
                   >
-                    <span className="font-semibold text-slate-600 dark:text-slate-300">
-                      <span className="text-orange-500">{item.quantity}x</span>{" "}
+                    <span className="font-semibold text-text-soft">
+                      <span className="text-primary">{item.quantity}x</span>{" "}
                       {item.name}
                     </span>
-                    <span className="font-bold text-slate-900 dark:text-white tracking-tight">
+                    <span className="font-bold text-foreground tracking-tight">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
@@ -320,12 +374,12 @@ export function OrderTrackingPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-[32px] border border-slate-100 dark:border-gray-800 shadow-[var(--shadow-panel)]">
+          <Card className="rounded-[32px] border border-border shadow-[var(--shadow-panel)]">
             <CardContent className="space-y-4 p-6 md:p-8">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 Notes
               </h2>
-              <p className="text-sm font-medium leading-relaxed text-slate-500">
+              <p className="text-sm font-medium leading-relaxed text-text-muted">
                 {order.notes ||
                   "No delivery notes were provided for this order."}
               </p>

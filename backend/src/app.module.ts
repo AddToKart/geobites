@@ -11,6 +11,8 @@ import { Order } from './entities/order.entity';
 import { Rating } from './entities/rating.entity';
 import { Vendor } from './entities/vendor.entity';
 import { RiderLocation } from './entities/rider-location.entity';
+import { Wallet } from './entities/wallet.entity';
+import { WalletTransaction } from './entities/wallet-transaction.entity';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
@@ -19,6 +21,7 @@ import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -38,6 +41,8 @@ import { PaymentsModule } from './payments/payments.module';
       Rating,
       Notification,
       RiderLocation,
+      Wallet,
+      WalletTransaction,
     ]),
     VendorsModule,
     MenuModule,
@@ -47,6 +52,7 @@ import { PaymentsModule } from './payments/payments.module';
     NotificationsModule,
     TrackingModule,
     PaymentsModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [AppService],

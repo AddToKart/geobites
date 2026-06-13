@@ -79,7 +79,7 @@ export function ShopProfileSection({
                 Shop description
               </label>
               <textarea
-                className="min-h-28 w-full rounded-[20px] border border-[color:var(--color-border)] bg-white/85 px-4 py-3 text-sm text-[color:var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none"
+                className="min-h-28 w-full rounded-[20px] border border-[color:var(--color-border)] bg-card/85 px-4 py-3 text-sm text-[color:var(--color-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] outline-none"
                 placeholder="Tell customers what your shop is known for."
                 value={vendorForm.description}
                 onChange={(event) =>

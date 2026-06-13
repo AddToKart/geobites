@@ -30,11 +30,11 @@ export function BrowseListItem({
     <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
       <article
         className={cn(
-          'defer-card grid overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transform-gpu transition-transform duration-150 hover:-translate-y-0.5 xl:grid-cols-[260px_minmax(0,1fr)_220px]',
-          isSelected && 'border-[color:var(--color-primary)] shadow-[0_22px_46px_rgba(235,106,45,0.18)]',
+          'panel-card grid transform-gpu transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-panel)] xl:grid-cols-[260px_minmax(0,1fr)_220px]',
+          isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-[var(--shadow-glow)]',
         )}
       >
-        <div className="relative min-h-[220px] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.38),transparent_36%),linear-gradient(135deg,#ef7c42,#f6b372)] p-6 text-white">
+        <div className="relative min-h-[220px] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.38),transparent_36%),linear-gradient(135deg,var(--color-primary-light),var(--color-primary-dark))] p-6 text-white">
           <div className="flex flex-wrap gap-2">
             <Badge variant={vendor.isActive ? 'success' : 'warning'}>
               {vendor.isActive ? 'Open now' : 'Closed'}
@@ -55,16 +55,16 @@ export function BrowseListItem({
         <div className="space-y-5 p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-[color:var(--color-text)]">{vendor.name}</p>
-              <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
+              <p className="text-sm font-semibold text-foreground">{vendor.name}</p>
+              <p className="mt-2 text-sm leading-6 text-text-soft">
                 {vendor.description || 'Prepared fast and pinned close to Santa Maria for easier ordering.'}
               </p>
             </div>
-            <ArrowRight className="mt-1 h-5 w-5 text-[color:var(--color-text-light)]" />
+            <ArrowRight className="mt-1 h-5 w-5 text-text-muted" />
           </div>
 
-          <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
+          <div className="flex items-start gap-2 text-sm text-text-soft">
+            <MapPin className="mt-0.5 h-4 w-4 text-primary" />
             <span>{vendor.address}</span>
           </div>
 
@@ -72,7 +72,7 @@ export function BrowseListItem({
             {(vendor.specialties || []).slice(0, 3).map((specialty) => (
               <span
                 key={specialty}
-                className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                className="rounded-full bg-surface-2 px-3 py-1 text-xs font-medium text-text-soft border border-white/30 dark:border-white/5"
               >
                 {specialty}
               </span>
@@ -80,24 +80,24 @@ export function BrowseListItem({
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-4 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-6 xl:border-l xl:border-t-0">
+        <div className="flex flex-col justify-between gap-4 border-t border-border/5 bg-surface-2/50 p-6 xl:border-l xl:border-t-0">
           <div className="grid gap-3">
             <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">Rating</span>
-              <span className="flex items-center gap-1 text-sm font-semibold text-[color:var(--color-text)]">
-                <Star className="h-4 w-4 fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />
+              <span className="text-sm text-text-soft">Rating</span>
+              <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                <Star className="h-4 w-4 fill-primary text-primary" />
                 {vendor.rating.toFixed(1)}
               </span>
             </div>
             <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">Distance</span>
-              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+              <span className="text-sm text-text-soft">Distance</span>
+              <span className="text-sm font-semibold text-foreground">
                 {formatDistanceLabel(distanceKm)}
               </span>
             </div>
             <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">ETA</span>
-              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+              <span className="text-sm text-text-soft">ETA</span>
+              <span className="text-sm font-semibold text-foreground">
                 {vendor.etaMinutes || '20-35 min'}
               </span>
             </div>

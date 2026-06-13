@@ -26,10 +26,11 @@ export async function updateDeliveryStatus(
 export async function updateDeliveryLocation(
   orderId: string,
   payload: { riderLat: number; riderLng: number },
-): Promise<Order> {
-  const response = await api.patch<Order>(
-    `/riders/deliveries/${orderId}/location`,
-    payload,
-  );
+): Promise<unknown> {
+  const response = await api.put<unknown>('/tracking/location', {
+    lat: payload.riderLat,
+    lng: payload.riderLng,
+    orderId,
+  });
   return response.data;
 }

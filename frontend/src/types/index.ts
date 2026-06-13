@@ -71,11 +71,17 @@ export interface Order {
   status: OrderStatus;
   totalAmount: number;
   deliveryAddress: string;
+  street?: string;
+  barangay?: string;
+  landmark?: string;
   deliveryLat?: number;
   deliveryLng?: number;
   riderLat?: number;
   riderLng?: number;
   notes?: string;
+  paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  paymentSessionId?: string;
   items: OrderItem[];
   vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;

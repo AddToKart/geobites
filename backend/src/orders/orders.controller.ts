@@ -78,4 +78,20 @@ export class OrdersController {
       role as 'customer' | 'seller' | 'rider',
     );
   }
+
+  @Get('riders/available')
+  @Roles('seller')
+  getAvailableRiders() {
+    return this.ordersService.getAvailableRiders();
+  }
+
+  @Post(':id/assign-rider')
+  @Roles('seller')
+  assignRider(
+    @Param('id') id: string,
+    @Body('riderId') riderId: string,
+    @CurrentUser('id') sellerId: string,
+  ) {
+    return this.ordersService.assignRider(id, riderId, sellerId);
+  }
 }

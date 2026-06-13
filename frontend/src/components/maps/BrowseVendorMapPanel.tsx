@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Clock3, MapPin } from 'lucide-react';
-import { MapStyleSelect } from '@/components/maps/MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from '@/components/maps/map-styles';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Map,
   MapControls,
   MapMarker,
   MarkerContent,
-  MarkerPopup,
   useMap,
 } from '@/components/ui/map';
 import { cn } from '@/lib/utils';
@@ -87,16 +81,6 @@ function BrowseMapViewport({
   return null;
 }
 
-function formatDistanceLabel(distanceKm: number | null) {
-  if (distanceKm === null) {
-    return 'Santa Maria area';
-  }
-
-  return distanceKm < 1
-    ? `${Math.round(distanceKm * 1000)} m away`
-    : `${distanceKm.toFixed(1)} km away`;
-}
-
 export function BrowseVendorMapPanel({
   vendors,
   selectedVendor,
@@ -110,7 +94,7 @@ export function BrowseVendorMapPanel({
   onSelectVendor: (vendorId: string) => void;
   onLocate: (coords: { lat: number; lng: number }) => void;
 }) {
-  const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
+  const [style] = useState<MapStyleKey>(defaultMapStyle);
   const selectedStyle = mapStyles[style];
   const is3D = style === 'openstreetmap3d';
 
@@ -157,7 +141,7 @@ export function BrowseVendorMapPanel({
                   <span
                     className={cn(
                       'relative inline-flex h-5 w-5 rounded-full border-[3px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.3)] transition-all duration-300',
-                      isSelected ? 'bg-black scale-125' : 'bg-orange-500 hover:scale-110',
+                      isSelected ? 'bg-black scale-125' : 'bg-primary hover:scale-110',
                     )}
                   />
                 </div>

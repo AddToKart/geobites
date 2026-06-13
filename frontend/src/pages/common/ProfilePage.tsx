@@ -34,7 +34,7 @@ export function ProfilePage() {
       <PageHeader
         eyebrow="Account"
         title="Profile"
-        description="Core account details live here. The goal is simple: make the important information easy to scan and nothing else."
+        description="Your name, email, role, and contact info at a glance."
       />
 
       <section className="grid gap-5 md:grid-cols-2">
@@ -55,9 +55,9 @@ export function ProfilePage() {
 
       <Card className="max-w-3xl">
         <CardContent className="space-y-3 p-5">
-          <h2 className="text-2xl font-semibold">Account notes</h2>
+          <h2 className="text-2xl font-semibold">Account info</h2>
           <p className="text-sm text-[color:var(--color-text-soft)]">
-            This screen is intentionally lightweight for now. If you want editable profile fields next, this page is already set up to become the account settings surface.
+            Profile editing is coming soon. For now, contact support to update your details.
           </p>
         </CardContent>
       </Card>

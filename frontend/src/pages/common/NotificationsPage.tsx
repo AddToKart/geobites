@@ -66,7 +66,7 @@ export function NotificationsPage() {
       <PageHeader
         eyebrow="Updates"
         title="Notifications"
-        description="Unread items stay obvious, read ones fade back, and the whole page now gives you a real triage flow instead of one long stack."
+        description="Stay updated on orders, deliveries, and account activity."
       />
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -125,7 +125,7 @@ export function NotificationsPage() {
               <div>
                 <h2 className="text-2xl font-semibold">Inbox</h2>
                 <p className="subtle-copy">
-                  Filter the feed or mark the visible unread set in one action.
+                  Filter by type or mark notifications as read.
                 </p>
               </div>
               {visibleUnread.length > 0 ? (
@@ -152,7 +152,7 @@ export function NotificationsPage() {
                   className={
                     filter === option.key
                       ? 'rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)]'
-                      : 'rounded-full border border-[color:var(--color-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]'
+                      : 'rounded-full border border-[color:var(--color-border)] bg-card px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]'
                   }
                 >
                   {option.label}
@@ -166,6 +166,17 @@ export function NotificationsPage() {
                 <p className="mt-2 subtle-copy">
                   Adjust the filter or wait for new order, delivery, or account updates.
                 </p>
+                {filter !== 'all' ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4 rounded-full font-semibold"
+                    onClick={() => setFilter('all')}
+                  >
+                    <Filter className="h-4 w-4 mr-1.5" />
+                    Show all notifications
+                  </Button>
+                ) : null}
               </div>
             ) : (
               filteredNotifications.map((notification) => (
@@ -207,7 +218,7 @@ export function NotificationsPage() {
                 <p className="eyebrow">Triage</p>
                 <h2 className="mt-2 text-2xl font-semibold">Quick read</h2>
                 <p className="mt-2 subtle-copy">
-                  The side rail now summarizes the inbox instead of leaving an empty right gutter.
+                  See how many notifications of each type you have.
                 </p>
               </div>
               <div className="grid gap-3">
@@ -225,9 +236,9 @@ export function NotificationsPage() {
 
           <Card>
             <CardContent className="space-y-3 p-5">
-              <h2 className="text-2xl font-semibold">What this improves</h2>
+              <h2 className="text-2xl font-semibold">Notification settings</h2>
               <p className="text-sm text-[color:var(--color-text-soft)]">
-                Filters, batch read actions, and category counts give this page actual utility instead of just a vertical stack of alerts.
+                Manage which types of notifications you receive — coming soon.
               </p>
             </CardContent>
           </Card>

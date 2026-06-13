@@ -86,7 +86,7 @@ export function ActiveDeliveryPage() {
       default:
         return 'Wait for the next valid rider step.';
     }
-  }, [order?.status]);
+  }, [order]);
 
   if (!order) {
     return (

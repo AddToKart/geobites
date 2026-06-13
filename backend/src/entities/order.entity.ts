@@ -34,7 +34,7 @@ export class Order {
   riderId?: string;
 
   @Column({
-    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: [
       'pending',
       'accepted',
@@ -80,18 +80,21 @@ export class Order {
   floorOrGate?: string;
 
   @Column({
-    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
-    enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
+    enum: ['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'],
     default: 'COD',
   })
-  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
 
   @Column({
-    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: ['pending', 'paid', 'failed'],
     default: 'pending',
   })
   paymentStatus!: 'pending' | 'paid' | 'failed';
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  paymentSessionId?: string;
 
   @Column({ type: 'text', nullable: true })
   cancellationReason?: string;
@@ -100,13 +103,16 @@ export class Order {
   disputeReason?: string;
 
   @Column({
-    type: process.env.USE_MEMORY_DB === 'true' ? 'simple-enum' : 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
     default: 'none',
   })
   disputeStatus!: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
 
-  @Column({ type: process.env.USE_MEMORY_DB === 'true' ? 'datetime' : 'timestamp', nullable: true })
+  @Column({
+    type: process.env.DB_TYPE === 'sqlite' ? 'datetime' : 'timestamp',
+    nullable: true,
+  })
   estimatedDeliveryTime?: Date;
 
   @Column({

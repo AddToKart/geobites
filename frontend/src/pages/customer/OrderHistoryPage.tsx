@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Clock3,
   PackageCheck,
@@ -6,13 +7,13 @@ import {
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
-import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
+import { StaticRouteMap } from "@/components/custom/StaticRouteMap";
 import { OrderCard } from "../../components/custom/OrderCard";
+import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
 import { MetricCard } from "@/components/layout/MetricCard";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { getOrders } from "../../services/orderService";
 import { Order } from "../../types";
@@ -175,11 +176,15 @@ export function OrderHistoryPage() {
       ) : orders.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center">
-            <h2 className="text-2xl font-semibold">No orders yet</h2>
+            <h2 className="text-2xl font-semibold text-foreground">No orders yet</h2>
             <p className="mx-auto mt-3 max-w-xl subtle-copy">
-              Once you place an order, status updates and delivery history will
-              appear here.
+              Start exploring local restaurants and place your first order.
             </p>
+            <div className="mt-6">
+              <Button asChild className="rounded-full font-bold">
+                <Link to="/browse"><ShoppingBag className="h-4 w-4 mr-2" /> Browse restaurants</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -190,10 +195,9 @@ export function OrderHistoryPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-semibold">History filters</h2>
-                    <p className="subtle-copy">
-                      Search orders, isolate live runs, or review completed
-                      deliveries without empty space between sections.
-                    </p>
+                <p className="subtle-copy">
+                  Search orders by ID, vendor, or address. Filter by status to focus on what matters.
+                </p>
                   </div>
                   <Badge>{filteredOrders.length} shown</Badge>
                 </div>
@@ -225,7 +229,7 @@ export function OrderHistoryPage() {
                         className={
                           filter === option.key
                             ? "rounded-full border border-[color:var(--color-primary)] bg-[color:var(--color-primary-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-primary-dark)]"
-                            : "rounded-full border border-[color:var(--color-border)] bg-white px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]"
+                            : "rounded-full border border-[color:var(--color-border)] bg-card px-4 py-2 text-sm font-medium text-[color:var(--color-text-soft)] hover:bg-[color:var(--color-surface-2)] hover:text-[color:var(--color-text)]"
                         }
                       >
                         {option.label}
@@ -253,10 +257,8 @@ export function OrderHistoryPage() {
 
           <div className="space-y-4">
             {spotlightOrder ? (
-              <LazyOrderRouteMap
+              <StaticRouteMap
                 order={spotlightOrder}
-                title={`Spotlight order #${spotlightOrder.id.slice(0, 8)}`}
-                description="This fills the history rail with live route context instead of leaving the right side underused."
                 compact
               />
             ) : null}
@@ -267,8 +269,7 @@ export function OrderHistoryPage() {
                   <p className="eyebrow">History summary</p>
                   <h2 className="mt-2 text-2xl font-semibold">Quick read</h2>
                   <p className="mt-2 subtle-copy">
-                    The side rail now summarizes what matters most instead of
-                    ending in dead space.
+                    Quick overview of your order activity at a glance.
                   </p>
                 </div>
 

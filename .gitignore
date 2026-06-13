@@ -92,3 +92,6 @@ yarn.lock
 
 # Project specific
 openspec
+
+# SQLite database files (auto-generated)
+*.db

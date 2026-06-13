@@ -14,6 +14,7 @@ import {
   Truck,
   User,
   UtensilsCrossed,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,6 +31,7 @@ const CUSTOMER_NAV: NavItem[] = [
   { label: "Browse", href: "/browse", icon: <Home className="w-5 h-5" /> },
   { label: "Cart", href: "/cart", icon: <ShoppingBag className="w-5 h-5" /> },
   { label: "Orders", href: "/orders", icon: <History className="w-5 h-5" /> },
+  { label: "GeoPay", href: "/wallet", icon: <Wallet className="w-5 h-5" /> },
   { label: "Profile", href: "/profile", icon: <User className="w-5 h-5" /> },
 ];
 
@@ -78,19 +80,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  const initials = React.useMemo(() => {
-    if (!user?.name) {
-      return "G";
-    }
-
-    return user.name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-  }, [user?.name]);
-
   const handleLogout = async () => {
     try {
       await signOut();
@@ -107,42 +96,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[color:var(--color-background)] relative">
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-80 p-0 md:block border-r border-slate-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-[var(--shadow-panel)]">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-80 p-0 md:block border-r border-border bg-card shadow-[var(--shadow-panel)]">
         <NavContent
           items={navItems}
           onLogout={handleLogout}
           userName={user.name}
           userRole={user.role}
-          initials={initials}
         />
       </aside>
 
       <div className="flex min-h-screen flex-col md:ml-80 relative z-10 w-full md:w-[calc(100%-20rem)]">
-        <header className="fixed top-0 inset-x-0 z-50 flex h-[70px] items-center justify-between border-b border-slate-200/50 bg-white/80 backdrop-blur-xl px-4 md:hidden dark:border-gray-800/50 dark:bg-gray-900/80">
+        <header className="fixed top-0 inset-x-0 z-50 flex h-[70px] items-center justify-between border-b border-border/50 bg-card/80 backdrop-blur-xl px-4 md:hidden">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[18px] bg-black text-sm font-bold text-white shadow-sm">
-              {initials}
+            <div className="flex h-10 w-10 items-center justify-center rounded-[18px] bg-gradient-to-br from-primary to-primary-dark text-sm font-bold text-white shadow-glow shadow-primary/30">
+              G
             </div>
             <div>
-              <p className="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">
+              <p className="text-[15px] font-bold tracking-tight text-foreground">
                 Geobites
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                {user.role}
+              <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-primary">
+                Santa Maria, Bulacan
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle
               compact
-              className="rounded-[18px] shadow-sm bg-white"
+              className="rounded-[18px] shadow-sm bg-card"
             />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-[18px] border-slate-200 dark:border-gray-700 shadow-sm bg-white"
+                  className="rounded-[18px] border-border shadow-sm bg-card"
                 >
                   <Menu className="w-5 h-5" />
                   <span className="sr-only">Toggle menu</span>
@@ -150,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-80 border-none bg-white dark:bg-gray-900 p-0 shadow-2xl"
+                className="w-80 border-none bg-card p-0 shadow-2xl"
               >
                 <NavContent
                   items={navItems}
@@ -158,7 +146,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onItemClick={() => setOpen(false)}
                   userName={user.name}
                   userRole={user.role}
-                  initials={initials}
                 />
               </SheetContent>
             </Sheet>
@@ -222,30 +209,31 @@ function NavContent({
   onItemClick,
   userName,
   userRole,
-  initials,
 }: {
   items: NavItem[];
   onLogout: () => void;
   onItemClick?: () => void;
   userName: string;
   userRole: string;
-  initials: string;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-gray-900">
-      <div className="border-b border-slate-100 dark:border-gray-800 px-6 py-8">
+    <div className="flex h-full flex-col overflow-hidden bg-card">
+      <div className="border-b border-border px-6 py-8">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-black text-white text-lg font-bold shadow-sm">
-            {initials}
+          <div className="flex h-14 w-14 items-center justify-center rounded-[20px] bg-gradient-to-br from-primary to-primary-dark text-white text-lg font-bold shadow-glow shadow-primary/30">
+            G
           </div>
           <div className="space-y-1">
-            <span className="block text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <span className="block text-xl font-bold tracking-tight text-foreground">
               Geobites
             </span>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              Santa Maria, Bulacan
+            </span>
+            <p className="text-sm font-medium text-text-muted">
               {userName}
             </p>
-            <p className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-gray-800 text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-300">
+            <p className="inline-block px-2.5 py-0.5 rounded-full bg-muted text-[10px] font-bold uppercase tracking-widest text-text-soft">
               {userRole}
             </p>
           </div>
@@ -266,8 +254,8 @@ function NavContent({
                 cn(
                   "flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold transition-all duration-200",
                   isActive
-                    ? "bg-slate-100 text-primary dark:bg-gray-800/80 dark:text-primary shadow-sm"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800/50 dark:hover:text-white",
+                    ? "bg-accent text-primary shadow-sm"
+                    : "text-text-muted hover:bg-accent hover:text-foreground",
                 )
               }
             >
@@ -278,9 +266,9 @@ function NavContent({
         ))}
       </Stagger>
 
-      <div className="space-y-2 border-t border-slate-100 dark:border-gray-800 p-4">
+      <div className="space-y-2 border-t border-border p-4">
         <div className="px-1 pb-2">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-text-muted">
             Settings
           </p>
           <ThemeToggle className="w-full justify-between" />
@@ -292,8 +280,8 @@ function NavContent({
             cn(
               "flex items-center gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold transition-colors",
               isActive
-                ? "bg-slate-100 text-primary dark:bg-gray-800/80 dark:text-primary shadow-sm"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-gray-800/50 dark:hover:text-white",
+                ? "bg-accent text-primary shadow-sm"
+                : "text-text-muted hover:bg-accent hover:text-foreground",
             )
           }
         >
@@ -302,7 +290,7 @@ function NavContent({
         </PrefetchNavLink>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 h-auto"
+          className="w-full justify-start gap-4 rounded-[20px] px-4 py-3.5 text-[15px] font-semibold text-text-muted hover:bg-danger-soft hover:text-danger h-auto"
           onClick={onLogout}
         >
           <LogOut className="w-5 h-5" />
@@ -315,9 +303,9 @@ function NavContent({
 
 function MobileBottomNav({ items }: { items: NavItem[] }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-gray-800/50 pb-safe">
-      <div className="flex h-[64px] items-center justify-around px-2">
-        {items.slice(0, 4).map((item) => (
+    <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-card/90 backdrop-blur-xl border-t border-border/50 pb-safe overflow-x-auto">
+      <div className="flex h-[64px] items-center justify-around px-2 min-w-max">
+        {items.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
@@ -325,8 +313,8 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
               cn(
                 "flex flex-col items-center justify-center gap-1 w-16 h-14 text-[10px] font-bold transition-all duration-200",
                 isActive
-                  ? "text-black dark:text-white"
-                  : "text-slate-500 dark:text-slate-400",
+                  ? "text-foreground"
+                  : "text-text-muted",
               )
             }
           >
@@ -335,7 +323,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
                 <div
                   className={cn(
                     "p-1.5 rounded-[16px] transition-colors",
-                    isActive && "bg-primary/10 text-primary dark:bg-primary/20",
+                    isActive && "bg-primary/10 text-primary",
                   )}
                 >
                   {item.icon}

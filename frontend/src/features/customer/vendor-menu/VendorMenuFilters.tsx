@@ -1,7 +1,5 @@
 import { Search, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +11,6 @@ export function VendorMenuFilters({
   categories,
   activeCategory,
   onActiveCategoryChange,
-  visibleCategoryCount,
 }: {
   menuSearch: string;
   onMenuSearchChange: (value: string) => void;
@@ -22,18 +19,17 @@ export function VendorMenuFilters({
   categories: string[];
   activeCategory: string;
   onActiveCategoryChange: (value: string) => void;
-  visibleCategoryCount: number;
 }) {
   return (
-    <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-[24px] border border-slate-200/50 dark:border-gray-800 shadow-[var(--shadow-soft)] p-6 space-y-6">
+    <div className="bg-card/80 backdrop-blur-md rounded-[24px] border border-border/50 shadow-[var(--shadow-soft)] p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <label className="relative block flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <Input
             placeholder="Search dishes or categories..."
             value={menuSearch}
             onChange={(event) => onMenuSearchChange(event.target.value)}
-            className="pl-11 h-12 rounded-full border-slate-200/60 bg-slate-50/50 dark:border-gray-700/50 dark:bg-gray-800/50 focus-visible:ring-orange-500 shadow-sm"
+            className="pl-11 h-12 rounded-full border-border/60 bg-muted/50 focus-visible:ring-primary shadow-sm"
           />
         </label>
         <Button
@@ -41,22 +37,22 @@ export function VendorMenuFilters({
           onClick={onToggleAvailableOnly}
           className={cn(
             "h-12 rounded-full px-6 font-semibold shadow-sm transition-all",
-            showAvailableOnly
-              ? "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100 hover:text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800/50"
-              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 dark:bg-gray-800 dark:text-slate-300 dark:border-gray-700",
+              showAvailableOnly
+                ? "bg-primary-soft text-primary border-primary/30 hover:bg-primary-soft hover:text-primary-dark"
+                : "bg-card text-text-soft border-border hover:bg-accent hover:text-foreground",
           )}
         >
           <Sparkles
             className={cn(
               "h-4 w-4 mr-2",
-              showAvailableOnly ? "text-orange-500" : "text-slate-400",
+              showAvailableOnly ? "text-primary" : "text-text-muted",
             )}
           />
           Available Only
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-gray-800">
+      <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
         {categories.map((category) => (
           <button
             key={category}
@@ -65,8 +61,8 @@ export function VendorMenuFilters({
             className={cn(
               "rounded-full border px-4 py-2 text-[13px] font-bold transition-all shadow-sm",
               activeCategory === category
-                ? "border-orange-500 bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,0.2)]"
-                : "border-slate-200/60 bg-white text-slate-600 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 dark:border-gray-700/50 dark:bg-gray-800 dark:text-slate-300 dark:hover:bg-gray-700",
+                ? "border-primary bg-primary text-primary-foreground shadow-glow"
+                : "border-border bg-card text-text-soft hover:border-primary/30 hover:bg-primary-soft hover:text-primary-dark",
             )}
           >
             {category === "all" ? "All Items" : category}

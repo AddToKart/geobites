@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
@@ -36,7 +36,7 @@ export function MenuManagementPage() {
   const [isSavingVendor, setIsSavingVendor] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
 
-  const syncVendorForm = (currentVendor: Vendor | null) => {
+  const syncVendorForm = useCallback((currentVendor: Vendor | null) => {
     if (!currentVendor) {
       setVendorForm(defaultVendorForm);
       return;
@@ -51,9 +51,9 @@ export function MenuManagementPage() {
       longitude: Number(currentVendor.longitude).toFixed(6),
       isActive: currentVendor.isActive,
     });
-  };
+  }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user) {
       return;
     }
@@ -76,11 +76,11 @@ export function MenuManagementPage() {
       setError(message);
       toast.error(message);
     }
-  };
+  }, [user, syncVendorForm]);
 
   useEffect(() => {
     void loadData();
-  }, [user]);
+  }, [loadData]);
 
   const vendorCoordinates = useMemo(
     () => ({

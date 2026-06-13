@@ -60,6 +60,24 @@ export const loadVendorMenuPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadMockPaymentPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/MockPaymentPage').then((module) => ({
+    default: module.MockPaymentPage,
+  })),
+);
+
+export const loadLandingPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/LandingPage').then((module) => ({
+    default: module.LandingPage,
+  })),
+);
+
+export const loadWalletPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/WalletPage').then((module) => ({
+    default: module.WalletPage,
+  })),
+);
+
 export const loadActiveDeliveryPage = memoizeRouteLoader(() =>
   import('@/pages/rider/ActiveDeliveryPage').then((module) => ({
     default: module.ActiveDeliveryPage,
@@ -91,6 +109,7 @@ export const loadSellerDashboardPage = memoizeRouteLoader(() =>
 );
 
 const exactRouteLoaders: Record<string, RouteLoader> = {
+  '/': loadLandingPage,
   '/browse': loadBrowsePage,
   '/cart': loadCartPage,
   '/login': loadLoginPage,
@@ -103,6 +122,8 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/seller': loadSellerDashboardPage,
   '/seller/menu': loadMenuManagementPage,
   '/seller/orders': loadOrderManagementPage,
+  '/mock-payment': loadMockPaymentPage,
+  '/wallet': loadWalletPage,
 };
 
 const dynamicRouteLoaders: Array<{
@@ -147,7 +168,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
   const commonLoaders = [loadNotificationsPage, loadProfilePage];
 
   if (!role) {
-    return [loadLoginPage, loadRegisterPage];
+    return [loadLandingPage, loadLoginPage, loadRegisterPage];
   }
 
   switch (role) {
@@ -167,6 +188,8 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadCartPage,
         loadOrderHistoryPage,
         loadOrderTrackingPage,
+        loadWalletPage,
+        loadMockPaymentPage,
         ...commonLoaders,
       ];
   }
