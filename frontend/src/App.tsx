@@ -19,7 +19,7 @@ import {
   loadOrderHistoryPage,
   loadOrderManagementPage,
   loadOrderTrackingPage,
-  loadProfilePage,
+  loadSettingsPage,
   loadRegisterPage,
   loadRiderDashboardPage,
   loadSellerDashboardPage,
@@ -32,7 +32,7 @@ const LandingPage = lazy(loadLandingPage);
 const LoginPage = lazy(loadLoginPage);
 const RegisterPage = lazy(loadRegisterPage);
 const NotificationsPage = lazy(loadNotificationsPage);
-const ProfilePage = lazy(loadProfilePage);
+const SettingsPage = lazy(loadSettingsPage);
 const BrowseVendorsPagePremium = lazy(loadBrowsePage);
 const CartPage = lazy(loadCartPage);
 const OrderHistoryPage = lazy(loadOrderHistoryPage);
@@ -113,7 +113,7 @@ function AppRoutes() {
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

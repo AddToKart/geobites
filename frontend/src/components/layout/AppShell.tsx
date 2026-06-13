@@ -14,6 +14,7 @@ import {
   User,
   UtensilsCrossed,
   Wallet,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,7 +31,7 @@ const CUSTOMER_NAV: NavItem[] = [
   { label: "Cart", href: "/cart", icon: <ShoppingBag className="w-5 h-5" /> },
   { label: "History", href: "/orders", icon: <History className="w-5 h-5" /> },
   { label: "Wallet", href: "/wallet", icon: <Wallet className="w-5 h-5" /> },
-  { label: "Account", href: "/profile", icon: <User className="w-5 h-5" /> },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 const SELLER_NAV: NavItem[] = [
@@ -45,7 +46,7 @@ const SELLER_NAV: NavItem[] = [
     href: "/seller/orders",
     icon: <ShoppingBag className="w-5 h-5" />,
   },
-  { label: "Account", href: "/profile", icon: <User className="w-5 h-5" /> },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 const RIDER_NAV: NavItem[] = [
@@ -55,7 +56,7 @@ const RIDER_NAV: NavItem[] = [
     href: "/rider/deliveries",
     icon: <Truck className="w-5 h-5" />,
   },
-  { label: "Account", href: "/profile", icon: <User className="w-5 h-5" /> },
+  { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

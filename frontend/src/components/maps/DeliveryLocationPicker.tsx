@@ -122,6 +122,7 @@ export function DeliveryLocationPicker({
     `Pin set at ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`,
   emptyText = 'No delivery pin selected yet.',
   initialCenter = fallbackCenter,
+  disabled = false,
 }: {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
@@ -136,6 +137,7 @@ export function DeliveryLocationPicker({
   selectedText?: (coords: { lat: number; lng: number }) => string;
   emptyText?: string;
   initialCenter?: { lat: number; lng: number };
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [center, setCenter] = useState<{ lat: number; lng: number }>(value ?? initialCenter);
@@ -311,7 +313,8 @@ export function DeliveryLocationPicker({
           <DialogTrigger asChild>
             <button
               type="button"
-              className="h-11 px-5 border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-colors duration-150 shrink-0"
+              disabled={disabled}
+              className="h-11 px-5 border border-foreground bg-transparent text-foreground hover:bg-foreground hover:text-background font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-colors duration-150 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-foreground"
             >
               <MapPinned className="h-4 w-4" />
               {value ? 'Edit pin' : 'Open map'}

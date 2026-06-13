@@ -20,6 +20,10 @@ export function CartPage() {
   const { user } = useAuth();
   const { items, total, updateQuantity, removeItem, clearCart, vendorId } =
     useCart();
+  
+  const hasProfileLocation = Boolean(user?.street && user?.barangay && user?.deliveryLat && user?.deliveryLng);
+  const [useProfileAddress, setUseProfileAddress] = useState(false);
+
   const [street, setStreet] = useState(user?.street || "");
   const [barangay, setBarangay] = useState(user?.barangay || "");
   const [landmark, setLandmark] = useState(user?.landmark || "");
@@ -35,20 +39,26 @@ export function CartPage() {
       : null
   );
 
+  // Auto-enable profile address toggling if they have a saved default address on load
   useEffect(() => {
-    if (user) {
-      setStreet((prev) => prev || user.street || "");
-      setBarangay((prev) => prev || user.barangay || "");
-      setLandmark((prev) => prev || user.landmark || "");
-      setDeliveryPin((prev) => {
-        if (prev) return prev;
-        if (user.deliveryLat && user.deliveryLng) {
-          return { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) };
-        }
-        return null;
-      });
+    if (hasProfileLocation) {
+      setUseProfileAddress(true);
     }
-  }, [user]);
+  }, [hasProfileLocation]);
+
+  // Sync inputs with profile fields if toggled on
+  useEffect(() => {
+    if (useProfileAddress && user) {
+      setStreet(user.street || "");
+      setBarangay(user.barangay || "");
+      setLandmark(user.landmark || "");
+      setDeliveryPin(
+        user.deliveryLat && user.deliveryLng
+          ? { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) }
+          : null
+      );
+    }
+  }, [useProfileAddress, user]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ street?: string; barangay?: string; paymentRef?: string }>({});
@@ -315,16 +325,62 @@ export function CartPage() {
               </div>
 
               <div className="space-y-6 mb-12">
-                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-                  Delivery Details
-                </p>
+                <div className="border-b border-border pb-2 flex items-center justify-between">
+                  <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                    Delivery Details
+                  </p>
+                </div>
+
+                {/* Profile Default Address Toggle */}
+                <div className="flex border border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!hasProfileLocation) {
+                        toast.error("No default location configured in Settings.");
+                        return;
+                      }
+                      setUseProfileAddress(true);
+                    }}
+                    className={`flex-1 h-12 font-bold tracking-widest text-[10px] uppercase transition-colors cursor-pointer ${
+                      useProfileAddress
+                        ? "bg-foreground text-background"
+                        : "bg-transparent text-foreground hover:bg-secondary/20"
+                    }`}
+                  >
+                    Use Profile Default
+                  </button>
+                  <div className="w-px bg-border" />
+                  <button
+                    type="button"
+                    onClick={() => setUseProfileAddress(false)}
+                    className={`flex-1 h-12 font-bold tracking-widest text-[10px] uppercase transition-colors cursor-pointer ${
+                      !useProfileAddress
+                        ? "bg-foreground text-background"
+                        : "bg-transparent text-foreground hover:bg-secondary/20"
+                    }`}
+                  >
+                    Custom Address
+                  </button>
+                </div>
+
+                {!hasProfileLocation && (
+                  <p className="text-xs text-amber-500 font-semibold mb-6 flex items-center gap-1.5 leading-relaxed">
+                    ⚠️ No default location set.{" "}
+                    <Link to="/settings" className="underline hover:text-foreground">
+                      Configure Default Location in Settings
+                    </Link>
+                  </p>
+                )}
+
                 <div className="space-y-4">
                   <Input
                     placeholder="Street / Unit Number"
                     value={street}
+                    disabled={useProfileAddress}
                     onBlur={() => handleBlur('street')}
                     onChange={(e) => { setStreet(e.target.value); clearError('street'); }}
-                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.street ? 'border-red-500 bg-red-500/5' : ''}`}
+                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.street ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.street)}
                     aria-describedby={errors.street ? 'street-error' : undefined}
                     required
@@ -334,9 +390,10 @@ export function CartPage() {
                   <Input
                     placeholder="Barangay"
                     value={barangay}
+                    disabled={useProfileAddress}
                     onBlur={() => handleBlur('barangay')}
                     onChange={(e) => { setBarangay(e.target.value); clearError('barangay'); }}
-                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.barangay ? 'border-red-500 bg-red-500/5' : ''}`}
+                    className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.barangay ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.barangay)}
                     aria-describedby={errors.barangay ? 'barangay-error' : undefined}
                     required
@@ -346,8 +403,9 @@ export function CartPage() {
                   <Input
                     placeholder="Landmark (Optional)"
                     value={landmark}
+                    disabled={useProfileAddress}
                     onChange={(e) => setLandmark(e.target.value)}
-                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <Textarea
                     className="min-h-[100px] resize-none rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
@@ -359,6 +417,7 @@ export function CartPage() {
                     <LazyDeliveryLocationPicker
                       value={deliveryPin}
                       onChange={setDeliveryPin}
+                      disabled={useProfileAddress}
                       vendorCoords={
                         vendor
                           ? { lat: Number(vendor.latitude), lng: Number(vendor.longitude) }

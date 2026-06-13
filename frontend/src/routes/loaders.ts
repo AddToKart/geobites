@@ -28,8 +28,8 @@ export const loadNotificationsPage = memoizeRouteLoader(() =>
   })),
 );
 
-export const loadProfilePage = memoizeRouteLoader(() =>
-  import('@/pages/common/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+export const loadSettingsPage = memoizeRouteLoader(() =>
+  import('@/pages/common/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 );
 
 export const loadBrowsePage = memoizeRouteLoader(() =>
@@ -115,7 +115,7 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/login': loadLoginPage,
   '/notifications': loadNotificationsPage,
   '/orders': loadOrderHistoryPage,
-  '/profile': loadProfilePage,
+  '/settings': loadSettingsPage,
   '/register': loadRegisterPage,
   '/rider': loadRiderDashboardPage,
   '/rider/deliveries': loadRiderDashboardPage,
@@ -165,7 +165,7 @@ export function preloadRoute(pathname: string) {
 }
 
 export function getWarmupLoadersForRole(role: UserRole | null) {
-  const commonLoaders = [loadNotificationsPage, loadProfilePage];
+  const commonLoaders = [loadNotificationsPage, loadSettingsPage];
 
   if (!role) {
     return [loadLandingPage, loadLoginPage, loadRegisterPage];
