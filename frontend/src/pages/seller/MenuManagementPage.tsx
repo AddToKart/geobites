@@ -1,5 +1,4 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
 import { createVendor, getVendors, updateVendor } from '@/services/vendorService';
@@ -219,41 +218,48 @@ export function MenuManagementPage() {
   };
 
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Seller"
-        title="Shop customization"
-        description="Edit the storefront customers actually browse: shop name, live status, address, hero image, and the exact Santa Maria pin."
-      />
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_380px]">
-        <div className="space-y-6">
-          <ShopProfileSection
-            vendorForm={vendorForm}
-            setVendorForm={setVendorForm}
-            onSubmit={saveVendorProfile}
-            isSavingVendor={isSavingVendor}
-            vendorCoordinates={vendorCoordinates}
-          />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
+        {/* Editorial Header */}
+        <div className="border-b-2 border-foreground pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Seller</p>
+            <h1 className="text-6xl md:text-8xl font-medium tracking-tighter leading-[0.9] mb-4">Shop customization.</h1>
+            <p className="text-xl text-muted-foreground mt-4 max-w-xl">
+              Edit the storefront customers actually browse: shop name, live status, address, hero image, and the exact Santa Maria pin.
+            </p>
+          </div>
         </div>
 
-        <ShopPreviewCard
-          vendorPreview={vendorPreview}
-          vendorForm={vendorForm}
-          vendorCoordinates={vendorCoordinates}
-          error={error}
-        />
-      </section>
+        <section className="grid gap-12 xl:grid-cols-[minmax(0,1.2fr)_380px] mb-12">
+          <div className="space-y-6">
+            <ShopProfileSection
+              vendorForm={vendorForm}
+              setVendorForm={setVendorForm}
+              onSubmit={saveVendorProfile}
+              isSavingVendor={isSavingVendor}
+              vendorCoordinates={vendorCoordinates}
+            />
+          </div>
 
-      <MenuItemsSection
-        newItem={newItem}
-        setNewItem={setNewItem}
-        onSubmit={addMenuItem}
-        isAddingItem={isAddingItem}
-        menuItems={menuItems}
-        onToggleAvailability={(item) => void toggleAvailability(item)}
-        onRemoveItem={(itemId) => void removeItem(itemId)}
-      />
+          <ShopPreviewCard
+            vendorPreview={vendorPreview}
+            vendorForm={vendorForm}
+            vendorCoordinates={vendorCoordinates}
+            error={error}
+          />
+        </section>
+
+        <MenuItemsSection
+          newItem={newItem}
+          setNewItem={setNewItem}
+          onSubmit={addMenuItem}
+          isAddingItem={isAddingItem}
+          menuItems={menuItems}
+          onToggleAvailability={(item) => void toggleAvailability(item)}
+          onRemoveItem={(itemId) => void removeItem(itemId)}
+        />
+      </div>
     </div>
   );
 }
