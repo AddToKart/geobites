@@ -1,4 +1,4 @@
-// Trigger migration runner reload
+// Trigger compilation reload after schema type change
 import * as dotenv from 'dotenv';
 dotenv.config();
 

@@ -25,8 +25,8 @@ export interface User {
   street?: string;
   barangay?: string;
   landmark?: string;
-  deliveryLat?: number;
-  deliveryLng?: number;
+  deliveryLat?: string | number;
+  deliveryLng?: string | number;
 }
 
 export interface Vendor {

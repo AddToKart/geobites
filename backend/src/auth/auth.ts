@@ -101,11 +101,11 @@ export const auth = betterAuth({
         required: false,
       },
       deliveryLat: {
-        type: 'number',
+        type: 'string',
         required: false,
       },
       deliveryLng: {
-        type: 'number',
+        type: 'string',
         required: false,
       },
     },

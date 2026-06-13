@@ -53,7 +53,7 @@ describe('RidersService', () => {
     await service.acceptDelivery('order-1', 'rider-1');
 
     expect(orderRepository.update).toHaveBeenCalledWith(
-      { id: 'order-1', status: 'ready_for_pickup', riderId: IsNull() },
+      { id: 'order-1', status: 'accepted', riderId: IsNull() },
       { riderId: 'rider-1' },
     );
     expect(notificationsService.create).toHaveBeenCalledTimes(2);
@@ -61,14 +61,14 @@ describe('RidersService', () => {
       1,
       expect.objectContaining({
         userId: 'customer-1',
-        title: 'Rider Assigned',
+        title: 'Rider On The Way',
       }),
     );
     expect(notificationsService.create).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         userId: 'seller-1',
-        title: 'Rider Assigned',
+        title: 'Rider Accepted',
       }),
     );
   });

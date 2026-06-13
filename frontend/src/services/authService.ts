@@ -59,8 +59,8 @@ export interface UpdateProfilePayload {
   street?: string;
   barangay?: string;
   landmark?: string;
-  deliveryLat?: number;
-  deliveryLng?: number;
+  deliveryLat?: string | number;
+  deliveryLng?: string | number;
 }
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<User> {

@@ -80,8 +80,8 @@ export function SettingsPage() {
         street: street.trim() || undefined,
         barangay: barangay.trim() || undefined,
         landmark: landmark.trim() || undefined,
-        deliveryLat: deliveryPin?.lat ?? undefined,
-        deliveryLng: deliveryPin?.lng ?? undefined,
+        deliveryLat: deliveryPin ? String(deliveryPin.lat) : undefined,
+        deliveryLng: deliveryPin ? String(deliveryPin.lng) : undefined,
       });
       await refreshSession();
       toast.success('Default delivery location saved');

@@ -5,10 +5,12 @@ import { formatCurrency, formatDate } from '../../utils/helpers';
 import { StatusBadge } from '../ui/status-badge';
 
 export function OrderCard({ order }: { order: Order }) {
+  const address = [order.street, order.barangay].filter(Boolean).join(', ') || order.deliveryAddress || 'No address specified';
+
   return (
     <article className="border border-border p-8 bg-background flex flex-col justify-between hover:bg-secondary/5 transition-colors group">
       <div>
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-8 gap-4">
           <div className="space-y-1">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Order
@@ -18,23 +20,23 @@ export function OrderCard({ order }: { order: Order }) {
           <StatusBadge status={order.status} />
         </div>
 
-        <div className="space-y-3 mb-8">
-          <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            <CalendarDays className="h-4 w-4" />
+        <div className="space-y-4 mb-8">
+          <div className="flex items-center gap-3 text-sm text-text-soft font-medium tracking-tight">
+            <CalendarDays className="h-4.5 w-4.5 text-muted-foreground/75" />
             <span>{formatDate(order.createdAt)}</span>
           </div>
-          <div className="flex items-start gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            <MapPin className="h-4 w-4 mt-0.5" />
-            <span className="line-clamp-2">{order.deliveryAddress}</span>
+          <div className="flex items-start gap-3 text-sm text-text-soft font-medium tracking-tight">
+            <MapPin className="h-4.5 w-4.5 mt-0.5 text-muted-foreground/75 shrink-0" />
+            <span className="line-clamp-2 leading-relaxed">{address}</span>
           </div>
-          <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            <Package2 className="h-4 w-4" />
+          <div className="flex items-center gap-3 text-sm text-text-soft font-medium tracking-tight">
+            <Package2 className="h-4.5 w-4.5 text-muted-foreground/75" />
             <span>{order.items.length} item(s)</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-end justify-between border-t border-border pt-6 mt-auto">
+      <div className="border-t border-border pt-6 mt-auto space-y-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
             Total
@@ -45,10 +47,10 @@ export function OrderCard({ order }: { order: Order }) {
         </div>
         <Link
           to={`/orders/${order.id}`}
-          className="text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center gap-2"
+          className="text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 border border-border w-full py-3.5 bg-background hover:bg-secondary/10"
         >
           View details
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
         </Link>
       </div>
     </article>
