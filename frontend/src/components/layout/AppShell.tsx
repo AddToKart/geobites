@@ -19,6 +19,8 @@ import {
   UtensilsCrossed,
   Wallet,
   Settings,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
@@ -92,6 +94,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(() => {
+    return localStorage.getItem("geobites-sidebar-collapsed") === "true";
+  });
+
+  const toggleSidebar = React.useCallback(() => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("geobites-sidebar-collapsed", String(next));
+      return next;
+    });
+  }, []);
 
   const navItems = React.useMemo(() => {
     if (!user) {
@@ -124,16 +137,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background relative font-sans selection:bg-primary selection:text-primary-foreground">
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-72 p-0 md:block border-r border-border bg-background">
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 hidden p-0 md:block border-r border-border bg-background transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-20" : "w-72"
+      )}>
         <NavContent
           items={navItems}
           onLogout={handleLogout}
           userName={user.name}
           userRole={user.role}
+          isCollapsed={isCollapsed}
         />
+        {/* Floating Sidebar Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-24 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/80 shadow-[var(--shadow-soft)] transition-colors cursor-pointer"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
       </aside>
 
-      <div className="flex min-h-screen flex-col md:ml-72 relative z-10 w-full md:w-[calc(100%-18rem)]">
+      <div className={cn(
+        "flex min-h-screen flex-col relative z-10 w-full transition-all duration-300 ease-in-out",
+        isCollapsed ? "md:ml-20 md:w-[calc(100%-5rem)]" : "md:ml-72 md:w-[calc(100%-18rem)]"
+      )}>
         {/* Stark Mobile Header */}
         <header className="fixed top-0 inset-x-0 z-50 flex h-16 items-center justify-between border-b border-border bg-background px-4 md:hidden">
           <div className="flex items-center gap-3">
@@ -225,38 +257,51 @@ function NavContent({
   onItemClick,
   userName,
   userRole,
+  isCollapsed = false,
 }: {
   items: NavItem[];
   onLogout: () => void;
   onItemClick?: () => void;
   userName: string;
   userRole: string;
+  isCollapsed?: boolean;
 }) {
   return (
     <div className="flex h-full flex-col bg-background">
       {/* Brand & User Block */}
-      <div className="border-b border-border p-6 flex flex-col gap-6">
+      <div className={cn("border-b border-border flex flex-col gap-6", isCollapsed ? "p-4 items-center" : "p-6")}>
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground">
+          <div className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground shrink-0">
             <UtensilsCrossed className="w-6 h-6" strokeWidth={2.5} />
           </div>
-          <div>
-            <span className="block text-2xl font-medium tracking-tighter text-foreground leading-none">
-              Geobites
-            </span>
-            <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
-              Santa Maria
-            </span>
+          {!isCollapsed && (
+            <div>
+              <span className="block text-2xl font-medium tracking-tighter text-foreground leading-none">
+                Geobites
+              </span>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                Santa Maria
+              </span>
+            </div>
+          )}
+        </div>
+        {!isCollapsed ? (
+          <div className="bg-secondary/20 p-4 border border-border">
+            <p className="text-sm font-medium tracking-tight text-foreground truncate">
+              {userName}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
+              {userRole} Account
+            </p>
           </div>
-        </div>
-        <div className="bg-secondary/20 p-4 border border-border">
-          <p className="text-sm font-medium tracking-tight text-foreground truncate">
-            {userName}
-          </p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
-            {userRole} Account
-          </p>
-        </div>
+        ) : (
+          <div 
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/30 border border-border text-sm font-bold uppercase text-primary shrink-0"
+            title={`${userName} (${userRole} Account)`}
+          >
+            {userName.charAt(0) || "U"}
+          </div>
+        )}
       </div>
 
       {/* Main Navigation */}
@@ -267,50 +312,68 @@ function NavContent({
               key={item.href}
               to={item.href}
               onClick={onItemClick}
-              end={item.href === "/seller" || item.href === "/rider"}
+              end={item.href === "/seller" || item.href === "/rider" || item.href === "/browse"}
+              title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-l-4",
+                  "flex items-center transition-colors border-l-4",
+                  isCollapsed ? "justify-center py-4 px-0" : "gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest",
                   isActive
                     ? "border-primary bg-secondary/10 text-foreground"
                     : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground hover:border-foreground/30",
                 )
               }
             >
-              {item.icon}
-              {item.label}
+              <span className="shrink-0">{item.icon}</span>
+              {!isCollapsed && <span>{item.label}</span>}
             </PrefetchNavLink>
           ))}
         </nav>
       </div>
 
       {/* Footer Navigation */}
-      <div className="border-t border-border p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Theme</span>
-          <ThemeToggle className="h-8 rounded-none border border-border" />
+      <div className={cn("border-t border-border space-y-4", isCollapsed ? "p-4 flex flex-col items-center" : "p-6")}>
+        <div className={cn("flex items-center justify-between w-full", isCollapsed && "justify-center")}>
+          {!isCollapsed && (
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Theme</span>
+          )}
+          <ThemeToggle compact={isCollapsed} className={cn("h-8 rounded-none border border-border", isCollapsed && "w-16")} />
         </div>
         
         <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
+          title={isCollapsed ? "Alerts" : undefined}
           className={({ isActive }) =>
             cn(
-              "flex items-center justify-between py-2 text-sm font-bold uppercase tracking-widest transition-colors",
+              "flex items-center transition-colors w-full",
+              isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest",
               isActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )
           }
         >
-          <span className="flex items-center gap-3"><Bell className="w-4 h-4" /> Alerts</span>
+          {isCollapsed ? (
+            <Bell className="w-5 h-5" />
+          ) : (
+            <span className="flex items-center gap-3"><Bell className="w-4 h-4" /> Alerts</span>
+          )}
         </PrefetchNavLink>
         
         <button
           onClick={onLogout}
-          className="flex w-full items-center justify-between py-2 text-sm font-bold uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors"
+          title={isCollapsed ? "Sign out" : undefined}
+          className={cn(
+            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full",
+            isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest"
+          )}
         >
-          <span className="flex items-center gap-3"><LogOut className="w-4 h-4" /> Sign out</span>
+          {isCollapsed ? (
+            <LogOut className="w-5 h-5" />
+          ) : (
+            <span className="flex items-center gap-3"><LogOut className="w-4 h-4" /> Sign out</span>
+          )}
         </button>
       </div>
     </div>
