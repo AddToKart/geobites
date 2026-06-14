@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -9,14 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet, useVendor, useAddresses } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/helpers";
 import { placeOrder, initiatePayment } from "@/services/orderService";
-import { getWallet } from "@/services/walletService";
-import { getVendorById } from "@/services/vendorService";
-import { getAddresses, SavedAddress } from "@/services/addressService";
+import type { SavedAddress } from "@/services/addressService";
 import { haversineKm, calculateDeliveryFee } from "@/utils/distance";
 import { toast } from "sonner";
-import type { Vendor } from "@/types";
 
 const cartSchema = z.object({
   street: z.string().min(1, "Street/Unit is required"),
@@ -66,6 +64,10 @@ export function CartPage() {
   const paymentMethod = watch("paymentMethod");
   const paymentRefValue = watch("paymentRef") ?? "";
 
+  const { data: wallet } = useWallet();
+  const { data: vendor } = useVendor(vendorId ?? "");
+  const { data: fetchedAddresses = [] } = useAddresses();
+
   const [addressMode, setAddressMode] = useState<'custom' | 'default' | 'saved'>('custom');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
@@ -78,23 +80,26 @@ export function CartPage() {
       : null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
-  const [vendor, setVendor] = useState<Vendor | null>(null);
 
   const isCustom = addressMode === "custom";
 
-  // Load saved addresses
+  // Sync addresses from hook into local state
   useEffect(() => {
-    getAddresses().then((addrs) => {
-      setSavedAddresses(addrs);
-      const defaultAddr = addrs.find((a) => a.isDefault);
-      if (defaultAddr && addressMode === 'custom') {
-        setAddressMode('default');
-        applySavedAddress(defaultAddr);
-      }
-    }).catch(() => {});
+    setSavedAddresses(fetchedAddresses);
+  }, [fetchedAddresses]);
+
+  // Auto-apply default address on initial load
+  const autoApplied = useRef(false);
+  useEffect(() => {
+    if (autoApplied.current || fetchedAddresses.length === 0) return;
+    autoApplied.current = true;
+    const defaultAddr = fetchedAddresses.find((a) => a.isDefault);
+    if (defaultAddr && addressMode === 'custom') {
+      setAddressMode('default');
+      applySavedAddress(defaultAddr);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchedAddresses]);
 
   // Sync inputs with selected saved address
   const applySavedAddress = useCallback((addr: SavedAddress) => {
@@ -131,23 +136,6 @@ export function CartPage() {
     () => total + (deliveryFee ?? 0),
     [total, deliveryFee],
   );
-
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        const data = await getWallet();
-        setWallet(data);
-      } catch (err) {
-        console.error("Failed to fetch wallet:", err);
-      }
-    }
-    fetchBalance();
-  }, []);
-
-  useEffect(() => {
-    if (!vendorId) return;
-    getVendorById(vendorId).then(setVendor).catch(console.error);
-  }, [vendorId]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -583,7 +571,7 @@ export function CartPage() {
               <button
                 type="submit"
                 className="w-full h-16 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet !== null && wallet.balance < orderTotal)}
+                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet != null && wallet.balance < orderTotal)}
               >
                 {isSubmitting ? "Processing..." : "Place order"}
                 <ArrowRight className="h-5 w-5" />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Wallet, 
   ArrowDownLeft, 
@@ -11,15 +11,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/utils/helpers";
-import { getWallet, getTransactions, initiateCashIn, WalletTransaction } from "@/services/walletService";
+import { initiateCashIn } from "@/services/walletService";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet, useTransactions } from "@/hooks/queries";
 import { toast } from "sonner";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 
 export function WalletPage() {
   const { user } = useAuth();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const { data: walletData, isLoading: walletLoading } = useWallet();
+  const { data: transactions = [], isLoading: txLoading } = useTransactions();
+
+  const balance = walletData ? Number(walletData.balance) : null;
+  const isLoading = walletLoading || txLoading;
+
   const [cashInAmount, setCashInAmount] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"GCASH" | "MAYA" | "QRPH">("GCASH");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,25 +41,6 @@ export function WalletPage() {
   const handleAmountBlur = () => {
     setAmountError(validateAmount(cashInAmount));
   };
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchWalletData = async () => {
-    try {
-      const wallet = await getWallet();
-      setBalance(Number(wallet.balance));
-      const txHistory = await getTransactions();
-      setTransactions(txHistory);
-    } catch (error) {
-      console.error("Error fetching wallet info:", error);
-      toast.error("Failed to load wallet details");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWalletData();
-  }, []);
 
   const handleQuickAmount = (amount: number) => {
     setCashInAmount(amount.toString());

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Wallet,
   ArrowDownLeft,
@@ -17,15 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/helpers";
-import {
-  getVendorWallet,
-  getVendorTransactions,
-  requestVendorWithdrawal,
-  getVendorWithdrawals,
-  WalletTransaction,
-  VendorWithdrawal,
-} from "@/services/walletService";
+import { requestVendorWithdrawal } from "@/services/walletService";
 import { useAuth } from "@/hooks/useAuth";
+import { useVendorWallet, useVendorTransactions, useVendorWithdrawals } from "@/hooks/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 
@@ -79,19 +74,23 @@ const validateAmount = (value: string, balance: number | null): string | null =>
 
 export function SellerWalletPage() {
   const { user } = useAuth();
-  const [balance, setBalance] = useState<number | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [withdrawals, setWithdrawals] = useState<VendorWithdrawal[]>([]);
-  const [activeTab, setActiveTab] = useState<"activity" | "withdrawals">("activity");
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: wallet, isLoading: walletLoading } = useVendorWallet();
+  const { data: transactions = [], isLoading: txLoading } = useVendorTransactions();
+  const { data: withdrawals = [], isLoading: wdLoading } = useVendorWithdrawals();
 
+  const walletObj = wallet && !('needsSetup' in wallet) ? wallet : null;
+  const balance = walletObj ? Number(walletObj.balance) : null;
+  const setupRequired = wallet !== undefined && wallet !== null && 'needsSetup' in wallet;
+  const isLoading = walletLoading || txLoading || wdLoading;
+
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"activity" | "withdrawals">("activity");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [amountError, setAmountError] = useState<string | null>(null);
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [providerError, setProviderError] = useState<string | null>(null);
-  const [setupRequired, setSetupRequired] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = (): boolean => {
@@ -112,31 +111,6 @@ export function SellerWalletPage() {
     }
     return true;
   };
-
-  const fetchWalletData = useCallback(async () => {
-    try {
-      const [wallet, txHistory, wdHistory] = await Promise.all([
-        getVendorWallet(),
-        getVendorTransactions(),
-        getVendorWithdrawals(),
-      ]);
-      if (wallet && 'needsSetup' in wallet) {
-        setSetupRequired(true);
-      } else {
-        setBalance(Number(wallet.balance));
-        setTransactions(Array.isArray(txHistory) ? txHistory : []);
-        setWithdrawals(Array.isArray(wdHistory) ? wdHistory : []);
-      }
-    } catch (error) {
-      console.error("Error fetching vendor wallet:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchWalletData();
-  }, [fetchWalletData]);
 
   const handleQuickAmount = (amount: number) => {
     setWithdrawAmount(amount.toString());
@@ -168,7 +142,7 @@ export function SellerWalletPage() {
       setSelectedProvider(null);
       setAmountError(null);
       setProviderError(null);
-      await fetchWalletData();
+      queryClient.invalidateQueries({ queryKey: ["wallet", "vendor"] });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to process withdrawal";
       setAmountError(message);

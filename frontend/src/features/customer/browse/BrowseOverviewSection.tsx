@@ -12,12 +12,14 @@ export const BrowseOverviewSection = memo(function BrowseOverviewSection({
   browseCount,
   activeOrder,
   isMapMode = false,
+  suggestions,
 }: {
   search: string;
   onSearchChange: (value: string) => void;
   browseCount: number;
   activeOrder: Order | null;
   isMapMode?: boolean;
+  suggestions?: React.ReactNode;
 }) {
   return (
     <div className={`flex flex-col ${isMapMode ? 'gap-4' : 'gap-8 pb-12 border-b border-border'}`}>
@@ -48,6 +50,7 @@ export const BrowseOverviewSection = memo(function BrowseOverviewSection({
             onChange={(event) => onSearchChange(event.target.value)}
             className={`pl-16 rounded-none border-border bg-transparent h-20 text-xl md:text-2xl font-medium text-foreground shadow-none focus-visible:ring-0 focus-visible:border-primary placeholder:text-muted-foreground transition-all ${isMapMode ? 'border-2' : 'border-b-2 border-t-0 border-l-0 border-r-0'}`}
           />
+          {suggestions}
         </div>
         {!isMapMode && (
           <Button size="icon" variant="outline" className="shrink-0 h-20 w-20 rounded-none border-2 border-border text-foreground hover:bg-foreground hover:text-background transition-colors hidden md:flex">

@@ -4,7 +4,7 @@ import type { VendorQuery } from "@/services/vendorService";
 import { getOrders, getOrder, placeOrder, updateOrderStatus } from "@/services/orderService";
 import type { PlaceOrderPayload } from "@/services/orderService";
 import type { OrderStatus } from "@/types";
-import { getWallet, getVendorWallet } from "@/services/walletService";
+import { getWallet, getVendorWallet, getTransactions, getVendorTransactions, getVendorWithdrawals } from "@/services/walletService";
 import { getAddresses } from "@/services/addressService";
 import { getNotifications } from "@/services/notificationService";
 import { getVendorMenu } from "@/services/menuService";
@@ -77,6 +77,27 @@ export function useVendorWallet() {
   return useQuery({
     queryKey: ["wallet", "vendor"],
     queryFn: () => getVendorWallet(),
+  });
+}
+
+export function useTransactions() {
+  return useQuery({
+    queryKey: ["wallet", "transactions"],
+    queryFn: () => getTransactions(),
+  });
+}
+
+export function useVendorTransactions() {
+  return useQuery({
+    queryKey: ["wallet", "vendor", "transactions"],
+    queryFn: () => getVendorTransactions(),
+  });
+}
+
+export function useVendorWithdrawals() {
+  return useQuery({
+    queryKey: ["wallet", "vendor", "withdrawals"],
+    queryFn: () => getVendorWithdrawals(),
   });
 }
 

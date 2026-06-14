@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useDeferredValue, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import {
@@ -13,11 +13,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
-import { getVendorMenu } from "@/services/menuService";
-import { getVendorById } from "@/services/vendorService";
-import { getActivePromotions } from "@/services/promotionService";
-import { getVendorRatings } from "@/services/ratingService";
-import { MenuItem, Vendor, Promotion, Rating } from "@/types";
+import { useVendor, useVendorMenu, useActivePromotions, useVendorRatings } from "@/hooks/queries";
+import type { MenuItem } from "@/types";
 
 import { toast } from "sonner";
 import { VendorMenuFilters } from "@/features/customer/vendor-menu/VendorMenuFilters";
@@ -30,56 +27,28 @@ import { CustomerReviews } from "@/features/customer/vendor-menu/CustomerReviews
 export function VendorMenuPage() {
   const { id } = useParams<{ id: string }>();
   const { items, addItem, updateQuantity } = useCart();
-  const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+
+  const { data: vendor, isLoading: vendorLoading, error: vendorError } = useVendor(id!);
+  const { data: menuItems = [], isLoading: menuLoading } = useVendorMenu(id!);
+  const { data: promotions = [] } = useActivePromotions(id!);
+  const { data: ratingData } = useVendorRatings(id!);
+
+  const ratings = ratingData?.ratings ?? [];
+  const avgRating = ratingData?.averageScore ?? 0;
+  const totalRatingCount = ratingData?.totalRatings ?? 0;
+
+  const isLoading = vendorLoading || menuLoading;
+  const queryError = vendorError ? (vendorError instanceof Error ? vendorError.message : "Failed to load menu") : null;
+
+  useEffect(() => {
+    if (queryError) toast.error("Failed to load menu data");
+  }, [queryError]);
+
   const [menuSearch, setMenuSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [avgRating, setAvgRating] = useState(0);
-  const [totalRatingCount, setTotalRatingCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const deferredMenuSearch = useDeferredValue(menuSearch);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const [vendorData, menuData, promoData, ratingData] = await Promise.all([
-          getVendorById(id),
-          getVendorMenu(id),
-          getActivePromotions(id).catch(() => [] as Promotion[]),
-          getVendorRatings(id).catch(() => ({ averageScore: 0, totalRatings: 0, ratings: [] })),
-        ]);
-        setVendor(vendorData);
-        setMenuItems(menuData);
-        setPromotions(promoData);
-        setRatings(ratingData.ratings);
-        setAvgRating(ratingData.averageScore);
-        setTotalRatingCount(ratingData.totalRatings);
-      } catch (caughtError) {
-        setError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : "Failed to load menu",
-        );
-        toast.error("Failed to load menu data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadData();
-  }, [id]);
 
   const vendorMeta = useMemo<DemoVendor | null>(() => {
     if (!id || !isDemoVendorId(id)) {
@@ -181,12 +150,12 @@ export function VendorMenuPage() {
     );
   }
 
-  if (error || !vendor) {
+  if (queryError || !vendor) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center border-b border-border">
         <h1 className="text-4xl font-medium tracking-tighter mb-4">Vendor not available</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          {error || "The vendor you are looking for could not be loaded right now."}
+          {queryError || "The vendor you are looking for could not be loaded right now."}
         </p>
         <Link to="/browse" className="border border-border px-6 py-3 font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors">
           Back to browse
