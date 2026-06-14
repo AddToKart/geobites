@@ -253,13 +253,13 @@ export function BrowseVendorsPagePremium() {
                 <div className="grid gap-2">
                   {result.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{item.name}</p>
+                      <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
+                        <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
                         {item.description && (
                           <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
                         )}
                         <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
-                      </div>
+                      </Link>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
