@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock3, MapPin, Star, Truck } from 'lucide-react';
 import type { Vendor } from '@/types';
@@ -7,13 +8,13 @@ interface VendorCardProps {
   vendor: Vendor;
 }
 
-export function VendorCardPremium({ vendor }: VendorCardProps) {
+export const VendorCardPremium = memo(function VendorCardPremium({ vendor }: VendorCardProps) {
   const avgRating = vendor.rating || 0;
   const isPopular = vendor.totalRatings >= 25;
 
   return (
     <Link to={`/vendor/${vendor.id}`} className="group block h-full">
-      <article className="flex h-full flex-col border-b border-border pb-8 transition-colors hover:bg-secondary/10 p-6 md:p-8">
+      <article className="flex h-full flex-col border-b border-border pb-8 transition-colors hover:bg-secondary/10 p-6 md:p-8" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px', contain: 'layout style paint' }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
             {vendor.isActive ? (
@@ -67,4 +68,4 @@ export function VendorCardPremium({ vendor }: VendorCardProps) {
       </article>
     </Link>
   );
-}
+});

@@ -62,7 +62,7 @@ export function VendorStorefrontHero({
         <div className="md:w-72 shrink-0 space-y-8">
           <div className="border-l-2 border-primary pl-6">
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
-              Average ETA
+              Delivery Time
             </p>
             <p className="text-4xl font-medium tracking-tighter text-foreground flex items-center gap-3">
               <Clock3 className="w-8 h-8 text-primary" />
@@ -88,6 +88,7 @@ export function VendorStorefrontHero({
             src={vendor.imageUrl}
             alt={vendor.name}
             loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         ) : (

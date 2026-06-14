@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -23,6 +24,23 @@ export class MenuController {
   @Get('vendors/:vendorId/menu')
   findVendorMenu(@Param('vendorId') vendorId: string) {
     return this.menuService.findVendorMenu(vendorId);
+  }
+
+  @Get('menu/search')
+  searchMenu(
+    @Query('q') query: string,
+    @Query('category') category?: string,
+    @Query('priceMin') priceMin?: string,
+    @Query('priceMax') priceMax?: string,
+  ) {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    return this.menuService.searchAcrossVendors(query.trim(), {
+      category,
+      priceMin: priceMin ? Number(priceMin) : undefined,
+      priceMax: priceMax ? Number(priceMax) : undefined,
+    });
   }
 
   @Post('menu')

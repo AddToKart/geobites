@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   Clock3,
   PackageCheck,
+  RefreshCw,
   Search,
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
-import { StaticRouteMap } from "@/components/custom/StaticRouteMap";
+import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { OrderCard } from "../../components/custom/OrderCard";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
+import { toast } from "sonner";
+import { useCart } from "@/hooks/useCart";
 import { getOrders } from "../../services/orderService";
+import { getVendorMenu } from "../../services/menuService";
 import { Order } from "../../types";
 
 type HistoryFilter = "all" | "active" | "delivered" | "issues";
@@ -27,11 +33,14 @@ const activeStatuses = [
 const issueStatuses = ["cancelled", "rejected"];
 
 export function OrderHistoryPage() {
+  const navigate = useNavigate();
+  const { addItem, clearCart, vendorId: cartVendorId } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [search, setSearch] = useState("");
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -102,6 +111,41 @@ export function OrderHistoryPage() {
     });
   }, [filter, orders, search]);
 
+  const handleReorder = async (order: Order) => {
+    setReorderingId(order.id);
+    try {
+      const vendorMenu = await getVendorMenu(order.vendorId);
+      if (vendorMenu.length === 0) {
+        toast.error("This vendor has no menu items available right now");
+        return;
+      }
+      if (cartVendorId && cartVendorId !== order.vendorId) {
+        clearCart();
+      }
+      let addedCount = 0;
+      for (const orderItem of order.items) {
+        const menuItem = vendorMenu.find((m) => m.id === orderItem.menuItemId);
+        if (menuItem && menuItem.isAvailable) {
+          for (let i = 0; i < orderItem.quantity; i++) {
+            addItem(menuItem);
+          }
+          addedCount++;
+        }
+      }
+      if (addedCount === 0) {
+        toast.error("None of the previous items are available for reorder");
+        return;
+      }
+      toast.success(`${addedCount} item(s) re-added to cart`, {
+        action: { label: "View Cart", onClick: () => navigate('/cart') },
+      });
+    } catch (err) {
+      toast.error("Failed to reorder. Please try again.");
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
   const spotlightOrder = useMemo(
     () =>
       orders.find((order) => activeStatuses.includes(order.status)) ??
@@ -137,10 +181,10 @@ export function OrderHistoryPage() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <div className="max-w-[1400px] mx-auto px-6 py-12 lg:px-12">
-        <div className="border-b-2 border-foreground pb-6 mb-12">
+        <div className="border-b border-border pb-6 mb-12">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Orders</p>
-          <h1 className="text-6xl font-medium tracking-tighter">Order history.</h1>
-          <p className="text-xl text-muted-foreground mt-4">Review past orders, track active ones, and check issues.</p>
+          <h1 className="text-4xl font-bold tracking-tight">Order history.</h1>
+          <p className="text-base text-muted-foreground mt-2">Review past orders, track active ones, and check issues.</p>
         </div>
 
         <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-16">
@@ -243,7 +287,15 @@ export function OrderHistoryPage() {
               ) : (
                 <section className="grid gap-6 md:grid-cols-2">
                   {filteredOrders.map((order) => (
-                    <OrderCard key={order.id} order={order} />
+                    <OrderCard
+                      key={order.id}
+                      order={order}
+                      onReorder={
+                        order.status === 'delivered' || order.status === 'cancelled' || order.status === 'rejected'
+                          ? () => void handleReorder(order)
+                          : undefined
+                      }
+                    />
                   ))}
                 </section>
               )}
@@ -251,14 +303,32 @@ export function OrderHistoryPage() {
 
             <div className="space-y-8 xl:sticky xl:top-12 xl:self-start">
               {spotlightOrder ? (
-                <div className="border border-border bg-background p-1">
-                  <div className="h-64 relative border border-border">
-                    <StaticRouteMap order={spotlightOrder} compact />
+                <div className="border border-border bg-background p-6 space-y-6">
+                  <div className="flex items-center justify-between border-b border-border pb-4">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Spotlight Order</p>
+                      <h3 className="text-2xl font-medium tracking-tighter">#{spotlightOrder.id.slice(0, 8)}</h3>
+                    </div>
+                    <StatusBadge status={spotlightOrder.status} />
                   </div>
-                  <div className="p-4 text-center">
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Spotlight Order</p>
-                    <p className="font-medium tracking-tight">#{spotlightOrder.id.slice(0, 8)}</p>
+                  
+                  <div className="relative h-64 border border-border overflow-hidden">
+                    <LazyOrderRouteMap
+                      order={spotlightOrder}
+                      compact
+                      title=""
+                      description=""
+                      className="p-0 space-y-0"
+                    />
                   </div>
+                  
+                  <Link
+                    to={`/orders/${spotlightOrder.id}`}
+                    className="text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 w-full py-3.5 bg-background border border-border"
+                  >
+                    Track live order
+                    <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  </Link>
                 </div>
               ) : null}
 

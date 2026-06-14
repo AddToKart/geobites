@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { LazyMotion, MotionConfig, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
@@ -90,9 +90,13 @@ const pageTransition = {
 function AppRoutes() {
   const location = useLocation();
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <ErrorBoundary>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
         <m.div key={location.pathname} {...pageTransition}>
           <Suspense fallback={<RouteLoadingScreen />}>
             <Routes location={location}>

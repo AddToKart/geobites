@@ -1,14 +1,15 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarDays, MapPin, Package2 } from 'lucide-react';
+import { ArrowRight, CalendarDays, MapPin, Package2, RefreshCw } from 'lucide-react';
 import { Order } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { StatusBadge } from '../ui/status-badge';
 
-export function OrderCard({ order }: { order: Order }) {
+export const OrderCard = memo(function OrderCard({ order, onReorder }: { order: Order; onReorder?: () => void }) {
   const address = [order.street, order.barangay].filter(Boolean).join(', ') || order.deliveryAddress || 'No address specified';
 
   return (
-    <article className="border border-border p-8 bg-background flex flex-col justify-between hover:bg-secondary/5 transition-colors group">
+    <article className="border border-border p-8 bg-background flex flex-col justify-between hover:bg-secondary/5 transition-colors group" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px', contain: 'layout style paint' }}>
       <div>
         <div className="flex items-start justify-between mb-8 gap-4">
           <div className="space-y-1">
@@ -45,14 +46,25 @@ export function OrderCard({ order }: { order: Order }) {
             {formatCurrency(order.totalAmount)}
           </p>
         </div>
-        <Link
-          to={`/orders/${order.id}`}
-          className="text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 border border-border w-full py-3.5 bg-background hover:bg-secondary/10"
-        >
-          View details
-          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
-        </Link>
+        <div className="flex gap-3">
+          {onReorder && (
+            <button
+              onClick={(e) => { e.preventDefault(); onReorder(); }}
+              className="text-xs font-bold uppercase tracking-widest flex-1 flex items-center justify-center gap-2 border border-border py-3.5 bg-background hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Reorder
+            </button>
+          )}
+          <Link
+            to={`/orders/${order.id}`}
+            className={`text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 border border-border py-3.5 bg-background hover:bg-secondary/10 ${onReorder ? '' : 'w-full'}`}
+          >
+            View details
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />
+          </Link>
+        </div>
       </div>
     </article>
   );
-}
+});

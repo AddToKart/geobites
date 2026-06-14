@@ -25,6 +25,60 @@ export class WalletService {
   ) {}
 
   /**
+   * Refunds a GeoPay order on cancellation: credits customer wallet,
+   * debits vendor wallet.
+   */
+  async refundGeoPayOrder(
+    vendorId: string,
+    customerId: string,
+    orderId: string,
+    amount: number,
+  ): Promise<{ customerTransaction: WalletTransaction; vendorTransaction: WalletTransaction | null }> {
+    return await this.dataSource.transaction(async (manager) => {
+      const walletRepo = manager.getRepository(Wallet);
+      const transactionRepo = manager.getRepository(WalletTransaction);
+
+      let customerWallet = await walletRepo.findOne({ where: { customerId } });
+      if (!customerWallet) {
+        customerWallet = walletRepo.create({ customerId, balance: 0.0 });
+        customerWallet = await walletRepo.save(customerWallet);
+      }
+      customerWallet.balance = Number(customerWallet.balance) + Number(amount);
+      await walletRepo.save(customerWallet);
+
+      const customerTxn = transactionRepo.create({
+        walletId: customerWallet.id,
+        amount,
+        type: 'refund',
+        status: 'success',
+        referenceId: orderId,
+        paymentMethod: 'GEOPAY',
+      });
+      const savedCustomerTxn = await transactionRepo.save(customerTxn);
+
+      let savedVendorTxn: WalletTransaction | null = null;
+      const vendorWallet = await walletRepo.findOne({ where: { vendorId } });
+      if (vendorWallet) {
+        vendorWallet.balance = Math.max(0, Number(vendorWallet.balance) - Number(amount));
+        await walletRepo.save(vendorWallet);
+
+        const vendorTxn = transactionRepo.create({
+          walletId: vendorWallet.id,
+          amount: -amount,
+          type: 'vendor_refund',
+          status: 'success',
+          referenceId: orderId,
+          paymentMethod: 'GEOPAY',
+        });
+        savedVendorTxn = await transactionRepo.save(vendorTxn);
+      }
+
+      this.logger.log(`Refunded ₱${amount} for order ${orderId}: customer ${customerId} credited, vendor ${vendorId} debited`);
+      return { customerTransaction: savedCustomerTxn, vendorTransaction: savedVendorTxn };
+    });
+  }
+
+  /**
    * Gets or creates a wallet for a customer.
    */
   async getOrCreateWallet(customerId: string): Promise<Wallet> {

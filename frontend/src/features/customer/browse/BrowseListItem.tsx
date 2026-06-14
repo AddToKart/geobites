@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,7 @@ function formatDistanceLabel(distanceKm: number | null) {
     : `${distanceKm.toFixed(1)} km away`;
 }
 
-export function BrowseListItem({
+export const BrowseListItem = memo(function BrowseListItem({
   vendor,
   distanceKm,
   isSelected,
@@ -31,6 +32,7 @@ export function BrowseListItem({
           'group flex flex-col xl:flex-row border-b border-border transition-colors hover:bg-secondary/10',
           isSelected && 'bg-secondary/5',
         )}
+        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px', contain: 'layout style paint' }}
       >
         <div className="relative min-h-[200px] xl:w-[320px] bg-secondary flex-shrink-0 p-8 border-b xl:border-b-0 xl:border-r border-border">
           <div className="flex flex-wrap gap-2 mb-6">
@@ -95,7 +97,7 @@ export function BrowseListItem({
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ETA</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Arrives in</span>
               <span className="text-sm font-bold text-foreground">
                 {vendor.etaMinutes || '20-35 min'}
               </span>
@@ -110,4 +112,4 @@ export function BrowseListItem({
       </article>
     </Link>
   );
-}
+});

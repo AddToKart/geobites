@@ -219,7 +219,6 @@ export function LandingPage() {
               <Link 
                 to="/register" 
                 className="group flex-1 flex flex-col justify-center p-12 lg:p-24 border-b border-border transition-colors duration-150 hover:bg-secondary/30"
-                style={{ willChange: 'background-color' }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-3xl sm:text-4xl font-medium tracking-tighter">Create an account</span>
@@ -229,7 +228,6 @@ export function LandingPage() {
               <Link 
                 to="/login" 
                 className="group flex-1 flex flex-col justify-center p-12 lg:p-24 transition-colors duration-150 hover:bg-secondary/30"
-                style={{ willChange: 'background-color' }}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-3xl sm:text-4xl font-medium tracking-tighter text-muted-foreground">Sign in to existing</span>

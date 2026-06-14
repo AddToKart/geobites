@@ -1,15 +1,14 @@
-import type { ReactNode } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { Children, type ReactNode, cloneElement, isValidElement } from 'react';
+import { useReducedMotion } from 'framer-motion';
+import { useInViewOnce } from '@/hooks/useInViewOnce';
 import { cn } from '@/lib/utils';
-
-const motionEase = [0.22, 1, 0.36, 1] as const;
 
 export function Reveal({
   children,
   className,
   delay = 0,
   y = 10,
-  mode = 'inView',
+  mode = 'immediate',
   viewportMargin = '0px 0px -10% 0px',
   amount = 0.14,
 }: {
@@ -21,35 +20,27 @@ export function Reveal({
   viewportMargin?: string;
   amount?: number;
 }) {
-  const shouldReduceMotion = useReducedMotion();
+  const { ref, inView } = useInViewOnce(viewportMargin, amount);
+  const shouldReduce = useReducedMotion();
 
-  if (shouldReduceMotion) {
+  if (shouldReduce) {
     return <div className={className}>{children}</div>;
   }
 
-  if (mode === 'immediate') {
-    return (
-      <m.div
-        className={className}
-        initial={{ opacity: 0, y }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.24, delay, ease: motionEase }}
-      >
-        {children}
-      </m.div>
-    );
-  }
+  const willAnimate = mode === 'immediate' || inView;
 
   return (
-    <m.div
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount, margin: viewportMargin }}
-      transition={{ duration: 0.24, delay, ease: motionEase }}
+    <div
+      ref={mode === 'inView' ? ref : undefined}
+      className={cn(willAnimate && 'animate-reveal', className)}
+      style={{
+        animationDelay: `${delay}s`,
+        '--reveal-y': `${y}px`,
+        ...(willAnimate ? {} : { opacity: 0, transform: `translateY(${y}px)` }),
+      } as React.CSSProperties}
     >
       {children}
-    </m.div>
+    </div>
   );
 }
 
@@ -58,7 +49,7 @@ export function Stagger({
   className,
   delayChildren = 0.02,
   stagger = 0.04,
-  mode = 'inView',
+  mode = 'immediate',
   viewportMargin = '0px 0px -10% 0px',
   amount = 0.14,
 }: {
@@ -70,40 +61,34 @@ export function Stagger({
   viewportMargin?: string;
   amount?: number;
 }) {
-  const shouldReduceMotion = useReducedMotion();
+  const { ref, inView } = useInViewOnce(viewportMargin, amount);
+  const shouldReduce = useReducedMotion();
 
-  if (shouldReduceMotion) {
+  if (shouldReduce) {
     return <div className={className}>{children}</div>;
   }
 
-  const variants = {
-    hidden: {},
-    visible: {
-      transition: {
-        delayChildren,
-        staggerChildren: stagger,
-      },
-    },
-  };
+  const willAnimate = mode === 'immediate' || inView;
 
-  if (mode === 'immediate') {
-    return (
-      <m.div className={className} initial="hidden" animate="visible" variants={variants}>
-        {children}
-      </m.div>
-    );
-  }
+  const mapped = Children.map(children, (child, i) => {
+    if (isValidElement<{ style?: React.CSSProperties }>(child)) {
+      return cloneElement(child, {
+        style: {
+          ...child.props.style,
+          '--stagger-delay': `${delayChildren + i * stagger}s`,
+        } as React.CSSProperties,
+      });
+    }
+    return child;
+  });
 
   return (
-    <m.div
-      className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount, margin: viewportMargin }}
-      variants={variants}
+    <div
+      ref={mode === 'inView' ? ref : undefined}
+      className={cn(willAnimate && 'animate-stagger', className)}
     >
-      {children}
-    </m.div>
+      {mapped}
+    </div>
   );
 }
 
@@ -118,29 +103,19 @@ export function StaggerItem({
   y?: number;
   onClick?: () => void;
 }) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduce = useReducedMotion();
 
-  if (shouldReduceMotion) {
+  if (shouldReduce) {
     return <div className={className} onClick={onClick}>{children}</div>;
   }
 
   return (
-    <m.div
-      className={cn(className)}
+    <div
+      className={cn('animate-stagger-item', className)}
       onClick={onClick}
-      variants={{
-        hidden: { opacity: 0, y },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: {
-            duration: 0.24,
-            ease: motionEase,
-          },
-        },
-      }}
+      style={{ '--reveal-y': `${y}px` } as React.CSSProperties}
     >
       {children}
-    </m.div>
+    </div>
   );
 }

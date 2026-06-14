@@ -1,6 +1,6 @@
-import { type FormEvent, useState, useEffect, useMemo } from "react";
+import { type FormEvent, useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, MapPin } from "lucide-react";
+import { ArrowRight, Home, MapPin, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { formatCurrency } from "@/utils/helpers";
 import { placeOrder, initiatePayment } from "@/services/orderService";
 import { getWallet } from "@/services/walletService";
 import { getVendorById } from "@/services/vendorService";
+import { getAddresses, SavedAddress } from "@/services/addressService";
 import { haversineKm, calculateDeliveryFee } from "@/utils/distance";
 import { toast } from "sonner";
 import type { Vendor } from "@/types";
@@ -21,8 +22,9 @@ export function CartPage() {
   const { items, total, updateQuantity, removeItem, clearCart, vendorId } =
     useCart();
   
-  const hasProfileLocation = Boolean(user?.street && user?.barangay && user?.deliveryLat && user?.deliveryLng);
-  const [useProfileAddress, setUseProfileAddress] = useState(false);
+  const [addressMode, setAddressMode] = useState<'custom' | 'default' | 'saved'>('custom');
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
 
   const [street, setStreet] = useState(user?.street || "");
   const [barangay, setBarangay] = useState(user?.barangay || "");
@@ -39,26 +41,37 @@ export function CartPage() {
       : null
   );
 
-  // Auto-enable profile address toggling if they have a saved default address on load
+  // Load saved addresses
   useEffect(() => {
-    if (hasProfileLocation) {
-      setUseProfileAddress(true);
-    }
-  }, [hasProfileLocation]);
+    getAddresses().then((addrs) => {
+      setSavedAddresses(addrs);
+      const defaultAddr = addrs.find((a) => a.isDefault);
+      if (defaultAddr && addressMode === 'custom') {
+        setAddressMode('default');
+        applySavedAddress(defaultAddr);
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Sync inputs with profile fields if toggled on
+  // Sync inputs with selected saved address
+  const applySavedAddress = useCallback((addr: SavedAddress) => {
+    setStreet(addr.street || "");
+    setBarangay(addr.barangay || "");
+    setLandmark(addr.landmark || "");
+    setDeliveryPin(
+      addr.deliveryLat && addr.deliveryLng
+        ? { lat: addr.deliveryLat, lng: addr.deliveryLng }
+        : null
+    );
+  }, []);
+
   useEffect(() => {
-    if (useProfileAddress && user) {
-      setStreet(user.street || "");
-      setBarangay(user.barangay || "");
-      setLandmark(user.landmark || "");
-      setDeliveryPin(
-        user.deliveryLat && user.deliveryLng
-          ? { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) }
-          : null
-      );
+    if (addressMode === 'saved' && selectedSavedId) {
+      const addr = savedAddresses.find(a => a.id === selectedSavedId);
+      if (addr) applySavedAddress(addr);
     }
-  }, [useProfileAddress, user]);
+  }, [addressMode, selectedSavedId, savedAddresses, applySavedAddress]);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ street?: string; barangay?: string; paymentRef?: string }>({});
@@ -226,6 +239,7 @@ export function CartPage() {
                       src={item.menuItem.imageUrl}
                       alt={item.menuItem.name}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -331,53 +345,97 @@ export function CartPage() {
                   </p>
                 </div>
 
-                {/* Profile Default Address Toggle */}
+                {/* Address Source Toggle */}
                 <div className="flex border border-border">
                   <button
                     type="button"
                     onClick={() => {
-                      if (!hasProfileLocation) {
-                        toast.error("No default location configured in Settings.");
+                      const defaultAddr = savedAddresses.find((a) => a.isDefault);
+                      if (!defaultAddr) {
+                        toast.error("No default address set. Save one in Settings.");
                         return;
                       }
-                      setUseProfileAddress(true);
+                      setAddressMode('default');
+                      setSelectedSavedId(null);
+                      applySavedAddress(defaultAddr);
                     }}
                     className={`flex-1 h-12 font-bold tracking-widest text-[10px] uppercase transition-colors cursor-pointer ${
-                      useProfileAddress
+                      addressMode === 'default'
                         ? "bg-foreground text-background"
                         : "bg-transparent text-foreground hover:bg-secondary/20"
                     }`}
                   >
-                    Use Profile Default
+                    Default
                   </button>
                   <div className="w-px bg-border" />
+                  {savedAddresses.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setAddressMode('saved'); setSelectedSavedId(savedAddresses[0]?.id ?? null); }}
+                        className={`flex-1 h-12 font-bold tracking-widest text-[10px] uppercase transition-colors cursor-pointer ${
+                          addressMode === 'saved'
+                            ? "bg-foreground text-background"
+                            : "bg-transparent text-foreground hover:bg-secondary/20"
+                        }`}
+                      >
+                        Saved ({savedAddresses.length})
+                      </button>
+                      <div className="w-px bg-border" />
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setUseProfileAddress(false)}
+                    onClick={() => { setAddressMode('custom'); setSelectedSavedId(null); }}
                     className={`flex-1 h-12 font-bold tracking-widest text-[10px] uppercase transition-colors cursor-pointer ${
-                      !useProfileAddress
+                      addressMode === 'custom'
                         ? "bg-foreground text-background"
                         : "bg-transparent text-foreground hover:bg-secondary/20"
                     }`}
                   >
-                    Custom Address
+                    Custom
                   </button>
                 </div>
 
-                {!hasProfileLocation && (
+                {!savedAddresses.some(a => a.isDefault) && addressMode !== 'custom' && (
                   <p className="text-xs text-amber-500 font-semibold mb-6 flex items-center gap-1.5 leading-relaxed">
-                    ⚠️ No default location set.{" "}
+                    ⚠️ No default address set.{" "}
                     <Link to="/settings" className="underline hover:text-foreground">
-                      Configure Default Location in Settings
+                      Set one in Settings
                     </Link>
                   </p>
+                )}
+
+                {/* Saved Address Selector */}
+                {addressMode === 'saved' && savedAddresses.length > 0 && (
+                  <div className="grid gap-2 mb-4">
+                    {savedAddresses.map((addr) => (
+                      <button
+                        key={addr.id}
+                        type="button"
+                        onClick={() => { setSelectedSavedId(addr.id); applySavedAddress(addr); }}
+                        className={`flex items-center gap-3 px-5 py-4 border text-left transition-colors ${
+                          selectedSavedId === addr.id
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border bg-transparent text-foreground hover:border-foreground"
+                        }`}
+                      >
+                        <Home className="h-4 w-4 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold">{addr.label}</p>
+                          <p className="text-xs truncate opacity-70">{addr.street}{addr.barangay ? `, ${addr.barangay}` : ''}</p>
+                        </div>
+                        {addr.isDefault && <span className="text-[9px] font-bold uppercase tracking-widest ml-auto shrink-0 opacity-70">Default</span>}
+                      </button>
+                    ))}
+                  </div>
                 )}
 
                 <div className="space-y-4">
                   <Input
                     placeholder="Street / Unit Number"
                     value={street}
-                    disabled={useProfileAddress}
+                    disabled={addressMode !== 'custom'}
                     onBlur={() => handleBlur('street')}
                     onChange={(e) => { setStreet(e.target.value); clearError('street'); }}
                     className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.street ? 'border-red-500 bg-red-500/5' : ''}`}
@@ -390,7 +448,7 @@ export function CartPage() {
                   <Input
                     placeholder="Barangay"
                     value={barangay}
-                    disabled={useProfileAddress}
+                    disabled={addressMode !== 'custom'}
                     onBlur={() => handleBlur('barangay')}
                     onChange={(e) => { setBarangay(e.target.value); clearError('barangay'); }}
                     className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.barangay ? 'border-red-500 bg-red-500/5' : ''}`}
@@ -403,7 +461,7 @@ export function CartPage() {
                   <Input
                     placeholder="Landmark (Optional)"
                     value={landmark}
-                    disabled={useProfileAddress}
+                    disabled={addressMode !== 'custom'}
                     onChange={(e) => setLandmark(e.target.value)}
                     className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   />
@@ -417,7 +475,7 @@ export function CartPage() {
                     <LazyDeliveryLocationPicker
                       value={deliveryPin}
                       onChange={setDeliveryPin}
-                      disabled={useProfileAddress}
+                      disabled={addressMode !== 'custom'}
                       vendorCoords={
                         vendor
                           ? { lat: Number(vendor.latitude), lng: Number(vendor.longitude) }

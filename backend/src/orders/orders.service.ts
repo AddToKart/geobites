@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,8 +13,10 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
 import { haversineKm, calculateDeliveryFee } from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderItemDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
@@ -31,6 +34,8 @@ const riderTransitions: Record<string, string[]> = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -41,6 +46,7 @@ export class OrdersService {
     @InjectRepository(Vendor)
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
+    private readonly walletService: WalletService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -298,13 +304,12 @@ export class OrdersService {
       if (order.customerId !== userId) {
         throw new ForbiddenException('You can only update your own orders');
       }
-      if (!(currentStatus === 'pending' && nextStatus === 'cancelled')) {
+      const cancellableStatuses = ['pending', 'accepted', 'preparing'];
+      if (!(cancellableStatuses.includes(currentStatus) && nextStatus === 'cancelled')) {
         throw new BadRequestException('Invalid customer status transition');
       }
-      if (nextStatus === 'cancelled') {
-        order.cancellationReason =
-          updateStatusDto.cancellationReason || 'Cancelled by customer';
-      }
+      order.cancellationReason =
+        updateStatusDto.cancellationReason || 'Cancelled by customer';
     }
 
     if (role === 'seller') {
@@ -356,6 +361,32 @@ export class OrdersService {
 
     order.status = nextStatus;
     const updatedOrder = await this.orderRepository.save(order);
+
+    // If cancelled by customer and paid via GeoPay, refund the customer wallet
+    if (nextStatus === 'cancelled' && role === 'customer' && order.paymentMethod === 'GEOPAY' && order.paymentStatus === 'paid') {
+      try {
+        await this.walletService.refundGeoPayOrder(
+          order.vendorId,
+          order.customerId,
+          order.id,
+          Number(order.totalAmount),
+        );
+        this.logger.log(`GeoPay refund processed for cancelled order ${order.id}`);
+      } catch (refundError) {
+        this.logger.error(`Failed to process GeoPay refund for order ${order.id}:`, refundError);
+      }
+    }
+
+    // Notify seller when customer cancels
+    if (nextStatus === 'cancelled' && role === 'customer' && order.vendor?.userId) {
+      await this.notificationsService.create({
+        userId: order.vendor.userId,
+        title: 'Order Cancelled',
+        message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
+        type: 'order_update',
+        referenceId: order.id,
+      });
+    }
 
     // Create notifications based on status change
     if (nextStatus === 'accepted') {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, CloudMoon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Reveal } from '@/components/motion/Reveal';
 import type { Order } from '@/types';
 
-export function BrowseOverviewSection({
+export const BrowseOverviewSection = memo(function BrowseOverviewSection({
   search,
   onSearchChange,
   browseCount,
@@ -39,7 +40,7 @@ export function BrowseOverviewSection({
       )}
 
       <Reveal delay={0.05} className="flex flex-col md:flex-row items-center gap-4 mt-4">
-        <div className={`relative flex-1 w-full ${isMapMode ? 'bg-background/90 backdrop-blur-md' : ''}`}>
+        <div className={`relative flex-1 w-full ${isMapMode ? 'bg-background/90 backdrop-blur-md' : ''}`} style={isMapMode ? { willChange: 'transform' } : undefined}>
           <Search className="absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search restaurants, groceries, or dishes..."
@@ -55,15 +56,7 @@ export function BrowseOverviewSection({
         )}
       </Reveal>
 
-      {!isMapMode && (
-        <Reveal delay={0.1} className="flex flex-wrap gap-3 mt-4">
-          {['Offers', 'Pickup', 'Burgers', 'Asian', 'Healthy', 'Coffee', 'Desserts'].map((category, i) => (
-             <button key={category} className={`border border-border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all ${i === 0 ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent text-foreground hover:bg-secondary'}`}>
-               {category}
-             </button>
-          ))}
-        </Reveal>
-      )}
+
 
       {activeOrder ? (
         <Reveal delay={0.15} className={`bg-foreground text-background p-6 flex flex-col md:flex-row items-center justify-between border-l-4 border-primary ${isMapMode ? 'mt-0' : 'mt-8'}`}>
@@ -85,4 +78,4 @@ export function BrowseOverviewSection({
       ) : null}
     </div>
   );
-}
+});

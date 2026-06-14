@@ -203,7 +203,7 @@ export function VendorMenuPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link to="/browse" className="text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
-              Back to directory
+              Back to shops
             </Link>
             {cartCount > 0 ? (
               <Link to="/cart" className="flex items-center gap-2 border border-border bg-foreground text-background px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors hover:opacity-90">

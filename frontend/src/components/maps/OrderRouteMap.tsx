@@ -369,17 +369,19 @@ export function OrderRouteMap({
 
   return (
     <div className={cn("p-6 md:p-8 space-y-6 text-foreground", className)}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h3 className="text-2xl font-medium tracking-tighter">{title}</h3>
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">{description}</p>
+      {(title || description) && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            {title && <h3 className="text-2xl font-medium tracking-tighter">{title}</h3>}
+            {description && <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">{description}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="border border-border bg-background px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Shop</span>
+            <span className="border border-emerald-500/30 bg-emerald-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-500">Rider</span>
+            <span className="border border-amber-500/30 bg-amber-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-500">Customer</span>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="border border-border bg-background px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Shop</span>
-          <span className="border border-emerald-500/30 bg-emerald-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-500">Rider</span>
-          <span className="border border-amber-500/30 bg-amber-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-500">Customer</span>
-        </div>
-      </div>
+      )}
 
       <div
         className={cn(
