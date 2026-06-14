@@ -5,7 +5,7 @@ import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBu
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
-import { searchMenuItems, DishSearchResult } from '@/services/menuService';
+import { searchMenuItems, getVendorMenu, DishSearchResult } from '@/services/menuService';
 import { Order, Vendor, MenuItem } from '@/types';
 import { toast } from 'sonner';
 import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverviewSection';
@@ -67,6 +67,19 @@ export function BrowseVendorsPagePremium() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  const allVendors = useMemo(() => {
+    return [
+      ...demoVendors.map((vendor) => ({
+        ...vendor,
+        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
+      })),
+      ...liveVendors
+        .map((vendor) => toBrowseVendor(vendor, coords))
+        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
+        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
+    ];
+  }, [coords, liveVendors]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -132,27 +145,57 @@ export function BrowseVendorsPagePremium() {
     }
     let cancelled = false;
     setSearchingDishes(true);
-    searchMenuItems(trimmed).then((results) => {
+    searchMenuItems(trimmed).then(async (results) => {
+      if (cancelled) return;
+
+      const queryLower = trimmed.toLowerCase();
+      const matchingVendors = allVendors.filter(
+        (vendor) =>
+          vendor.name.toLowerCase().includes(queryLower) ||
+          (vendor.description?.toLowerCase() || '').includes(queryLower),
+      );
+
+      const missingVendors = matchingVendors.filter(
+        (vendor) => !results.some((r) => r.vendor.id === vendor.id),
+      );
+
+      if (missingVendors.length > 0) {
+        const fallbackResults = await Promise.all(
+          missingVendors.map(async (vendor) => {
+            try {
+              const menu = await getVendorMenu(vendor.id);
+              const availableItems = menu.filter((item) => item.isAvailable !== false).slice(0, 3);
+              return {
+                vendor: {
+                  id: vendor.id,
+                  name: vendor.name,
+                  imageUrl: vendor.imageUrl,
+                  rating: vendor.rating,
+                  totalRatings: vendor.totalRatings,
+                },
+                items: availableItems,
+              };
+            } catch (e) {
+              console.error('Failed to load menu for vendor', vendor.id, e);
+              return null;
+            }
+          }),
+        );
+
+        const validFallbacks = fallbackResults.filter(Boolean) as DishSearchResult[];
+        results.push(...validFallbacks);
+      }
+
       if (!cancelled) {
         setDishResults(results);
         setSearchingDishes(false);
       }
     });
-    return () => { cancelled = true; };
-  }, [deferredSearch]);
+    return () => {
+      cancelled = true;
+    };
+  }, [deferredSearch, allVendors]);
 
-  const allVendors = useMemo(() => {
-    return [
-      ...demoVendors.map((vendor) => ({
-        ...vendor,
-        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
-      })),
-      ...liveVendors
-        .map((vendor) => toBrowseVendor(vendor, coords))
-        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
-        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
-    ];
-  }, [coords, liveVendors]);
 
   const browseVendors = useMemo(() => {
     const filtered = allVendors.filter((vendor) => {
