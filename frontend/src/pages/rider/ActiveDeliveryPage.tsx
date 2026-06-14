@@ -264,14 +264,14 @@ export function ActiveDeliveryPage() {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <Button 
                   variant="outline" 
-                  onClick={() => toast.success(`Simulating call to Kitchen (${order.vendor?.name || "Seller"})`)}
+                  onClick={() => toast.success(`Calling Kitchen: ${order.vendor?.name || "Seller"} (${order.vendorPhone || "N/A"})`)}
                   className="flex items-center justify-center gap-2 h-12 text-xs font-bold uppercase tracking-widest border border-border rounded-none"
                 >
                   <Phone className="w-3.5 h-3.5 text-primary" /> Kitchen
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => toast.success("Simulating call to Customer")}
+                  onClick={() => toast.success(`Calling Customer: ${order.customerName || "Client"} (${order.customerPhone || "N/A"})`)}
                   className="flex items-center justify-center gap-2 h-12 text-xs font-bold uppercase tracking-widest border border-border rounded-none"
                 >
                   <Phone className="w-3.5 h-3.5 text-primary" /> Customer

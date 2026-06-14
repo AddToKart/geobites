@@ -264,6 +264,9 @@ export class OrdersService {
       }
 
       const [data, total] = await qb.getManyAndCount();
+      for (const order of data) {
+        await this.enrichOrderDetails(order);
+      }
 
       return {
         data,
@@ -298,6 +301,8 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
+
+    await this.enrichOrderDetails(order);
 
     if (role === 'customer' && order.customerId !== userId) {
       throw new ForbiddenException('You are not allowed to access this order');
@@ -623,4 +628,47 @@ export class OrdersService {
 
     return updated;
   }
+
+  async enrichOrderDetails(order: Order): Promise<Order> {
+    if (order.riderId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const riders = await this.dataSource.query(query, [order.riderId]);
+      if (riders && riders[0]) {
+        order.riderName = riders[0].name;
+        order.riderPhone = riders[0].phone || 'N/A';
+      }
+    }
+    if (order.customerId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const customers = await this.dataSource.query(query, [order.customerId]);
+      if (customers && customers[0]) {
+        order.customerName = customers[0].name;
+        order.customerPhone = customers[0].phone || 'N/A';
+      }
+    }
+    if (order.vendor && order.vendor.userId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT phone FROM user WHERE id = ?'
+        : 'SELECT phone FROM "user" WHERE id = $1';
+      const sellers = await this.dataSource.query(query, [order.vendor.userId]);
+      if (sellers && sellers[0]) {
+        order.vendorPhone = sellers[0].phone || 'N/A';
+      }
+    }
+    return order;
+  }
 }
+

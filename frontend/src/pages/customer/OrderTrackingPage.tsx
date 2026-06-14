@@ -466,6 +466,43 @@ export function OrderTrackingPage() {
           </Reveal>
 
           <Reveal className="space-y-12" delay={0.1}>
+            {/* Rider Information Panel */}
+            {order.status !== 'pending' &&
+              order.status !== 'rejected' &&
+              order.status !== 'cancelled' && (
+                <div className="border border-border bg-background p-8">
+                  <h2 className="text-2xl font-medium tracking-tighter mb-6 border-b border-border pb-4">Rider Details</h2>
+                  {order.riderId ? (
+                    <div className="space-y-4">
+                      <div className="flex justify-between text-sm border-b border-border/40 pb-2">
+                        <span className="text-muted-foreground">Name:</span>
+                        <span className="font-semibold text-foreground">{order.riderName || 'Assigned'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm border-b border-border/40 pb-2">
+                        <span className="text-muted-foreground">Phone:</span>
+                        <span className="font-mono font-bold text-foreground">{order.riderPhone || 'N/A'}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed pt-1">
+                        A rider is handling your order and will arrive soon.
+                      </p>
+                    </div>
+                  ) : order.status === 'accepted' ? (
+                    <div className="space-y-2">
+                      <p className="text-lg font-semibold text-primary animate-pulse">
+                        Finding a rider...
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Your order is accepted. We are searching for an available rider to pick it up.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      A rider will be assigned once the kitchen accepts and starts preparing.
+                    </p>
+                  )}
+                </div>
+              )}
+
             <div className="border border-border bg-background p-8">
               <h2 className="text-2xl font-medium tracking-tighter mb-8 border-b border-border pb-4">Summary</h2>
               <div className="space-y-4">

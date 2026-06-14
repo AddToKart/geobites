@@ -116,6 +116,11 @@ export interface Order {
   vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
+  riderName?: string;
+  riderPhone?: string;
+  customerName?: string;
+  customerPhone?: string;
+  vendorPhone?: string;
   customerRating?: number;
   cancellationReason?: string;
   disputeStatus?: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';

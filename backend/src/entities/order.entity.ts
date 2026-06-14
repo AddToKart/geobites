@@ -176,4 +176,11 @@ export class Order {
 
   @OneToMany(() => Rating, (rating) => rating.order)
   ratings!: Rating[];
+
+  riderName?: string;
+  riderPhone?: string;
+  customerName?: string;
+  customerPhone?: string;
+  vendorPhone?: string;
 }
+
