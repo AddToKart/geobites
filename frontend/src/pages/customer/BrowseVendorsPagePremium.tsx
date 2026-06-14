@@ -155,17 +155,8 @@ export function BrowseVendorsPagePremium() {
   }, [coords, liveVendors]);
 
   const browseVendors = useMemo(() => {
-    const normalizedSearch = deferredSearch.trim().toLowerCase();
-
     const filtered = allVendors.filter((vendor) => {
-      // 1. Search query filter
-      const matchesSearch = !normalizedSearch || [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(normalizedSearch));
-
-      if (!matchesSearch) return false;
-
-      // 2. Category selection filter
+      // 1. Category selection filter
       if (selectedCategory === 'All') return true;
 
       const categoryLower = selectedCategory.toLowerCase();
@@ -200,7 +191,7 @@ export function BrowseVendorsPagePremium() {
 
       return secondVendor.rating - firstVendor.rating;
     });
-  }, [allVendors, deferredSearch, sortBy, selectedCategory]);
+  }, [allVendors, sortBy, selectedCategory]);
 
   const selectedVendor = useMemo(
     () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
