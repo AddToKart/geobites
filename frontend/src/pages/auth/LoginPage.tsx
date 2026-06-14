@@ -1,4 +1,7 @@
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ArrowRight, UtensilsCrossed, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,32 +11,24 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { toast } from "sonner";
 
+const loginSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required").min(6, "Password must be at least 6 characters"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { user, signIn, isLoading } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-
-  const validateField = (field: 'email' | 'password', value: string) => {
-    if (field === 'email' && !value.trim()) return 'Email is required';
-    if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Enter a valid email address';
-    if (field === 'password' && !value) return 'Password is required';
-    if (field === 'password' && value.length < 6) return 'Password must be at least 6 characters';
-    return undefined;
-  };
-
-  const handleBlur = (field: 'email' | 'password') => {
-    const value = field === 'email' ? email : password;
-    const error = validateField(field, value);
-    setErrors((prev) => ({ ...prev, [field]: error }));
-  };
-
-  const clearError = (field: 'email' | 'password') => {
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
 
   if (!isLoading && user) {
     const destination =
@@ -45,27 +40,13 @@ export function LoginPage() {
     return <Navigate to={destination} replace />;
   }
 
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-
-    const emailError = validateField('email', email);
-    const passwordError = validateField('password', password);
-    setErrors({ email: emailError, password: passwordError });
-
-    if (emailError || passwordError) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: LoginForm) => {
     try {
-      await signIn(email, password);
+      await signIn(data.email, data.password);
       toast.success("Welcome back");
       navigate("/");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to sign in");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -101,7 +82,7 @@ export function LoginPage() {
             <p className="text-muted-foreground text-lg">Enter your details below to continue.</p>
           </div>
 
-          <form onSubmit={onSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             <div className="space-y-3">
               <Label htmlFor="email" className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
                 Email Address
@@ -111,14 +92,11 @@ export function LoginPage() {
                 type="email"
                 placeholder="name@example.com"
                 className={`h-14 rounded-2xl border-border bg-secondary/20 px-4 text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:border-primary transition-colors shadow-none ${errors.email ? 'border-red-500 bg-red-500/5' : ''}`}
-                value={email}
-                onBlur={() => handleBlur('email')}
-                onChange={(event) => { setEmail(event.target.value); clearError('email'); }}
                 aria-invalid={Boolean(errors.email)}
                 aria-describedby={errors.email ? 'email-error' : undefined}
-                required
+                {...register('email')}
               />
-              {errors.email && <p id="email-error" className="text-sm font-semibold text-red-500 mt-2">{errors.email}</p>}
+              {errors.email && <p id="email-error" className="text-sm font-semibold text-red-500 mt-2">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-3">
@@ -133,12 +111,9 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   className={`h-14 rounded-2xl border-border bg-secondary/20 pl-4 pr-12 text-lg focus-visible:ring-primary focus-visible:ring-offset-0 focus-visible:border-primary transition-colors shadow-none ${errors.password ? 'border-red-500 bg-red-500/5' : ''}`}
-                  value={password}
-                  onBlur={() => handleBlur('password')}
-                  onChange={(event) => { setPassword(event.target.value); clearError('password'); }}
                   aria-invalid={Boolean(errors.password)}
                   aria-describedby={errors.password ? 'password-error' : undefined}
-                  required
+                  {...register('password')}
                 />
                 <button
                   type="button"
@@ -148,7 +123,7 @@ export function LoginPage() {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && <p id="password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.password}</p>}
+              {errors.password && <p id="password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.password.message}</p>}
             </div>
 
             <Button

@@ -45,7 +45,18 @@ export function SellerPromotions() {
   const { user } = useAuth();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState<{
+    name: string;
+    description: string;
+    type: Promotion['type'];
+    value: string;
+    minOrderAmount: string;
+    maxDiscount: string;
+    applicableTo: string;
+    startsAt: string;
+    expiresAt: string;
+    usageLimit: string;
+  }>({ ...defaultForm, type: 'percentage' });
   const [isAdding, setIsAdding] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
@@ -168,7 +179,7 @@ export function SellerPromotions() {
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Type</label>
                 <select
                   value={form.type}
-                  onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as any }))}
+                   onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as Promotion['type'] }))}
                   className="h-12 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground text-foreground"
                 >
                   <option value="percentage" className="bg-background text-foreground" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>Percentage off</option>

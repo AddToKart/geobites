@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { MapStyleSelect } from './MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from './map-styles';
+import { OSRM_BASE_URL } from '@/lib/config';
 
 const fallbackCenter = santaMariaBulacanCenter;
 
@@ -163,7 +164,7 @@ export function DeliveryLocationPicker({
 
     const fetchRoute = async () => {
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${vendorCoords.lng},${vendorCoords.lat};${draftCoords.lng},${draftCoords.lat}?overview=full&geometries=geojson`;
+        const url = `${OSRM_BASE_URL}/route/v1/driving/${vendorCoords.lng},${vendorCoords.lat};${draftCoords.lng},${draftCoords.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error('OSRM request failed');
         const data = await res.json();

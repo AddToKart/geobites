@@ -123,7 +123,7 @@ export function SellerWalletPage() {
       if (wallet && 'needsSetup' in wallet) {
         setSetupRequired(true);
       } else {
-        setBalance(Number((wallet as any).balance));
+        setBalance(Number(wallet.balance));
         setTransactions(Array.isArray(txHistory) ? txHistory : []);
         setWithdrawals(Array.isArray(wdHistory) ? wdHistory : []);
       }

@@ -16,7 +16,7 @@ export function ShopPreviewCard({
   return (
     <div className="space-y-6 xl:sticky xl:top-8 xl:self-start">
       <div className="border border-border bg-background">
-        <div className="bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.34),transparent_36%),linear-gradient(135deg,#ef7c42,#f6b372)] p-6 text-white rounded-none">
+        <div className="bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.34),transparent_36%),linear-gradient(135deg,var(--color-primary),var(--color-primary-light))] p-6 text-white rounded-none">
           <div className="flex flex-wrap gap-2">
             <span className="border border-white/40 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/90">
               Customer preview

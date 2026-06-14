@@ -88,6 +88,7 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  prepTimeMinutes?: number;
 }
 
 export interface Order {
@@ -115,6 +116,7 @@ export interface Order {
   vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
+  customerRating?: number;
   prepStartTime?: string;
   prepCompleteTime?: string;
   actualDeliveryTime?: string;

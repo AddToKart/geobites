@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LazyMotion, MotionConfig, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
@@ -8,6 +9,7 @@ import { ErrorBoundary } from './components/layout/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import type { ReactNode } from 'react';
 import {
   loadActiveDeliveryPage,
   loadBrowsePage,
@@ -80,12 +82,30 @@ function HomeRedirect() {
   return <Navigate to="/browse" replace />;
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
 const pageTransition = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -6 },
   transition: { duration: 0.15, ease: "easeOut" as const },
 };
+
+function RouteGroup({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
+  );
+}
 
 function AppRoutes() {
   const location = useLocation();
@@ -95,71 +115,71 @@ function AppRoutes() {
   }, [location.pathname]);
 
   return (
-    <ErrorBoundary>
-      <AnimatePresence mode="popLayout">
-        <m.div key={location.pathname} {...pageTransition}>
-          <Suspense fallback={<RouteLoadingScreen />}>
-            <Routes location={location}>
-              <Route path="/" element={<HomeRedirect />} />
-              <Route path="/landing" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+    <AnimatePresence mode="popLayout">
+      <m.div key={location.pathname} {...pageTransition}>
+        <Suspense fallback={<RouteLoadingScreen />}>
+          <Routes location={location}>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/landing" element={<RouteGroup><LandingPage /></RouteGroup>} />
+            <Route path="/login" element={<RouteGroup><LoginPage /></RouteGroup>} />
+            <Route path="/register" element={<RouteGroup><RegisterPage /></RouteGroup>} />
 
-              <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
-                <Route path="/browse" element={<BrowseVendorsPagePremium />} />
-                <Route path="/vendor/:id" element={<VendorMenuPage />} />
-                <Route path="/cart" element={<CartPage />} />
-                <Route path="/orders" element={<OrderHistoryPage />} />
-                <Route path="/orders/:id" element={<OrderTrackingPage />} />
-                <Route path="/mock-payment" element={<MockPaymentPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
-              </Route>
+            <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
+              <Route path="/browse" element={<RouteGroup><BrowseVendorsPagePremium /></RouteGroup>} />
+              <Route path="/vendor/:id" element={<RouteGroup><VendorMenuPage /></RouteGroup>} />
+              <Route path="/cart" element={<RouteGroup><CartPage /></RouteGroup>} />
+              <Route path="/orders" element={<RouteGroup><OrderHistoryPage /></RouteGroup>} />
+              <Route path="/orders/:id" element={<RouteGroup><OrderTrackingPage /></RouteGroup>} />
+              <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
+              <Route path="/wallet" element={<RouteGroup><WalletPage /></RouteGroup>} />
+            </Route>
 
-              <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
-                <Route path="/seller" element={<SellerDashboard />} />
-                <Route path="/seller/menu" element={<MenuManagementPage />} />
-                <Route path="/seller/orders" element={<OrderManagementPage />} />
-                <Route path="/seller/analytics" element={<SellerAnalytics />} />
-                <Route path="/seller/payouts" element={<SellerPayouts />} />
-                <Route path="/seller/kds" element={<SellerKDS />} />
-                <Route path="/seller/promotions" element={<SellerPromotions />} />
-                <Route path="/seller/ratings" element={<SellerRatings />} />
-                <Route path="/seller/wallet" element={<SellerWallet />} />
-              </Route>
+            <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
+              <Route path="/seller" element={<RouteGroup><SellerDashboard /></RouteGroup>} />
+              <Route path="/seller/menu" element={<RouteGroup><MenuManagementPage /></RouteGroup>} />
+              <Route path="/seller/orders" element={<RouteGroup><OrderManagementPage /></RouteGroup>} />
+              <Route path="/seller/analytics" element={<RouteGroup><SellerAnalytics /></RouteGroup>} />
+              <Route path="/seller/payouts" element={<RouteGroup><SellerPayouts /></RouteGroup>} />
+              <Route path="/seller/kds" element={<RouteGroup><SellerKDS /></RouteGroup>} />
+              <Route path="/seller/promotions" element={<RouteGroup><SellerPromotions /></RouteGroup>} />
+              <Route path="/seller/ratings" element={<RouteGroup><SellerRatings /></RouteGroup>} />
+              <Route path="/seller/wallet" element={<RouteGroup><SellerWallet /></RouteGroup>} />
+            </Route>
 
-              <Route element={<ProtectedRoute allowedRoles={['rider']} />}>
-                <Route path="/rider" element={<RiderDashboard />} />
-                <Route path="/rider/deliveries" element={<RiderDashboard />} />
-                <Route path="/rider/delivery/:id" element={<ActiveDeliveryPage />} />
-              </Route>
+            <Route element={<ProtectedRoute allowedRoles={['rider']} />}>
+              <Route path="/rider" element={<RouteGroup><RiderDashboard /></RouteGroup>} />
+              <Route path="/rider/deliveries" element={<RouteGroup><RiderDashboard /></RouteGroup>} />
+              <Route path="/rider/delivery/:id" element={<RouteGroup><ActiveDeliveryPage /></RouteGroup>} />
+            </Route>
 
-              <Route element={<ProtectedRoute />}>
-                <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Route>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/notifications" element={<RouteGroup><NotificationsPage /></RouteGroup>} />
+              <Route path="/settings" element={<RouteGroup><SettingsPage /></RouteGroup>} />
+            </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </m.div>
-      </AnimatePresence>
-    </ErrorBoundary>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </m.div>
+    </AnimatePresence>
   );
 }
 
 
 function App() {
   return (
-    <LazyMotion features={domAnimation}>
-      <MotionConfig reducedMotion="user">
-        <AuthProvider>
-          <CartProvider>
-            <RouteWarmup />
-            <AppRoutes />
-          </CartProvider>
-        </AuthProvider>
-      </MotionConfig>
-    </LazyMotion>
+    <QueryClientProvider client={queryClient}>
+      <LazyMotion features={domAnimation}>
+        <MotionConfig reducedMotion="user">
+          <AuthProvider>
+            <CartProvider>
+              <RouteWarmup />
+              <AppRoutes />
+            </CartProvider>
+          </AuthProvider>
+        </MotionConfig>
+      </LazyMotion>
+    </QueryClientProvider>
   );
 }
 

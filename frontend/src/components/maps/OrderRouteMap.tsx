@@ -3,6 +3,7 @@ import { Map, MapControls, MapMarker, MapRoute, MarkerContent, MarkerPopup, useM
 import { Order, Vendor } from '@/types';
 import { MapStyleSelect } from './MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from './map-styles';
+import { OSRM_BASE_URL } from '@/lib/config';
 import { cn } from '@/lib/utils';
 
 type RouteVendor = Pick<Vendor, 'name' | 'address' | 'latitude' | 'longitude'>;
@@ -285,7 +286,7 @@ export function OrderRouteMap({
     const controller = new AbortController();
     const fetchRoute = async () => {
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${vendorPoint.lng},${vendorPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
+        const url = `${OSRM_BASE_URL}/route/v1/driving/${vendorPoint.lng},${vendorPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error('OSRM request failed');
         const data = await res.json();
@@ -324,7 +325,7 @@ export function OrderRouteMap({
     const controller = new AbortController();
     const fetchRoute = async () => {
       try {
-        const url = `https://router.project-osrm.org/route/v1/driving/${riderPoint.lng},${riderPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
+        const url = `${OSRM_BASE_URL}/route/v1/driving/${riderPoint.lng},${riderPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error('OSRM request failed');
         const data = await res.json();

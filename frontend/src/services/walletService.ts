@@ -55,7 +55,7 @@ export async function initiateCashIn(
   return response.data;
 }
 
-export async function getVendorWallet(): Promise<Wallet> {
+export async function getVendorWallet(): Promise<Wallet | { needsSetup: boolean }> {
   const response = await api.get<Wallet>('/wallet/vendor');
   return response.data;
 }
