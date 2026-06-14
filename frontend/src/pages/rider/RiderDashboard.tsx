@@ -23,10 +23,29 @@ import { ORDER_STATUS_LABELS } from '@/utils/constants';
 import { Order } from '../../types';
 import { formatCurrency } from '@/utils/helpers';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 type TabId = 'available' | 'active';
 
 export function RiderDashboard() {
+  const { user } = useAuth();
+  const [isOnDuty, setIsOnDuty] = useState<boolean>(() => {
+    return localStorage.getItem('rider-on-duty') !== 'false';
+  });
+
+  const handleDutyToggle = () => {
+    setIsOnDuty((prev) => {
+      const next = !prev;
+      localStorage.setItem('rider-on-duty', String(next));
+      if (next) {
+        toast.success("You are now online and ready to accept bookings!");
+      } else {
+        toast.info("You are off-duty. You won't receive new bookings.");
+      }
+      return next;
+    });
+  };
+
   const [tab, setTab] = useState<TabId>('available');
   const [available, setAvailable] = useState<Order[]>([]);
   const [active, setActive] = useState<Order[]>([]);
@@ -34,6 +53,7 @@ export function RiderDashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
 
   const loadAvailable = async () => {
     try {
@@ -194,16 +214,31 @@ export function RiderDashboard() {
         {/* Master Header with GeoPay Integration */}
         <Reveal>
           <div className="border border-border bg-secondary/5 mb-12 flex flex-col md:flex-row md:items-stretch justify-between relative overflow-hidden">
-            <div className="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
-                <Bike className="w-4 h-4 text-primary" /> Rider Dispatch
-              </p>
-              <h1 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground mt-1">
-                Dashboard.
-              </h1>
-              <p className="text-xl text-muted-foreground mt-4 max-w-md leading-relaxed">
-                Browse open bookings, claim a run, and manage your active deliveries.
-              </p>
+            <div className="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-border flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                  <Bike className="w-4 h-4 text-primary" /> Rider Dispatch
+                </p>
+                <h1 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground mt-1">
+                  Dashboard.
+                </h1>
+                <p className="text-xl text-muted-foreground mt-4 max-w-md leading-relaxed">
+                  Browse open bookings, claim a run, and manage your active deliveries.
+                </p>
+              </div>
+              <div className="mt-8 flex items-center gap-4">
+                <button
+                  onClick={handleDutyToggle}
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all flex items-center gap-2 ${
+                    isOnDuty 
+                      ? 'bg-green-500/10 border-green-500 text-green-500' 
+                      : 'bg-muted/10 border-muted text-muted-foreground'
+                  }`}
+                >
+                  <span className={`h-2.5 w-2.5 rounded-full ${isOnDuty ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                  {isOnDuty ? 'ACTIVE ON-DUTY' : 'OFF-DUTY'}
+                </button>
+              </div>
             </div>
             
             <div className="flex-1 p-8 md:p-12 bg-primary/5 relative">
@@ -240,6 +275,61 @@ export function RiderDashboard() {
           </div>
         </Reveal>
 
+        {/* Shift Analytics & Vehicle Profile */}
+        <Reveal delay={0.07}>
+          <div className="grid gap-0 md:grid-cols-3 border border-border bg-secondary/5 mb-12">
+            {/* Panel 1: Daily Efficiency */}
+            <div className="p-8 border-b md:border-b-0 md:border-r border-border flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary" /> Shift Progress
+                </p>
+                <h3 className="text-2xl font-medium tracking-tight mb-2">Milestones Today</h3>
+                <p className="text-sm text-muted-foreground mb-4">5 completed runs of 8 daily goal.</p>
+              </div>
+              <div className="w-full bg-muted h-2 mt-2 relative overflow-hidden">
+                <div className="bg-primary h-full transition-all duration-500" style={{ width: '62.5%' }} />
+              </div>
+            </div>
+
+            {/* Panel 2: Vehicle Card */}
+            <div className="p-8 border-b md:border-b-0 md:border-r border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                <Bike className="w-4 h-4 text-primary" /> Active Vehicle
+              </p>
+              <h3 className="text-2xl font-medium tracking-tight mb-1">
+                {user?.vehicleType || 'Motorcycle (Mio Aerox)'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Plate: <span className="font-bold text-foreground">{user?.licenseNumber || 'BUL-9981'}</span>
+              </p>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-500 bg-green-500/10 border border-green-500/20 px-2 py-0.5 inline-block">
+                Registered & Active
+              </span>
+            </div>
+
+            {/* Panel 3: Stats Details */}
+            <div className="p-8 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Shift Time</p>
+                <p className="text-2xl font-medium tracking-tight">4h 12m</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Est. Distance</p>
+                <p className="text-2xl font-medium tracking-tight">24.6 km</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Runs Claimed</p>
+                <p className="text-2xl font-medium tracking-tight">6 runs</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Rider Rating</p>
+                <p className="text-2xl font-medium tracking-tight text-primary">★ 4.9</p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
         <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_480px]">
           <div className="space-y-0">
             {/* Editorial Tab Switcher */}
@@ -272,7 +362,21 @@ export function RiderDashboard() {
             {/* ── AVAILABLE BOOKINGS TAB ── */}
             {tab === 'available' && (
               <div className="space-y-6">
-                {available.length === 0 ? (
+                {!isOnDuty ? (
+                  <div className="border border-border bg-secondary/5 py-24 text-center px-6">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-6" />
+                    <h2 className="text-3xl font-medium tracking-tighter mb-2">You are Off-Duty</h2>
+                    <p className="text-lg text-muted-foreground max-w-sm mx-auto mb-8">
+                      Switch to active duty status above to start receiving live delivery bookings.
+                    </p>
+                    <button
+                      onClick={handleDutyToggle}
+                      className="border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary px-8 py-4 text-xs font-bold uppercase tracking-widest transition-colors"
+                    >
+                      Go On-Duty
+                    </button>
+                  </div>
+                ) : available.length === 0 ? (
                   <div className="border border-border bg-secondary/5 py-24 text-center px-6">
                     <Zap className="h-10 w-10 text-muted-foreground mx-auto mb-6" />
                     <h2 className="text-3xl font-medium tracking-tighter mb-2">No open bookings</h2>
@@ -281,6 +385,7 @@ export function RiderDashboard() {
                     </p>
                   </div>
                 ) : (
+
                   <Stagger className="space-y-4" delayChildren={0.02} stagger={0.05}>
                     {available.map((order) => (
                       <StaggerItem key={order.id}>
