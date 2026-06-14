@@ -134,12 +134,22 @@ export class WalletService {
    */
   async getTransactionHistory(
     customerId: string,
-  ): Promise<WalletTransaction[]> {
+    page = 1,
+    limit = 15,
+  ): Promise<{
+    data: WalletTransaction[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const wallet = await this.getOrCreateWallet(customerId);
-    return this.transactionRepository.find({
+    const [data, total] = await this.transactionRepository.findAndCount({
       where: { walletId: wallet.id },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+    return { data, total, page, limit };
   }
 
   /**

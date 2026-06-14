@@ -6,7 +6,9 @@ import {
   History, 
   Sparkles, 
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +24,12 @@ import { ReferralSection } from "@/features/customer/geopay/ReferralSection";
 export function WalletPage() {
   const { user } = useAuth();
   const { data: walletData, isLoading: walletLoading } = useWallet();
-  const { data: transactions = [], isLoading: txLoading } = useTransactions();
+  const [txPage, setTxPage] = useState(1);
+  const { data: txResult, isLoading: txLoading } = useTransactions(txPage);
+  const transactions = txResult?.data ?? [];
+  const totalTransactions = txResult?.total ?? 0;
+  const limit = txResult?.limit ?? 15;
+  const totalPages = Math.max(1, Math.ceil(totalTransactions / limit));
 
   const balance = walletData ? Number(walletData.balance) : null;
   const isLoading = walletLoading || txLoading;
@@ -284,6 +291,39 @@ export function WalletPage() {
                         );
                       })}
                     </Stagger>
+                  )}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-6 border-t border-border mt-6">
+                      <button
+                        onClick={() => setTxPage((p) => Math.max(1, p - 1))}
+                        disabled={txPage <= 1}
+                        className="h-10 px-4 border border-border flex items-center gap-2 text-sm font-bold uppercase tracking-widest hover:bg-secondary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Prev
+                      </button>
+                      <div className="flex items-center gap-2">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                          <button
+                            key={p}
+                            onClick={() => setTxPage(p)}
+                            className={`h-10 w-10 text-sm font-bold border transition-colors ${
+                              p === txPage
+                                ? "bg-foreground text-background border-foreground"
+                                : "border-border text-foreground hover:bg-secondary/10"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setTxPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={txPage >= totalPages}
+                        className="h-10 px-4 border border-border flex items-center gap-2 text-sm font-bold uppercase tracking-widest hover:bg-secondary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -82,10 +82,10 @@ export function useVendorWallet() {
   });
 }
 
-export function useTransactions() {
+export function useTransactions(page = 1) {
   return useQuery({
-    queryKey: ["wallet", "transactions"],
-    queryFn: () => getTransactions(),
+    queryKey: ["wallet", "transactions", page],
+    queryFn: () => getTransactions(page),
   });
 }
 

@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -39,8 +40,16 @@ export class WalletController {
 
   @Get('transactions')
   @Roles('customer')
-  async getTransactions(@CurrentUser('id') customerId: string) {
-    return this.walletService.getTransactionHistory(customerId);
+  async getTransactions(
+    @CurrentUser('id') customerId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.walletService.getTransactionHistory(
+      customerId,
+      Number(page) || 1,
+      Number(limit) || 15,
+    );
   }
 
   @Post('cash-in')

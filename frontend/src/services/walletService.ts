@@ -39,8 +39,17 @@ export async function getWallet(): Promise<Wallet> {
   return response.data;
 }
 
-export async function getTransactions(): Promise<WalletTransaction[]> {
-  const response = await api.get<WalletTransaction[]>('/wallet/transactions');
+export interface PaginatedTransactions {
+  data: WalletTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function getTransactions(page = 1, limit = 15): Promise<PaginatedTransactions> {
+  const response = await api.get<PaginatedTransactions>('/wallet/transactions', {
+    params: { page, limit },
+  });
   return response.data;
 }
 
