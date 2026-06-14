@@ -332,18 +332,22 @@ export function WalletPage() {
         </div>
 
         {/* Rewards Section */}
-        <div className="mt-12">
-          <Reveal>
-            <RewardsSection />
-          </Reveal>
-        </div>
+        {user?.role === 'customer' && (
+          <div className="mt-12">
+            <Reveal>
+              <RewardsSection />
+            </Reveal>
+          </div>
+        )}
 
         {/* Referral Section */}
-        <div className="mt-12">
-          <Reveal>
-            <ReferralSection />
-          </Reveal>
-        </div>
+        {user?.role === 'customer' && (
+          <div className="mt-12">
+            <Reveal>
+              <ReferralSection />
+            </Reveal>
+          </div>
+        )}
       </div>
     </div>
   );
