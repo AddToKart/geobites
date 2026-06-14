@@ -15,6 +15,8 @@ import { RiderLocation } from './entities/rider-location.entity';
 import { Wallet } from './entities/wallet.entity';
 import { WalletTransaction } from './entities/wallet-transaction.entity';
 import { WithdrawalRequest } from './entities/withdrawal-request.entity';
+import { Address } from './entities/address.entity';
+import { AddressesModule } from './addresses/addresses.module';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
@@ -48,6 +50,7 @@ import { WalletModule } from './wallet/wallet.module';
       Wallet,
       WalletTransaction,
       WithdrawalRequest,
+      Address,
     ]),
     VendorsModule,
     MenuModule,
@@ -59,6 +62,7 @@ import { WalletModule } from './wallet/wallet.module';
     TrackingModule,
     PaymentsModule,
     WalletModule,
+    AddressesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

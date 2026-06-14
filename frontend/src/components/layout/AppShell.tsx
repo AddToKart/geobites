@@ -144,6 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           "transition-[width] duration-200 ease-in-out",
           isCollapsed ? "w-20" : "w-72"
         )}
+        style={{ willChange: 'width' }}
       >
         {/* Inner wrapper with overflow-hidden to clip content during sidebar width transition */}
         <div className="w-full h-full overflow-hidden flex flex-col">
@@ -158,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Floating Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="absolute top-24 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/80 shadow-[var(--shadow-soft)] transition-colors cursor-pointer"
+          className="absolute top-24 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/80 shadow-[var(--shadow-soft)] transition-colors cursor-pointer contain-paint"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
@@ -190,7 +191,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle compact className="h-8 w-8 rounded-none border border-border" />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <button className="flex h-8 w-8 items-center justify-center border border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-colors">
+                <button className="flex h-8 w-8 items-center justify-center border border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-colors contain-paint">
                   <Menu className="w-4 h-4" />
                   <span className="sr-only">Toggle menu</span>
                 </button>
@@ -324,7 +325,7 @@ function NavContent({
               title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center transition-colors border-l-4",
+                  "flex items-center transition-colors border-l-4 contain-paint",
                   isCollapsed ? "justify-center py-4 px-0" : "gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest",
                   isActive
                     ? "border-primary bg-secondary/10 text-foreground"
@@ -354,7 +355,7 @@ function NavContent({
           title={isCollapsed ? "Alerts" : undefined}
           className={({ isActive }) =>
             cn(
-              "flex items-center transition-colors w-full",
+              "flex items-center transition-colors w-full contain-paint",
               isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest",
               isActive
                 ? "text-foreground"
@@ -373,7 +374,7 @@ function NavContent({
           onClick={onLogout}
           title={isCollapsed ? "Sign out" : undefined}
           className={cn(
-            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full",
+            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full contain-paint",
             isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest"
           )}
         >
@@ -399,7 +400,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
             end={item.href === "/seller" || item.href === "/rider"}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-[color,background-color,border-color]",
+                "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-[color,border-color] contain-paint",
                 isActive
                   ? "border-primary text-foreground bg-secondary/10"
                   : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground",

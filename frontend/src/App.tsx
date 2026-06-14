@@ -92,7 +92,7 @@ function AppRoutes() {
 
   return (
     <ErrorBoundary>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout">
         <m.div key={location.pathname} {...pageTransition}>
           <Suspense fallback={<RouteLoadingScreen />}>
             <Routes location={location}>

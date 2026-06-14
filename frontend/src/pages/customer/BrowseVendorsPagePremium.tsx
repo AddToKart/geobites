@@ -1,15 +1,19 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { List, MapIcon, Store } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
-import { Order, Vendor } from '@/types';
+import { searchMenuItems, DishSearchResult } from '@/services/menuService';
+import { Order, Vendor, MenuItem } from '@/types';
 import { toast } from 'sonner';
 import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverviewSection';
 import { BrowseResultsSection } from '@/features/customer/browse/BrowseResultsSection';
 import type { BrowseSort, BrowseVendor, BrowseViewMode } from '@/features/customer/browse/types';
-import { Reveal } from '@/components/motion/Reveal';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
+import { formatCurrency } from '@/utils/helpers';
+import { useCart } from '@/hooks/useCart';
 
 function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): BrowseVendor | null {
   if (
@@ -36,6 +40,8 @@ function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): B
 }
 
 export function BrowseVendorsPagePremium() {
+  const navigate = useNavigate();
+  const { addItem, items: cartItems, vendorId: cartVendorId, clearCart } = useCart();
   const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
@@ -44,6 +50,8 @@ export function BrowseVendorsPagePremium() {
   const [viewMode, setViewMode] = useState<BrowseViewMode>('grid');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
+  const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
+  const [searchingDishes, setSearchingDishes] = useState(false);
   const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
@@ -82,6 +90,24 @@ export function BrowseVendorsPagePremium() {
       });
     }
   }, 15000);
+
+  // Dish search — runs when deferred search changes
+  useEffect(() => {
+    const trimmed = deferredSearch.trim();
+    if (trimmed.length < 2) {
+      setDishResults([]);
+      return;
+    }
+    let cancelled = false;
+    setSearchingDishes(true);
+    searchMenuItems(trimmed).then((results) => {
+      if (!cancelled) {
+        setDishResults(results);
+        setSearchingDishes(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [deferredSearch]);
 
   const browseVendors = useMemo(() => {
     const merged = [
@@ -136,6 +162,16 @@ export function BrowseVendorsPagePremium() {
     }
   }, [browseVendors, selectedVendorId]);
 
+  const handleAddDishToCart = (item: MenuItem, vendorId: string) => {
+    if (cartVendorId && cartVendorId !== vendorId) {
+      clearCart();
+    }
+    addItem(item);
+    toast.success(`${item.name} added to cart`, {
+      action: { label: "View Cart", onClick: () => navigate('/cart') },
+    });
+  };
+
   if (viewMode === 'map') {
     return (
       <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-background">
@@ -189,8 +225,59 @@ export function BrowseVendorsPagePremium() {
           activeOrder={activeOrder}
         />
 
+        {/* Dish Search Results */}
+        {deferredSearch.trim().length >= 2 && dishResults.length > 0 && (
+          <Reveal>
+            <div className="border border-border bg-background mb-8 mt-8">
+              <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  {searchingDishes ? "Searching dishes..." : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) found across ${dishResults.length} vendor(s)`}
+                </p>
+              </div>
+              <Stagger className="divide-y divide-border">
+                {dishResults.map((result) => (
+                  <StaggerItem key={result.vendor.id}>
+                    <div className="px-6 py-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-bold tracking-tight text-foreground">
+                            {result.vendor.name}
+                          </p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        {result.items.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-foreground">{item.name}</p>
+                              {item.description && (
+                                <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
+                              )}
+                              <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
+                            </div>
+                            <button
+                              onClick={() => handleAddDishToCart(item, result.vendor.id)}
+                              className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors"
+                              title="Add to cart"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            </div>
+          </Reveal>
+        )}
+
         {/* Sticky Categories Bar */}
-        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">
+        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50" style={{ willChange: 'transform' }}>
           <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
             {['Offers', 'Pickup', 'Burgers', 'Asian', 'Healthy', 'Coffee', 'Desserts'].map((category, i) => (
                <button key={category} className={`shrink-0 border border-border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all ${i === 0 ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent text-foreground hover:bg-secondary'}`}>

@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Mail, Phone, Shield, User, Loader2, Save, ArrowRight, Settings, MapPin, Bell } from 'lucide-react';
+import { Home, Mail, MapPin, Phone, Plus, Shield, Star, Trash2, User, X, Loader2, Save, Settings, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { updateProfile } from '@/services/authService';
+import { getAddresses, createAddress, updateAddress, deleteAddress, SavedAddress, CreateAddressPayload } from '@/services/addressService';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { toast } from 'sonner';
+import { Stagger, StaggerItem } from '@/components/motion/Reveal';
 
-type SettingsTab = 'profile' | 'location' | 'business' | 'preferences';
+type SettingsTab = 'profile' | 'business' | 'addresses' | 'preferences';
 
 export function SettingsPage() {
   const { user, refreshSession } = useAuth();
@@ -17,12 +20,6 @@ export function SettingsPage() {
   // Profile Form States
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-
-  // Location Form States
-  const [street, setStreet] = useState('');
-  const [barangay, setBarangay] = useState('');
-  const [landmark, setLandmark] = useState('');
-  const [deliveryPin, setDeliveryPin] = useState<{ lat: number; lng: number } | null>(null);
 
   // Business Form States (for sellers)
   const [storeName, setStoreName] = useState('');
@@ -34,24 +31,109 @@ export function SettingsPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Saved Addresses State
+  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressLabel, setAddressLabel] = useState('');
+  const [addressStreet, setAddressStreet] = useState('');
+  const [addressBarangay, setAddressBarangay] = useState('');
+  const [addressLandmark, setAddressLandmark] = useState('');
+  const [addressFloor, setAddressFloor] = useState('');
+  const [addressPin, setAddressPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [addressIsDefault, setAddressIsDefault] = useState(false);
+  const [addressSaving, setAddressSaving] = useState(false);
+
+  // Load saved addresses
+  useEffect(() => {
+    if (activeTab === 'addresses') {
+      setAddressesLoading(true);
+      getAddresses().then(setAddresses).catch(() => {}).finally(() => setAddressesLoading(false));
+    }
+  }, [activeTab]);
+
+  const resetAddressForm = () => {
+    setAddressLabel('');
+    setAddressStreet('');
+    setAddressBarangay('');
+    setAddressLandmark('');
+    setAddressFloor('');
+    setAddressPin(null);
+    setAddressIsDefault(false);
+    setEditingAddressId(null);
+    setShowAddressForm(false);
+  };
+
+  const openEditAddress = (addr: SavedAddress) => {
+    setAddressLabel(addr.label);
+    setAddressStreet(addr.street || '');
+    setAddressBarangay(addr.barangay || '');
+    setAddressLandmark(addr.landmark || '');
+    setAddressFloor(addr.floorOrGate || '');
+    setAddressPin(addr.deliveryLat && addr.deliveryLng ? { lat: addr.deliveryLat, lng: addr.deliveryLng } : null);
+    setAddressIsDefault(addr.isDefault);
+    setEditingAddressId(addr.id);
+    setShowAddressForm(true);
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addressLabel.trim()) { toast.error('Address label is required'); return; }
+    if (!addressStreet.trim()) { toast.error('Street address is required'); return; }
+    setAddressSaving(true);
+    try {
+      const payload: CreateAddressPayload = {
+        label: addressLabel.trim(),
+        street: addressStreet.trim(),
+        barangay: addressBarangay.trim() || undefined,
+        landmark: addressLandmark.trim() || undefined,
+        floorOrGate: addressFloor.trim() || undefined,
+        deliveryLat: addressPin?.lat,
+        deliveryLng: addressPin?.lng,
+        isDefault: addressIsDefault,
+      };
+      if (editingAddressId) {
+        await updateAddress(editingAddressId, payload);
+        toast.success('Address updated');
+      } else {
+        await createAddress(payload);
+        toast.success('Address saved');
+      }
+      resetAddressForm();
+      const data = await getAddresses();
+      setAddresses(data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save address');
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      await deleteAddress(id);
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
+      toast.success('Address deleted');
+    } catch { toast.error('Failed to delete address'); }
+  };
+
+  const handleSetDefaultAddress = async (id: string) => {
+    try {
+      await updateAddress(id, { isDefault: true });
+      const data = await getAddresses();
+      setAddresses(data);
+      toast.success('Default address updated');
+    } catch { toast.error('Failed to set default address'); }
+  };
+
   // Initialize states from user profile data
   useEffect(() => {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
-      setStreet(user.street || '');
-      setBarangay(user.barangay || '');
-      setLandmark(user.landmark || '');
       setStoreName(user.storeName || '');
       setBusinessPermit(user.businessPermit || '');
-      if (user.deliveryLat && user.deliveryLng) {
-        setDeliveryPin({
-          lat: Number(user.deliveryLat),
-          lng: Number(user.deliveryLng),
-        });
-      } else {
-        setDeliveryPin(null);
-      }
     }
   }, [user]);
 
@@ -73,27 +155,6 @@ export function SettingsPage() {
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : 'Failed to update profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveLocation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      await updateProfile({
-        street: street.trim() || undefined,
-        barangay: barangay.trim() || undefined,
-        landmark: landmark.trim() || undefined,
-        deliveryLat: deliveryPin ? String(deliveryPin.lat) : undefined,
-        deliveryLng: deliveryPin ? String(deliveryPin.lng) : undefined,
-      });
-      await refreshSession();
-      toast.success('Default delivery location saved');
-    } catch (err) {
-      console.error(err);
-      toast.error(err instanceof Error ? err.message : 'Failed to update location');
     } finally {
       setIsSaving(false);
     }
@@ -135,14 +196,6 @@ export function SettingsPage() {
   const hasProfileChanges =
     user && (name !== (user.name || '') || phone !== (user.phone || ''));
 
-  const hasLocationChanges =
-    user &&
-    (street !== (user.street || '') ||
-      barangay !== (user.barangay || '') ||
-      landmark !== (user.landmark || '') ||
-      (deliveryPin?.lat !== (user.deliveryLat ? Number(user.deliveryLat) : undefined)) ||
-      (deliveryPin?.lng !== (user.deliveryLng ? Number(user.deliveryLng) : undefined)));
-
   const hasBusinessChanges =
     user &&
     (storeName !== (user.storeName || '') ||
@@ -172,7 +225,8 @@ export function SettingsPage() {
             { id: 'profile' as const, label: 'Profile Details', icon: <User className="h-4 w-4" /> },
             ...(isSeller
               ? [{ id: 'business' as const, label: 'Business Details', icon: <Shield className="h-4 w-4" /> }]
-              : [{ id: 'location' as const, label: 'Default Location', icon: <MapPin className="h-4 w-4" /> }]),
+              : []),
+            { id: 'addresses' as const, label: 'Saved Addresses', icon: <Home className="h-4 w-4" /> },
             { id: 'preferences' as const, label: 'System Preferences', icon: <Settings className="h-4 w-4" /> },
           ].map((tab) => (
             <button
@@ -278,178 +332,187 @@ export function SettingsPage() {
             </form>
           )}
 
-          {/* DEFAULT LOCATION TAB */}
-          {activeTab === 'location' && (
-            <form onSubmit={handleSaveLocation} className="grid gap-12 md:grid-cols-2">
-              <div className="space-y-6">
+          {/* SAVED ADDRESSES TAB */}
+          {activeTab === 'addresses' && (
+            <div>
+              <div className="flex items-center justify-between mb-8">
                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-                  Address Information
+                  Saved Addresses
                 </h2>
-
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Street / Unit Number"
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-                  />
-
-                  <Input
-                    placeholder="Barangay"
-                    value={barangay}
-                    onChange={(e) => setBarangay(e.target.value)}
-                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-                  />
-
-                  <Input
-                    placeholder="Landmark (Optional)"
-                    value={landmark}
-                    onChange={(e) => setLandmark(e.target.value)}
-                    className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-                  />
-                </div>
-
-                {hasLocationChanges && (
-                  <div className="flex gap-4 pt-4">
-                    <button
-                      type="submit"
-                      disabled={isSaving}
-                      className="h-14 px-8 bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-opacity disabled:opacity-50"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      Save Location
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (user) {
-                          setStreet(user.street || '');
-                          setBarangay(user.barangay || '');
-                          setLandmark(user.landmark || '');
-                          if (user.deliveryLat && user.deliveryLng) {
-                            setDeliveryPin({
-                              lat: Number(user.deliveryLat),
-                              lng: Number(user.deliveryLng),
-                            });
-                          } else {
-                            setDeliveryPin(null);
-                          }
-                        }
-                      }}
-                      className="h-14 px-8 border border-border hover:bg-secondary/20 font-bold uppercase tracking-widest text-xs transition-colors"
-                    >
-                      Discard
-                    </button>
-                  </div>
-                )}
+                <Button
+                  onClick={() => { resetAddressForm(); setShowAddressForm(true); }}
+                  className="h-10 px-5 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] rounded-none flex items-center gap-2"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add
+                </Button>
               </div>
 
-              <div className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2">
-                  Map Pin Coordinates
-                </h2>
-                <div className="pt-2">
-                  <LazyDeliveryLocationPicker
-                    value={deliveryPin}
-                    onChange={setDeliveryPin}
-                    title="Default delivery pin"
-                    description="Open map to pin your default coordinates."
-                    emptyText="No default delivery pin saved."
-                  />
-                </div>
-              </div>
-            </form>
-          )}
+              {/* Address Form Overlay */}
+              {showAddressForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                  <div className="w-full max-w-2xl bg-background border border-border p-8 md:p-12 mx-4 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-start justify-between mb-8">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
+                          {editingAddressId ? 'Edit Address' : 'New Address'}
+                        </p>
+                        <h2 className="text-3xl font-medium tracking-tighter">
+                          {editingAddressId ? 'Update address details' : 'Add a delivery address'}
+                        </h2>
+                      </div>
+                      <button onClick={resetAddressForm} className="h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
 
-          {/* BUSINESS DETAILS TAB */}
-          {activeTab === 'business' && (
-            <form onSubmit={handleSaveBusinessDetails} className="space-y-12">
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-8">
-                  Business Details
-                </h2>
-
-                <div className="grid gap-8 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <User className="h-4 w-4" /> Store Name
-                    </label>
-                    <Input
-                      placeholder="Enter your store name"
-                      value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
-                      className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-                      required
-                    />
+                    <form onSubmit={handleSaveAddress} className="space-y-6">
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Label *</label>
+                        <Input
+                          placeholder="e.g. Home, Office, Grandma's House"
+                          value={addressLabel}
+                          onChange={(e) => setAddressLabel(e.target.value)}
+                          className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-6 md:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Street / Unit *</label>
+                          <Input
+                            placeholder="Street, building, unit"
+                            value={addressStreet}
+                            onChange={(e) => setAddressStreet(e.target.value)}
+                            className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Barangay</label>
+                          <Input
+                            placeholder="Barangay"
+                            value={addressBarangay}
+                            onChange={(e) => setAddressBarangay(e.target.value)}
+                            className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-6 md:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Landmark</label>
+                          <Input
+                            placeholder="Nearby landmark"
+                            value={addressLandmark}
+                            onChange={(e) => setAddressLandmark(e.target.value)}
+                            className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Floor / Gate</label>
+                          <Input
+                            placeholder="Floor, gate, etc."
+                            value={addressFloor}
+                            onChange={(e) => setAddressFloor(e.target.value)}
+                            className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Map pin</label>
+                        <LazyDeliveryLocationPicker
+                          value={addressPin}
+                          onChange={setAddressPin}
+                          title="Delivery location"
+                          description="Pin the exact delivery location on the map."
+                          emptyText="No pin set."
+                        />
+                      </div>
+                      <label className="flex items-center gap-3 cursor-pointer pt-2">
+                        <input
+                          type="checkbox"
+                          checked={addressIsDefault}
+                          onChange={(e) => setAddressIsDefault(e.target.checked)}
+                          className="h-5 w-5 accent-primary cursor-pointer border border-border bg-background"
+                        />
+                        <span className="text-sm font-medium">Set as default delivery address</span>
+                      </label>
+                      <div className="flex gap-4 pt-4">
+                        <Button type="submit" disabled={addressSaving} className="flex-1 h-14 rounded-none bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs">
+                          {addressSaving ? 'Saving...' : editingAddressId ? 'Update address' : 'Save address'}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={resetAddressForm} className="h-14 rounded-none border-border font-bold uppercase tracking-widest text-xs">
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <Shield className="h-4 w-4" /> Business Permit No.
-                    </label>
-                    <Input
-                      placeholder="Enter business permit number"
-                      value={businessPermit}
-                      onChange={(e) => setBusinessPermit(e.target.value)}
-                      className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
-                  <div className="border border-border p-6 bg-secondary/5 flex flex-col justify-between min-h-[120px]">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-2">
-                      <Mail className="h-3.5 w-3.5" /> Email Address
-                    </span>
-                    <p className="text-lg font-medium tracking-tighter text-muted-foreground/85 truncate">
-                      {user?.email || 'Not set'}
-                    </p>
-                  </div>
-
-                  <div className="border border-border p-6 bg-secondary/5 flex flex-col justify-between min-h-[120px]">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-2">
-                      <Shield className="h-3.5 w-3.5" /> Account Role
-                    </span>
-                    <p className="text-lg font-medium tracking-tighter text-muted-foreground/85 capitalize">
-                      {user?.role || 'Customer'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {hasBusinessChanges && (
-                <div className="flex gap-4">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="h-14 px-8 bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-opacity disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    Save Business Details
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (user) {
-                        setStoreName(user.storeName || '');
-                        setBusinessPermit(user.businessPermit || '');
-                      }
-                    }}
-                    className="h-14 px-8 border border-border hover:bg-secondary/20 font-bold uppercase tracking-widest text-xs transition-colors"
-                  >
-                    Discard Changes
-                  </button>
                 </div>
               )}
-            </form>
+
+              {/* Addresses List */}
+              {addressesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-36 border border-border bg-secondary/5 animate-pulse" />
+                  ))}
+                </div>
+              ) : addresses.length === 0 ? (
+                <div className="border border-border p-12 text-center bg-secondary/5">
+                  <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium tracking-tighter mb-2">No saved addresses</p>
+                  <p className="text-sm text-muted-foreground mb-6">Add addresses for faster checkout.</p>
+                  <Button onClick={() => { resetAddressForm(); setShowAddressForm(true); }} className="h-10 px-6 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] rounded-none">
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Add your first address
+                  </Button>
+                </div>
+              ) : (
+                <Stagger className="grid gap-4 md:grid-cols-2">
+                  {addresses.map((addr) => (
+                    <StaggerItem key={addr.id}>
+                      <div className="border border-border p-6 bg-background flex flex-col justify-between h-full group hover:bg-secondary/5 transition-colors">
+                        <div>
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 flex items-center justify-center bg-primary/10 text-primary shrink-0">
+                                <Home className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-base font-bold tracking-tight">{addr.label}</p>
+                                {addr.isDefault && (
+                                  <span className="text-[9px] font-bold uppercase tracking-widest text-primary flex items-center gap-1">
+                                    <Star className="h-3 w-3" /> Default
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-1 mb-6">
+                            <p className="text-sm text-muted-foreground">{addr.street}</p>
+                            {addr.barangay && <p className="text-sm text-muted-foreground">{addr.barangay}</p>}
+                            {addr.landmark && <p className="text-sm text-muted-foreground italic">Near {addr.landmark}</p>}
+                          </div>
+                        </div>
+                        <div className="border-t border-border pt-3 flex gap-2">
+                          <button onClick={() => openEditAddress(addr)} className="flex-1 py-2 border border-border text-[10px] font-bold uppercase tracking-widest hover:bg-secondary/10 transition-colors">
+                            Edit
+                          </button>
+                          {!addr.isDefault && (
+                            <button onClick={() => handleSetDefaultAddress(addr.id)} className="flex-1 py-2 border border-border text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/5 transition-colors">
+                              Set default
+                            </button>
+                          )}
+                          <button onClick={() => handleDeleteAddress(addr.id)} className="py-2 px-3 border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              )}
+            </div>
           )}
 
           {/* SYSTEM PREFERENCES TAB */}

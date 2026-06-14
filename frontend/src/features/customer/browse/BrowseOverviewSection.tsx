@@ -39,7 +39,7 @@ export function BrowseOverviewSection({
       )}
 
       <Reveal delay={0.05} className="flex flex-col md:flex-row items-center gap-4 mt-4">
-        <div className={`relative flex-1 w-full ${isMapMode ? 'bg-background/90 backdrop-blur-md' : ''}`}>
+        <div className={`relative flex-1 w-full ${isMapMode ? 'bg-background/90 backdrop-blur-md' : ''}`} style={isMapMode ? { willChange: 'transform' } : undefined}>
           <Search className="absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search restaurants, groceries, or dishes..."

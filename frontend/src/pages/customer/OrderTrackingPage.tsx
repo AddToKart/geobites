@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { MapPin, PackageCheck, ShoppingBag, Star } from "lucide-react";
+import { Ban, MapPin, PackageCheck, ShoppingBag, Star, X } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { Button } from "../../components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
@@ -11,6 +12,18 @@ import { Order } from "../../types";
 import { ORDER_STATUS_LABELS } from "../../utils/constants";
 import { formatCurrency, formatDate } from "../../utils/helpers";
 import { RatingDialog } from "@/components/custom/RatingDialog";
+
+const CANCELLATION_REASONS = [
+  "Changed my mind",
+  "Found a better option",
+  "Order takes too long",
+  "Delivery address is wrong",
+  "Payment issue",
+  "Duplicate order",
+  "Other",
+] as const;
+
+const CANCELLABLE_STATUSES = ["pending", "accepted", "preparing"];
 
 const timeline: string[] = [
   "pending",
@@ -30,6 +43,9 @@ export function OrderTrackingPage() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [ratingDone, setRatingDone] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>("");
+  const [cancelCustomReason, setCancelCustomReason] = useState("");
 
   useEffect(() => {
     const refreshInitialOrder = async () => {
@@ -78,13 +94,12 @@ export function OrderTrackingPage() {
     { enabled: Boolean(id), runOnMount: false },
   );
 
-  const cancelOrder = async () => {
-    if (!order) {
-      return;
-    }
+  const cancelOrder = async (reason: string) => {
+    if (!order) return;
     setIsCancelling(true);
+    setShowCancelDialog(false);
     try {
-      const updated = await updateOrderStatus(order.id, "cancelled");
+      const updated = await updateOrderStatus(order.id, "cancelled", reason);
       setOrder((current) =>
         current
           ? {
@@ -104,7 +119,22 @@ export function OrderTrackingPage() {
       );
     } finally {
       setIsCancelling(false);
+      setCancelReason("");
+      setCancelCustomReason("");
     }
+  };
+
+  const handleCancelClick = () => {
+    setCancelReason("");
+    setCancelCustomReason("");
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    const finalReason = cancelReason === "Other"
+      ? cancelCustomReason.trim() || "Cancelled by customer"
+      : cancelReason || "Cancelled by customer";
+    void cancelOrder(finalReason);
   };
 
   const displayTimeline = useMemo(() => {
@@ -168,18 +198,79 @@ export function OrderTrackingPage() {
             <div className="border border-border bg-secondary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest">
               {ORDER_STATUS_LABELS[order.status] ?? order.status}
             </div>
-            {order.status === "pending" ? (
+            {CANCELLABLE_STATUSES.includes(order.status) ? (
               <Button
                 variant="outline"
-                onClick={() => void cancelOrder()}
+                onClick={handleCancelClick}
                 disabled={isCancelling}
                 className="rounded-none border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
               >
+                <Ban className="h-4 w-4 mr-2" />
                 {isCancelling ? "Cancelling..." : "Cancel order"}
               </Button>
             ) : null}
           </div>
         </div>
+
+        {/* Cancellation Dialog */}
+        {showCancelDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-lg bg-background border border-border p-8 md:p-12 mx-4">
+              <div className="flex items-start justify-between mb-8">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-red-500 mb-2">Cancel Order</p>
+                  <h2 className="text-3xl font-medium tracking-tighter">Why are you cancelling?</h2>
+                </div>
+                <button
+                  onClick={() => setShowCancelDialog(false)}
+                  className="h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-muted-foreground mb-6">This action cannot be undone. Select a reason for cancelling.</p>
+              <div className="space-y-2 mb-8">
+                {CANCELLATION_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    onClick={() => setCancelReason(reason === cancelReason ? "" : reason)}
+                    className={`w-full text-left px-5 py-4 border text-sm font-medium transition-colors ${
+                      cancelReason === reason
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-transparent text-foreground hover:border-foreground"
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+              {cancelReason === "Other" && (
+                <Input
+                  placeholder="Tell us more..."
+                  value={cancelCustomReason}
+                  onChange={(e) => setCancelCustomReason(e.target.value)}
+                  className="mb-8 h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground transition-colors shadow-none"
+                />
+              )}
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelDialog(false)}
+                  className="flex-1 h-14 rounded-none border-border font-bold uppercase tracking-widest text-xs"
+                >
+                  Keep order
+                </Button>
+                <Button
+                  onClick={handleConfirmCancel}
+                  disabled={!cancelReason || isCancelling}
+                  className="flex-1 h-14 rounded-none bg-red-500 text-white hover:bg-red-600 font-bold uppercase tracking-widest text-xs disabled:opacity-50"
+                >
+                  {isCancelling ? "Cancelling..." : "Yes, cancel"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error ? (
           <div className="border border-red-500 bg-red-500/10 p-6 mb-8 text-sm font-bold text-red-500">

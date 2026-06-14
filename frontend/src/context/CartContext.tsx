@@ -4,6 +4,7 @@ import {
   createContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { CartItem, MenuItem } from '../types';
@@ -49,9 +50,24 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [items, setItems] = useState<CartItem[]>(initial.items);
   const [vendorId, setVendorId] = useState<string | null>(initial.vendorId);
 
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    const payload: PersistedCart = { items, vendorId };
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
+    if (persistTimer.current) {
+      clearTimeout(persistTimer.current);
+    }
+
+    persistTimer.current = setTimeout(() => {
+      const payload: PersistedCart = { items, vendorId };
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
+      persistTimer.current = null;
+    }, 300);
+
+    return () => {
+      if (persistTimer.current) {
+        clearTimeout(persistTimer.current);
+      }
+    };
   }, [items, vendorId]);
 
   const total = useMemo(
