@@ -39,9 +39,20 @@ function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): B
   };
 }
 
+const CATEGORIES = [
+  'All',
+  'Silog',
+  'Ihaw-Ihaw',
+  'Pancit & Noodles',
+  'Desserts & Sweet',
+  'Burgers & Fast Food',
+  'Coffee & Drinks',
+  'Street Food',
+];
+
 export function BrowseVendorsPagePremium() {
   const navigate = useNavigate();
-  const { addItem, items: cartItems, vendorId: cartVendorId, clearCart } = useCart();
+  const { addItem, vendorId: cartVendorId, clearCart } = useCart();
   const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
@@ -53,6 +64,7 @@ export function BrowseVendorsPagePremium() {
   const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
   const [searchingDishes, setSearchingDishes] = useState(false);
   const deferredSearch = useDeferredValue(search);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   useEffect(() => {
     const loadBrowseData = async () => {
@@ -109,8 +121,8 @@ export function BrowseVendorsPagePremium() {
     return () => { cancelled = true; };
   }, [deferredSearch]);
 
-  const browseVendors = useMemo(() => {
-    const merged = [
+  const allVendors = useMemo(() => {
+    return [
       ...demoVendors.map((vendor) => ({
         ...vendor,
         distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
@@ -120,17 +132,41 @@ export function BrowseVendorsPagePremium() {
         .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
         .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
     ];
+  }, [coords, liveVendors]);
 
+  const browseVendors = useMemo(() => {
     const normalizedSearch = deferredSearch.trim().toLowerCase();
 
-    const filtered = merged.filter((vendor) => {
-      if (!normalizedSearch) {
-        return true;
-      }
-
-      return [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
+    const filtered = allVendors.filter((vendor) => {
+      // 1. Search query filter
+      const matchesSearch = !normalizedSearch || [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(normalizedSearch));
+
+      if (!matchesSearch) return false;
+
+      // 2. Category selection filter
+      if (selectedCategory === 'All') return true;
+
+      const categoryLower = selectedCategory.toLowerCase();
+      const keywords: Record<string, string[]> = {
+        'silog': ['silog', 'breakfast', 'almusal', 'tapsi'],
+        'ihaw-ihaw': ['ihaw', 'grill', 'barbecue', 'bbq', 'liempo', 'inasal'],
+        'pancit & noodles': ['pancit', 'noodles', 'bihon', 'canton', 'mami'],
+        'desserts & sweet': ['dessert', 'sweet', 'halo-halo', 'ice cream', 'cake', 'flan', 'buko'],
+        'burgers & fast food': ['burger', 'fries', 'chicken', 'fast food', 'pizza'],
+        'coffee & drinks': ['coffee', 'drinks', 'kape', 'beverage', 'latte', 'tea', 'cooler'],
+        'street food': ['street food', 'tusok-tusok', 'snack', 'siomai', 'kwek-kwek', 'fishball'],
+      };
+
+      const targetKeywords = keywords[categoryLower] || [categoryLower];
+      const vendorText = [
+        vendor.name,
+        vendor.description,
+        ...(vendor.specialties || []),
+      ].join(' ').toLowerCase();
+
+      return targetKeywords.some(keyword => vendorText.includes(keyword));
     });
 
     return filtered.sort((firstVendor, secondVendor) => {
@@ -144,7 +180,7 @@ export function BrowseVendorsPagePremium() {
 
       return secondVendor.rating - firstVendor.rating;
     });
-  }, [coords, deferredSearch, liveVendors, sortBy]);
+  }, [allVendors, deferredSearch, sortBy, selectedCategory]);
 
   const selectedVendor = useMemo(
     () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
@@ -178,6 +214,7 @@ export function BrowseVendorsPagePremium() {
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
+          allVendors={allVendors}
           viewMode="map"
           coords={coords}
           selectedVendor={selectedVendor}
@@ -277,13 +314,24 @@ export function BrowseVendorsPagePremium() {
         )}
 
         {/* Sticky Categories Bar */}
-        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50" style={{ willChange: 'transform' }}>
+        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">
           <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
-            {['Offers', 'Pickup', 'Burgers', 'Asian', 'Healthy', 'Coffee', 'Desserts'].map((category, i) => (
-               <button key={category} className={`shrink-0 border border-border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all ${i === 0 ? 'bg-primary text-primary-foreground border-primary' : 'bg-transparent text-foreground hover:bg-secondary'}`}>
-                 {category}
-               </button>
-            ))}
+            {CATEGORIES.map((category) => {
+              const isActive = selectedCategory === category;
+              return (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`shrink-0 border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground border-primary font-extrabold'
+                      : 'border-border bg-transparent text-foreground hover:bg-secondary/40'
+                  }`}
+                >
+                  {category}
+                </button>
+              );
+            })}
           </Reveal>
         </div>
         
@@ -309,6 +357,7 @@ export function BrowseVendorsPagePremium() {
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
+          allVendors={allVendors}
           viewMode={viewMode}
           coords={coords}
           selectedVendor={selectedVendor}

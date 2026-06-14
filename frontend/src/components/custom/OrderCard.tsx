@@ -9,7 +9,7 @@ export const OrderCard = memo(function OrderCard({ order, onReorder }: { order: 
   const address = [order.street, order.barangay].filter(Boolean).join(', ') || order.deliveryAddress || 'No address specified';
 
   return (
-    <article className="border border-border p-8 bg-background flex flex-col justify-between hover:bg-secondary/5 transition-colors group contain-paint" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px' }}>
+    <article className="border border-border p-8 bg-background flex flex-col justify-between hover:bg-secondary/5 transition-colors group" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px', contain: 'layout style paint' }}>
       <div>
         <div className="flex items-start justify-between mb-8 gap-4">
           <div className="space-y-1">

@@ -159,7 +159,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Floating Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="absolute top-24 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/80 shadow-[var(--shadow-soft)] transition-colors cursor-pointer contain-paint"
+          className="absolute top-24 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background text-foreground hover:bg-secondary/80 shadow-[var(--shadow-soft)] transition-colors cursor-pointer"
+          style={{ contain: 'layout style paint' }}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
@@ -191,7 +192,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <ThemeToggle compact className="h-8 w-8 rounded-none border border-border" />
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <button className="flex h-8 w-8 items-center justify-center border border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-colors contain-paint">
+                <button className="flex h-8 w-8 items-center justify-center border border-border bg-transparent text-foreground hover:bg-foreground hover:text-background transition-colors" style={{ contain: 'layout style paint' }}>
                   <Menu className="w-4 h-4" />
                   <span className="sr-only">Toggle menu</span>
                 </button>
@@ -315,7 +316,7 @@ function NavContent({
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto py-6">
-        <nav className="flex flex-col">
+        <nav className="flex flex-col" style={{ contain: 'layout style paint' }}>
           {items.map((item) => (
             <PrefetchNavLink
               key={item.href}
@@ -325,7 +326,7 @@ function NavContent({
               title={isCollapsed ? item.label : undefined}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center transition-colors border-l-4 contain-paint",
+                  "flex items-center transition-colors border-l-4",
                   isCollapsed ? "justify-center py-4 px-0" : "gap-4 px-8 py-4 text-sm font-bold uppercase tracking-widest",
                   isActive
                     ? "border-primary bg-secondary/10 text-foreground"
@@ -355,7 +356,7 @@ function NavContent({
           title={isCollapsed ? "Alerts" : undefined}
           className={({ isActive }) =>
             cn(
-              "flex items-center transition-colors w-full contain-paint",
+              "flex items-center transition-colors w-full",
               isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest",
               isActive
                 ? "text-foreground"
@@ -374,7 +375,7 @@ function NavContent({
           onClick={onLogout}
           title={isCollapsed ? "Sign out" : undefined}
           className={cn(
-            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full contain-paint",
+            "flex items-center text-red-500 hover:text-red-600 transition-colors w-full",
             isCollapsed ? "justify-center py-2" : "justify-between py-2 text-sm font-bold uppercase tracking-widest"
           )}
         >
@@ -400,7 +401,7 @@ function MobileBottomNav({ items }: { items: NavItem[] }) {
             end={item.href === "/seller" || item.href === "/rider"}
             className={({ isActive }) =>
               cn(
-                "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-[color,border-color] contain-paint",
+                "flex flex-col items-center justify-center flex-1 gap-1 border-t-2 transition-[color,border-color]",
                 isActive
                   ? "border-primary text-foreground bg-secondary/10"
                   : "border-transparent text-muted-foreground hover:bg-secondary/5 hover:text-foreground",

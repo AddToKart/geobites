@@ -160,6 +160,8 @@ function BrowseVendorSidePanel({
           <img
             src={vendor.imageUrl}
             alt={vendor.name}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -243,6 +245,8 @@ function BrowseVendorSidePanel({
                     <img
                       src={item.imageUrl}
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className="h-16 w-16 object-cover border border-border shrink-0"
                     />
                   ) : (

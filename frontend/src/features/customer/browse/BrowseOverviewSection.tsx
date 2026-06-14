@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, CloudMoon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Reveal } from '@/components/motion/Reveal';
 import type { Order } from '@/types';
 
-export function BrowseOverviewSection({
+export const BrowseOverviewSection = memo(function BrowseOverviewSection({
   search,
   onSearchChange,
   browseCount,
@@ -77,4 +78,4 @@ export function BrowseOverviewSection({
       ) : null}
     </div>
   );
-}
+});

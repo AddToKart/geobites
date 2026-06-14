@@ -29,10 +29,10 @@ export const BrowseListItem = memo(function BrowseListItem({
     <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
       <article
         className={cn(
-          'group flex flex-col xl:flex-row border-b border-border transition-colors hover:bg-secondary/10 contain-paint',
+          'group flex flex-col xl:flex-row border-b border-border transition-colors hover:bg-secondary/10',
           isSelected && 'bg-secondary/5',
         )}
-        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
+        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px', contain: 'layout style paint' }}
       >
         <div className="relative min-h-[200px] xl:w-[320px] bg-secondary flex-shrink-0 p-8 border-b xl:border-b-0 xl:border-r border-border">
           <div className="flex flex-wrap gap-2 mb-6">
