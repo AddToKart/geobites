@@ -329,7 +329,7 @@ export function BrowseVendorsPagePremium() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <div className="flex flex-col w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12 lg:py-16">
-        <div ref={searchContainerRef} className="relative w-full">
+        <div ref={searchContainerRef} className="relative w-full z-40">
           <BrowseOverviewSection
             search={search}
             onSearchChange={setSearch}
