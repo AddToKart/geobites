@@ -82,11 +82,7 @@ const SELLER_NAV: NavItem[] = [
 
 const RIDER_NAV: NavItem[] = [
   { label: "Dispatch", href: "/rider", icon: <Home className="w-5 h-5" /> },
-  {
-    label: "Routes",
-    href: "/rider/deliveries",
-    icon: <Truck className="w-5 h-5" />,
-  },
+  { label: "Wallet", href: "/wallet", icon: <Wallet className="w-5 h-5" /> },
   { label: "Settings", href: "/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 

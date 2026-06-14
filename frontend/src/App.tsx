@@ -147,10 +147,13 @@ function AppRoutes() {
               <Route path="/orders" element={<RouteGroup><OrderHistoryPage /></RouteGroup>} />
               <Route path="/orders/:id" element={<RouteGroup><OrderTrackingPage /></RouteGroup>} />
               <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
-              <Route path="/wallet" element={<RouteGroup><WalletPage /></RouteGroup>} />
               <Route path="/favorites" element={<RouteGroup><FavoritesPage /></RouteGroup>} />
               <Route path="/search" element={<RouteGroup><SearchResultsPage /></RouteGroup>} />
               <Route path="/receipt/:orderId" element={<RouteGroup><PaymentReceiptPage /></RouteGroup>} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={['customer', 'rider']} />}>
+              <Route path="/wallet" element={<RouteGroup><WalletPage /></RouteGroup>} />
               <Route path="/payment/gcash" element={<RouteGroup><PaymentGcashPage /></RouteGroup>} />
               <Route path="/payment/maya" element={<RouteGroup><PaymentMayaPage /></RouteGroup>} />
               <Route path="/payment/qrph" element={<RouteGroup><PaymentQrphPage /></RouteGroup>} />
