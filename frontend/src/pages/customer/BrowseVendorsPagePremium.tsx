@@ -1,11 +1,11 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
-import { searchMenuItems, getVendorMenu, DishSearchResult } from '@/services/menuService';
+import { searchMenuItems, DishSearchResult } from '@/services/menuService';
 import { Order, Vendor, MenuItem } from '@/types';
 import { toast } from 'sonner';
 import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverviewSection';
@@ -63,13 +63,14 @@ export function BrowseVendorsPagePremium() {
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
   const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
   const [searchingDishes, setSearchingDishes] = useState(false);
-  const deferredSearch = useDeferredValue(search);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  // Stable ref so search effect doesn't re-run when vendor list updates
+  const allVendorsRef = useRef<BrowseVendor[]>([]);
 
   const allVendors = useMemo(() => {
-    return [
+    const merged = [
       ...demoVendors.map((vendor) => ({
         ...vendor,
         distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
@@ -79,6 +80,8 @@ export function BrowseVendorsPagePremium() {
         .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
         .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
     ];
+    allVendorsRef.current = merged;
+    return merged;
   }, [coords, liveVendors]);
 
   useEffect(() => {
@@ -92,10 +95,10 @@ export function BrowseVendorsPagePremium() {
   }, []);
 
   useEffect(() => {
-    if (search.trim().length >= 2) {
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
+    setShowSuggestions(search.trim().length >= 2);
+    if (search.trim().length < 2) {
+      setDishResults([]);
+      setSearchingDishes(false);
     }
   }, [search]);
 
@@ -136,65 +139,60 @@ export function BrowseVendorsPagePremium() {
     }
   }, 15000);
 
-  // Dish search — runs when deferred search changes
+  // Dish search — debounced 300ms, uses stable allVendorsRef to avoid retriggering on vendor updates
   useEffect(() => {
-    const trimmed = deferredSearch.trim();
-    if (trimmed.length < 2) {
-      setDishResults([]);
-      return;
-    }
+    const trimmed = search.trim();
+    if (trimmed.length < 2) return;
+
     let cancelled = false;
     setSearchingDishes(true);
-    searchMenuItems(trimmed).then(async (results) => {
-      if (cancelled) return;
 
-      const queryLower = trimmed.toLowerCase();
-      const matchingVendors = allVendors.filter(
-        (vendor) =>
-          vendor.name.toLowerCase().includes(queryLower) ||
-          (vendor.description?.toLowerCase() || '').includes(queryLower),
-      );
+    const timerId = setTimeout(async () => {
+      try {
+        // 1. Run dish search (client-side for demo vendors + backend for live)
+        const dishSearchResults = await searchMenuItems(trimmed);
+        if (cancelled) return;
 
-      const missingVendors = matchingVendors.filter(
-        (vendor) => !results.some((r) => r.vendor.id === vendor.id),
-      );
+        // 2. Find vendors whose NAME or DESCRIPTION match — no extra menu fetches needed
+        const queryLower = trimmed.toLowerCase();
+        const vendorNameMatches = allVendorsRef.current
+          .filter(
+            (vendor) =>
+              vendor.name.toLowerCase().includes(queryLower) ||
+              (vendor.description?.toLowerCase() ?? '').includes(queryLower),
+          )
+          .filter((vendor) => !dishSearchResults.some((r) => r.vendor.id === vendor.id));
 
-      if (missingVendors.length > 0) {
-        const fallbackResults = await Promise.all(
-          missingVendors.map(async (vendor) => {
-            try {
-              const menu = await getVendorMenu(vendor.id);
-              const availableItems = menu.filter((item) => item.isAvailable !== false).slice(0, 3);
-              return {
-                vendor: {
-                  id: vendor.id,
-                  name: vendor.name,
-                  imageUrl: vendor.imageUrl,
-                  rating: vendor.rating,
-                  totalRatings: vendor.totalRatings,
-                },
-                items: availableItems,
-              };
-            } catch (e) {
-              console.error('Failed to load menu for vendor', vendor.id, e);
-              return null;
-            }
-          }),
-        );
+        // Represent vendor-name matches as a result entry with empty items
+        // so the dropdown shows the vendor card without fetching its full menu
+        const vendorNameResults: DishSearchResult[] = vendorNameMatches.map((vendor) => ({
+          vendor: {
+            id: vendor.id,
+            name: vendor.name,
+            imageUrl: vendor.imageUrl,
+            rating: vendor.rating,
+            totalRatings: vendor.totalRatings,
+          },
+          items: [],
+        }));
 
-        const validFallbacks = fallbackResults.filter(Boolean) as DishSearchResult[];
-        results.push(...validFallbacks);
+        if (!cancelled) {
+          setDishResults([...dishSearchResults, ...vendorNameResults]);
+          setSearchingDishes(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setDishResults([]);
+          setSearchingDishes(false);
+        }
       }
+    }, 300);
 
-      if (!cancelled) {
-        setDishResults(results);
-        setSearchingDishes(false);
-      }
-    });
     return () => {
       cancelled = true;
+      clearTimeout(timerId);
     };
-  }, [deferredSearch, allVendors]);
+  }, [search]);
 
 
   const browseVendors = useMemo(() => {
@@ -262,12 +260,14 @@ export function BrowseVendorsPagePremium() {
     });
   };
 
-  const dishSuggestions = deferredSearch.trim().length >= 2 && dishResults.length > 0 ? (
+  const dishSuggestions = search.trim().length >= 2 && dishResults.length > 0 ? (
     <Reveal className="absolute top-full left-0 right-0 z-50 mt-1 max-h-[400px] overflow-y-auto border border-border bg-background/98 backdrop-blur-md shadow-2xl">
       <div className="divide-y divide-border">
         <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-background/50">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            {searchingDishes ? "Searching dishes..." : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) found across ${dishResults.length} vendor(s)`}
+            {searchingDishes
+              ? 'Searching...'
+              : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) · ${dishResults.length} restaurant(s)`}
           </p>
         </div>
         <Stagger className="divide-y divide-border">
@@ -284,29 +284,38 @@ export function BrowseVendorsPagePremium() {
                     </p>
                   </Link>
                 </div>
-                <div className="grid gap-2">
-                  {result.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
-                      <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
-                        <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
-                        )}
-                        <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
-                      </Link>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddDishToCart(item, result.vendor.id);
-                        }}
-                        className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
-                        title="Add to cart"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                {result.items.length > 0 ? (
+                  <div className="grid gap-2">
+                    {result.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
+                        <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
+                          <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
+                          )}
+                          <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddDishToCart(item, result.vendor.id);
+                          }}
+                          className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
+                          title="Add to cart"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Link
+                    to={`/vendor/${result.vendor.id}`}
+                    className="inline-flex items-center gap-2 pl-4 border-l-2 border-primary text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+                  >
+                    Visit Restaurant →
+                  </Link>
+                )}
               </div>
             </StaggerItem>
           ))}
