@@ -33,13 +33,13 @@ export class WalletController {
   }
 
   @Get('balance')
-  @Roles('customer')
+  @Roles('customer', 'rider')
   async getWallet(@CurrentUser('id') customerId: string) {
     return this.walletService.getOrCreateWallet(customerId);
   }
 
   @Get('transactions')
-  @Roles('customer')
+  @Roles('customer', 'rider')
   async getTransactions(
     @CurrentUser('id') customerId: string,
     @Query('page') page?: string,
@@ -53,7 +53,7 @@ export class WalletController {
   }
 
   @Post('cash-in')
-  @Roles('customer')
+  @Roles('customer', 'rider')
   async initiateCashIn(
     @CurrentUser('id') customerId: string,
     @Body('amount') amount: number,
@@ -63,7 +63,7 @@ export class WalletController {
   }
 
   @Post('cash-in/:id/simulate-success')
-  @Roles('customer')
+  @Roles('customer', 'rider')
   @HttpCode(HttpStatus.OK)
   async simulateSuccess(@Param('id') id: string) {
     return this.walletService.completeCashIn(id);
