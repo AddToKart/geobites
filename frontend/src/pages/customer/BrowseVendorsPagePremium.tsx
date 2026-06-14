@@ -197,7 +197,7 @@ export function BrowseVendorsPagePremium() {
 
   const browseVendors = useMemo(() => {
     const filtered = allVendors.filter((vendor) => {
-      // 1. Category selection filter
+      // Category selection filter only — search drives the dropdown, not this grid.
       if (selectedCategory === 'All') return true;
 
       const categoryLower = selectedCategory.toLowerCase();
@@ -260,7 +260,7 @@ export function BrowseVendorsPagePremium() {
     });
   };
 
-  const dishSuggestions = search.trim().length >= 2 && dishResults.length > 0 ? (
+  const dishSuggestions = search.trim().length >= 2 && (dishResults.length > 0 || searchingDishes) ? (
     <Reveal className="absolute top-full left-0 right-0 z-50 mt-1 max-h-[400px] overflow-y-auto border border-border bg-background/98 backdrop-blur-md shadow-2xl">
       <div className="divide-y divide-border">
         <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-background/50">
@@ -270,56 +270,58 @@ export function BrowseVendorsPagePremium() {
               : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) · ${dishResults.length} restaurant(s)`}
           </p>
         </div>
-        <Stagger className="divide-y divide-border">
-          {dishResults.map((result) => (
-            <StaggerItem key={result.vendor.id}>
-              <div className="px-6 py-5 hover:bg-secondary/10 transition-colors">
-                <div className="flex items-center justify-between mb-3">
-                  <Link to={`/vendor/${result.vendor.id}`} className="group/vendor">
-                    <p className="text-sm font-bold tracking-tight text-foreground group-hover/vendor:text-primary transition-colors">
-                      {result.vendor.name} →
-                    </p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
-                    </p>
-                  </Link>
-                </div>
-                {result.items.length > 0 ? (
-                  <div className="grid gap-2">
-                    {result.items.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
-                        <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
-                          <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
-                          )}
-                          <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
-                        </Link>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddDishToCart(item, result.vendor.id);
-                          }}
-                          className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
-                          title="Add to cart"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+        {dishResults.length > 0 && (
+          <Stagger className="divide-y divide-border">
+            {dishResults.map((result) => (
+              <StaggerItem key={result.vendor.id}>
+                <div className="px-6 py-5 hover:bg-secondary/10 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <Link to={`/vendor/${result.vendor.id}`} className="group/vendor">
+                      <p className="text-sm font-bold tracking-tight text-foreground group-hover/vendor:text-primary transition-colors">
+                        {result.vendor.name} →
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
+                      </p>
+                    </Link>
                   </div>
-                ) : (
-                  <Link
-                    to={`/vendor/${result.vendor.id}`}
-                    className="inline-flex items-center gap-2 pl-4 border-l-2 border-primary text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
-                  >
-                    Visit Restaurant →
-                  </Link>
-                )}
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
+                  {result.items.length > 0 ? (
+                    <div className="grid gap-2">
+                      {result.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
+                          <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
+                            <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
+                            )}
+                            <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDishToCart(item, result.vendor.id);
+                            }}
+                            className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
+                            title="Add to cart"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Link
+                      to={`/vendor/${result.vendor.id}`}
+                      className="inline-flex items-center gap-2 pl-4 border-l-2 border-primary text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+                    >
+                      Visit Restaurant →
+                    </Link>
+                  )}
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
       </div>
     </Reveal>
   ) : null;

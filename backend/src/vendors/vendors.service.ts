@@ -25,9 +25,10 @@ export class VendorsService {
     const qb = this.vendorRepository.createQueryBuilder('vendor');
 
     if (query.search) {
-      qb.where('LOWER(vendor.name) LIKE LOWER(:search)', {
-        search: `%${query.search}%`,
-      });
+      qb.where(
+        '(LOWER(vendor.name) LIKE LOWER(:search) OR LOWER(vendor.description) LIKE LOWER(:search))',
+        { search: `%${query.search}%` },
+      );
     }
 
     const sortBy = query.sortBy ?? 'rating';

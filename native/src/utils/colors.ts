@@ -13,6 +13,4 @@ export const Colors = {
   textPrimary: '#2D231F',
   textSecondary: '#857971',
   borderColor: '#E8E3DA',
-} as const;
-
-   c
+} as const;
