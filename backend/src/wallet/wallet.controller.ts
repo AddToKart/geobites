@@ -113,4 +113,29 @@ export class WalletController {
     if (!vendorId) return { needsSetup: true };
     return this.walletService.getWithdrawalHistory(vendorId);
   }
+
+  @Post('withdraw')
+  @Roles('customer', 'rider')
+  @HttpCode(HttpStatus.OK)
+  async withdrawCustomer(
+    @CurrentUser('id') customerId: string,
+    @Body('amount') amount: number,
+    @Body('accountName') accountName: string,
+    @Body('accountNumber') accountNumber: string,
+    @Body('accountType') accountType: 'bank' | 'ewallet',
+    @Body('accountProvider') accountProvider: string,
+  ) {
+    return this.walletService.requestCustomerWithdrawal(customerId, amount, {
+      accountName,
+      accountNumber,
+      accountType,
+      accountProvider,
+    });
+  }
+
+  @Get('withdrawals')
+  @Roles('customer', 'rider')
+  async getCustomerWithdrawals(@CurrentUser('id') customerId: string) {
+    return this.walletService.getCustomerWithdrawalHistory(customerId);
+  }
 }

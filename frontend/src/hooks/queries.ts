@@ -4,7 +4,15 @@ import type { VendorQuery } from "@/services/vendorService";
 import { getOrders, getOrder, placeOrder, updateOrderStatus } from "@/services/orderService";
 import type { PlaceOrderPayload } from "@/services/orderService";
 import type { OrderStatus } from "@/types";
-import { getWallet, getVendorWallet, getTransactions, getVendorTransactions, getVendorWithdrawals } from "@/services/walletService";
+import {
+  getWallet,
+  getVendorWallet,
+  getTransactions,
+  getVendorTransactions,
+  getVendorWithdrawals,
+  requestCustomerWithdrawal,
+  getCustomerWithdrawals,
+} from "@/services/walletService";
 import { getAddresses } from "@/services/addressService";
 import { getNotifications } from "@/services/notificationService";
 import { getVendorMenu } from "@/services/menuService";
@@ -252,6 +260,35 @@ export function useRegisterReferral() {
     },
     onError: (error: Error) => {
       toast.error(error.message);
+    },
+  });
+}
+
+export function useCustomerWithdrawals() {
+  return useQuery({
+    queryKey: ["wallet", "withdrawals"],
+    queryFn: () => getCustomerWithdrawals(),
+  });
+}
+
+export function useRequestCustomerWithdrawal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      amount: number;
+      accountName: string;
+      accountNumber: string;
+      accountType: 'bank' | 'ewallet';
+      accountProvider: string;
+    }) => requestCustomerWithdrawal(payload.amount, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet", "withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet", "transactions"] });
+      toast.success("Withdrawal request submitted successfully!");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Withdrawal failed");
     },
   });
 }

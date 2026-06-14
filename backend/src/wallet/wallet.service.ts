@@ -407,4 +407,78 @@ export class WalletService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  /**
+   * Requests a withdrawal from customer/rider wallet to a bank or e-wallet.
+   */
+  async requestCustomerWithdrawal(
+    customerId: string,
+    amount: number,
+    accountDetails: {
+      accountName: string;
+      accountNumber: string;
+      accountType: 'bank' | 'ewallet';
+      accountProvider: string;
+    },
+  ): Promise<WithdrawalRequest> {
+    if (amount <= 0) {
+      throw new BadRequestException(
+        'Withdrawal amount must be greater than zero',
+      );
+    }
+
+    const wallet = await this.getOrCreateWallet(customerId);
+    if (Number(wallet.balance) < Number(amount)) {
+      throw new BadRequestException('Insufficient wallet balance');
+    }
+
+    return await this.dataSource.transaction(async (manager) => {
+      const walletRepo = manager.getRepository(Wallet);
+      const withdrawalRepo = manager.getRepository(WithdrawalRequest);
+      const transactionRepo = manager.getRepository(WalletTransaction);
+
+      const w = await walletRepo.findOne({ where: { customerId } });
+      if (!w) throw new NotFoundException('Wallet not found');
+
+      w.balance = Number(w.balance) - Number(amount);
+      await walletRepo.save(w);
+
+      const withdrawal = withdrawalRepo.create({
+        vendorId: customerId, // use customerId in vendorId column as it is generic varchar
+        amount,
+        status: 'pending',
+        accountName: accountDetails.accountName,
+        accountNumber: accountDetails.accountNumber,
+        accountType: accountDetails.accountType,
+        accountProvider: accountDetails.accountProvider,
+      });
+      const saved = await withdrawalRepo.save(withdrawal);
+
+      const tx = transactionRepo.create({
+        walletId: w.id,
+        amount: -amount,
+        type: 'withdrawal',
+        status: 'success',
+        referenceId: saved.id,
+        paymentMethod: 'WITHDRAWAL',
+      });
+      await transactionRepo.save(tx);
+
+      this.logger.log(
+        `Withdrawal of ₱${amount} requested for customer/rider wallet ${w.id}. New balance: ₱${w.balance}`,
+      );
+
+      return saved;
+    });
+  }
+
+  /**
+   * Returns withdrawal history for a customer/rider.
+   */
+  async getCustomerWithdrawalHistory(customerId: string): Promise<WithdrawalRequest[]> {
+    return this.withdrawalRepository.find({
+      where: { vendorId: customerId },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

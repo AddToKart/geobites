@@ -94,3 +94,24 @@ export async function getVendorWithdrawals(): Promise<VendorWithdrawal[]> {
   const response = await api.get<VendorWithdrawal[]>('/wallet/vendor/withdrawals');
   return response.data;
 }
+
+export async function requestCustomerWithdrawal(
+  amount: number,
+  accountDetails: {
+    accountName: string;
+    accountNumber: string;
+    accountType: 'bank' | 'ewallet';
+    accountProvider: string;
+  },
+): Promise<VendorWithdrawal> {
+  const response = await api.post<VendorWithdrawal>('/wallet/withdraw', {
+    amount,
+    ...accountDetails,
+  });
+  return response.data;
+}
+
+export async function getCustomerWithdrawals(): Promise<VendorWithdrawal[]> {
+  const response = await api.get<VendorWithdrawal[]>('/wallet/withdrawals');
+  return response.data;
+}
