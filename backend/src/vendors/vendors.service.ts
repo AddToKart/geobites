@@ -117,4 +117,20 @@ export class VendorsService {
     Object.assign(vendor, updateVendorDto);
     return this.vendorRepository.save(vendor);
   }
+
+  async remove(id: string, ownerUserId: string): Promise<void> {
+    const vendor = await this.vendorRepository.findOne({
+      where: { id },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+
+    if (vendor.userId !== ownerUserId) {
+      throw new ForbiddenException('You can only delete your own vendor');
+    }
+
+    await this.vendorRepository.remove(vendor);
+  }
 }

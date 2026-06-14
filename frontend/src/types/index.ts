@@ -117,6 +117,8 @@ export interface Order {
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
   customerRating?: number;
+  cancellationReason?: string;
+  disputeStatus?: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
   prepStartTime?: string;
   prepCompleteTime?: string;
   actualDeliveryTime?: string;

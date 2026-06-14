@@ -29,11 +29,19 @@ import {
   loadSellerPayoutsPage,
   loadSellerKDSPage,
   loadSellerPromotionsPage,
+  loadSellerVouchersPage,
   loadSellerRatingsPage,
   loadSellerWalletPage,
   loadVendorMenuPage,
   loadMockPaymentPage,
   loadWalletPage,
+  loadFavoritesPage,
+  loadSearchResultsPage,
+  loadPaymentReceiptPage,
+  loadPaymentGcashPage,
+  loadPaymentMayaPage,
+  loadPaymentQrphPage,
+  loadPaymentGeoPayPage,
 } from '@/routes/loaders';
 
 const LandingPage = lazy(loadLandingPage);
@@ -48,6 +56,13 @@ const OrderTrackingPage = lazy(loadOrderTrackingPage);
 const VendorMenuPage = lazy(loadVendorMenuPage);
 const MockPaymentPage = lazy(loadMockPaymentPage);
 const WalletPage = lazy(loadWalletPage);
+const FavoritesPage = lazy(loadFavoritesPage);
+const SearchResultsPage = lazy(loadSearchResultsPage);
+const PaymentReceiptPage = lazy(loadPaymentReceiptPage);
+const PaymentGcashPage = lazy(loadPaymentGcashPage);
+const PaymentMayaPage = lazy(loadPaymentMayaPage);
+const PaymentQrphPage = lazy(loadPaymentQrphPage);
+const PaymentGeoPayPage = lazy(loadPaymentGeoPayPage);
 const ActiveDeliveryPage = lazy(loadActiveDeliveryPage);
 const RiderDashboard = lazy(loadRiderDashboardPage);
 const MenuManagementPage = lazy(loadMenuManagementPage);
@@ -57,6 +72,7 @@ const SellerAnalytics = lazy(loadSellerAnalyticsPage);
 const SellerPayouts = lazy(loadSellerPayoutsPage);
 const SellerKDS = lazy(loadSellerKDSPage);
 const SellerPromotions = lazy(loadSellerPromotionsPage);
+const SellerVouchers = lazy(loadSellerVouchersPage);
 const SellerRatings = lazy(loadSellerRatingsPage);
 const SellerWallet = lazy(loadSellerWalletPage);
 
@@ -132,6 +148,13 @@ function AppRoutes() {
               <Route path="/orders/:id" element={<RouteGroup><OrderTrackingPage /></RouteGroup>} />
               <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
               <Route path="/wallet" element={<RouteGroup><WalletPage /></RouteGroup>} />
+              <Route path="/favorites" element={<RouteGroup><FavoritesPage /></RouteGroup>} />
+              <Route path="/search" element={<RouteGroup><SearchResultsPage /></RouteGroup>} />
+              <Route path="/receipt/:orderId" element={<RouteGroup><PaymentReceiptPage /></RouteGroup>} />
+              <Route path="/payment/gcash" element={<RouteGroup><PaymentGcashPage /></RouteGroup>} />
+              <Route path="/payment/maya" element={<RouteGroup><PaymentMayaPage /></RouteGroup>} />
+              <Route path="/payment/qrph" element={<RouteGroup><PaymentQrphPage /></RouteGroup>} />
+              <Route path="/payment/geopay" element={<RouteGroup><PaymentGeoPayPage /></RouteGroup>} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
@@ -142,6 +165,7 @@ function AppRoutes() {
               <Route path="/seller/payouts" element={<RouteGroup><SellerPayouts /></RouteGroup>} />
               <Route path="/seller/kds" element={<RouteGroup><SellerKDS /></RouteGroup>} />
               <Route path="/seller/promotions" element={<RouteGroup><SellerPromotions /></RouteGroup>} />
+              <Route path="/seller/vouchers" element={<RouteGroup><SellerVouchers /></RouteGroup>} />
               <Route path="/seller/ratings" element={<RouteGroup><SellerRatings /></RouteGroup>} />
               <Route path="/seller/wallet" element={<RouteGroup><SellerWallet /></RouteGroup>} />
             </Route>

@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWallet, useTransactions } from "@/hooks/queries";
 import { toast } from "sonner";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
+import { RewardsSection } from "@/features/customer/geopay/RewardsSection";
+import { ReferralSection } from "@/features/customer/geopay/ReferralSection";
 
 export function WalletPage() {
   const { user } = useAuth();
@@ -287,6 +289,20 @@ export function WalletPage() {
               </div>
             </Reveal>
           </div>
+        </div>
+
+        {/* Rewards Section */}
+        <div className="mt-12">
+          <Reveal>
+            <RewardsSection />
+          </Reveal>
+        </div>
+
+        {/* Referral Section */}
+        <div className="mt-12">
+          <Reveal>
+            <ReferralSection />
+          </Reveal>
         </div>
       </div>
     </div>

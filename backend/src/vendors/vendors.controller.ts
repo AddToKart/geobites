@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -50,5 +51,12 @@ export class VendorsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.vendorsService.update(id, updateVendorDto, userId);
+  }
+
+  @Delete(':id')
+  @UseGuards(SessionGuard, RolesGuard)
+  @Roles('seller')
+  remove(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.vendorsService.remove(id, userId);
   }
 }

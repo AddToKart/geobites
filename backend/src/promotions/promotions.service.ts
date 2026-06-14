@@ -42,7 +42,8 @@ export class PromotionsService {
 
     if (
       createPromotionDto.expiresAt &&
-      new Date(createPromotionDto.expiresAt) <= new Date(createPromotionDto.startsAt)
+      new Date(createPromotionDto.expiresAt) <=
+        new Date(createPromotionDto.startsAt)
     ) {
       throw new BadRequestException('Expiry must be after start date');
     }
@@ -83,7 +84,10 @@ export class PromotionsService {
       throw new ForbiddenException('You can only manage your own promotions');
     }
 
-    if (updatePromotionDto.startsAt && new Date(updatePromotionDto.startsAt) < new Date()) {
+    if (
+      updatePromotionDto.startsAt &&
+      new Date(updatePromotionDto.startsAt) < new Date()
+    ) {
       throw new BadRequestException('Start date must be in the future');
     }
 

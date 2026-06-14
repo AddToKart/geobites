@@ -12,6 +12,8 @@ export interface PlaceOrderPayload {
   deliveryLat?: number;
   deliveryLng?: number;
   notes?: string;
+  discountAmount?: number;
+  voucherCode?: string;
   items: Array<{
     menuItemId: string;
     quantity: number;

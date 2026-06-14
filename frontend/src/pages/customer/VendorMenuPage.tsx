@@ -1,6 +1,6 @@
 import { useState, useEffect, useDeferredValue, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import {
   getDemoVendorById,
   isDemoVendorId,
@@ -13,7 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
-import { useVendor, useVendorMenu, useActivePromotions, useVendorRatings } from "@/hooks/queries";
+import { useVendor, useVendorMenu, useActivePromotions, useVendorRatings, useIsFavorite, useAddFavorite, useRemoveFavorite } from "@/hooks/queries";
 import type { MenuItem } from "@/types";
 
 import { toast } from "sonner";
@@ -32,6 +32,10 @@ export function VendorMenuPage() {
   const { data: menuItems = [], isLoading: menuLoading } = useVendorMenu(id!);
   const { data: promotions = [] } = useActivePromotions(id!);
   const { data: ratingData } = useVendorRatings(id!);
+
+  const { data: isFav = false } = useIsFavorite(id!);
+  const addFav = useAddFavorite();
+  const removeFav = useRemoveFavorite();
 
   const ratings = ratingData?.ratings ?? [];
   const avgRating = ratingData?.averageScore ?? 0;
@@ -173,6 +177,19 @@ export function VendorMenuPage() {
             <h1 className="text-5xl font-medium tracking-tighter text-foreground">{vendor.name}</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => isFav ? removeFav.mutate(id!) : addFav.mutate(id!)}
+              disabled={addFav.isPending || removeFav.isPending}
+              className={`border px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 ${
+                isFav
+                  ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
+                  : "border-border bg-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`h-4 w-4 ${isFav ? "fill-current" : ""}`} />
+              {isFav ? "Saved" : "Save"}
+            </button>
             <Link to="/browse" className="text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
               Back to shops
             </Link>

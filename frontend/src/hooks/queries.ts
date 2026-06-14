@@ -10,6 +10,8 @@ import { getNotifications } from "@/services/notificationService";
 import { getVendorMenu } from "@/services/menuService";
 import { getActivePromotions } from "@/services/promotionService";
 import { getVendorRatings } from "@/services/ratingService";
+import { getFavorites, addFavorite, removeFavorite, isFavorite } from "@/services/favoritesService";
+import { getRewardsBalance, getRewardHistory, redeemPoints, consumeDiscount, getReferralCode, getReferralHistory, registerReferral } from "@/services/geopayService";
 import { toast } from "sonner";
 
 export function useVendors(query?: VendorQuery) {
@@ -138,3 +140,120 @@ export function useNotifications(params?: { unreadOnly?: boolean; page?: number;
     queryFn: () => getNotifications(params),
   });
 }
+
+export function useFavorites() {
+  return useQuery({
+    queryKey: ["favorites"],
+    queryFn: getFavorites,
+  });
+}
+
+export function useIsFavorite(vendorId: string) {
+  return useQuery({
+    queryKey: ["favorites", vendorId],
+    queryFn: () => isFavorite(vendorId),
+    enabled: !!vendorId,
+  });
+}
+
+export function useAddFavorite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vendorId: string) => addFavorite(vendorId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast.success("Added to favorites");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useRemoveFavorite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vendorId: string) => removeFavorite(vendorId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+      toast.success("Removed from favorites");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+// GeoPay Rewards
+export function useRewardsBalance() {
+  return useQuery({
+    queryKey: ["geopay", "rewards"],
+    queryFn: getRewardsBalance,
+  });
+}
+
+export function useRewardHistory() {
+  return useQuery({
+    queryKey: ["geopay", "rewards", "history"],
+    queryFn: getRewardHistory,
+  });
+}
+
+export function useRedeemPoints() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (points: number) => redeemPoints(points),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["geopay", "rewards"] });
+      toast.success("Points redeemed as discount!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+export function useConsumeDiscount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (discountPesos: number) => consumeDiscount(discountPesos),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["geopay", "rewards"] });
+      toast.success("Discount applied!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+// GeoPay Referrals
+export function useReferralCode() {
+  return useQuery({
+    queryKey: ["geopay", "referral"],
+    queryFn: getReferralCode,
+  });
+}
+
+export function useReferralHistory() {
+  return useQuery({
+    queryKey: ["geopay", "referral", "history"],
+    queryFn: getReferralHistory,
+  });
+}
+
+export function useRegisterReferral() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, email }: { code: string; email?: string }) => registerReferral(code, email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["geopay", "referral"] });
+      toast.success("Referral code applied!");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
+

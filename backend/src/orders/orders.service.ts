@@ -14,7 +14,12 @@ import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
-import { haversineKm, calculateDeliveryFee } from '../common/utils/distance.util';
+import { GeopayService } from '../geopay/geopay.service';
+import { VouchersService } from '../vouchers/vouchers.service';
+import {
+  haversineKm,
+  calculateDeliveryFee,
+} from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreateOrderItemDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
@@ -47,6 +52,8 @@ export class OrdersService {
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
     private readonly walletService: WalletService,
+    private readonly geopayService: GeopayService,
+    private readonly vouchersService: VouchersService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -120,7 +127,6 @@ export class OrdersService {
           0,
         );
 
-        // Compute distance-based delivery fee
         let deliveryFee = 0;
         if (
           createOrderDto.deliveryLat !== undefined &&
@@ -135,7 +141,40 @@ export class OrdersService {
           deliveryFee = calculateDeliveryFee(distanceKm);
         }
 
-        const totalAmount = subtotal + deliveryFee;
+        let totalAmount = subtotal + deliveryFee;
+        let discountAmount = 0;
+        let discountLabel: string | undefined;
+
+        // Apply voucher
+        if (createOrderDto.voucherCode) {
+          const vd = await this.vouchersService.applyVoucher(
+            createOrderDto.voucherCode,
+            createOrderDto.vendorId,
+            totalAmount,
+          );
+          discountAmount += vd;
+        }
+
+        // Apply points discount balance
+        const pointsDiscount = createOrderDto.discountAmount ?? 0;
+        if (pointsDiscount > 0) {
+          const available = Math.min(
+            pointsDiscount,
+            totalAmount - discountAmount,
+          );
+          if (available > 0) {
+            await this.geopayService.consumeDiscount(customerId, available);
+            discountAmount += available;
+          }
+        }
+
+        if (discountAmount > 0) {
+          totalAmount = Math.max(0, totalAmount - discountAmount);
+          const parts: string[] = [];
+          if (createOrderDto.voucherCode) parts.push('Voucher');
+          if (pointsDiscount > 0) parts.push('Points');
+          discountLabel = parts.join(' + ');
+        }
 
         const order = orderRepository.create({
           customerId,
@@ -153,6 +192,8 @@ export class OrdersService {
           deliveryLat: createOrderDto.deliveryLat,
           deliveryLng: createOrderDto.deliveryLng,
           notes: createOrderDto.notes,
+          discountAmount,
+          discountLabel,
         });
 
         const savedOrder = await orderRepository.save(order);
@@ -305,7 +346,12 @@ export class OrdersService {
         throw new ForbiddenException('You can only update your own orders');
       }
       const cancellableStatuses = ['pending', 'accepted', 'preparing'];
-      if (!(cancellableStatuses.includes(currentStatus) && nextStatus === 'cancelled')) {
+      if (
+        !(
+          cancellableStatuses.includes(currentStatus) &&
+          nextStatus === 'cancelled'
+        )
+      ) {
         throw new BadRequestException('Invalid customer status transition');
       }
       order.cancellationReason =
@@ -363,7 +409,12 @@ export class OrdersService {
     const updatedOrder = await this.orderRepository.save(order);
 
     // If cancelled by customer and paid via GeoPay, refund the customer wallet
-    if (nextStatus === 'cancelled' && role === 'customer' && order.paymentMethod === 'GEOPAY' && order.paymentStatus === 'paid') {
+    if (
+      nextStatus === 'cancelled' &&
+      role === 'customer' &&
+      order.paymentMethod === 'GEOPAY' &&
+      order.paymentStatus === 'paid'
+    ) {
       try {
         await this.walletService.refundGeoPayOrder(
           order.vendorId,
@@ -371,14 +422,23 @@ export class OrdersService {
           order.id,
           Number(order.totalAmount),
         );
-        this.logger.log(`GeoPay refund processed for cancelled order ${order.id}`);
+        this.logger.log(
+          `GeoPay refund processed for cancelled order ${order.id}`,
+        );
       } catch (refundError) {
-        this.logger.error(`Failed to process GeoPay refund for order ${order.id}:`, refundError);
+        this.logger.error(
+          `Failed to process GeoPay refund for order ${order.id}:`,
+          refundError,
+        );
       }
     }
 
     // Notify seller when customer cancels
-    if (nextStatus === 'cancelled' && role === 'customer' && order.vendor?.userId) {
+    if (
+      nextStatus === 'cancelled' &&
+      role === 'customer' &&
+      order.vendor?.userId
+    ) {
       await this.notificationsService.create({
         userId: order.vendor.userId,
         title: 'Order Cancelled',
@@ -429,6 +489,31 @@ export class OrdersService {
         type: 'order_update',
         referenceId: order.id,
       });
+      // Award loyalty points for completed orders
+      try {
+        await this.geopayService.awardPoints(
+          order.customerId,
+          Number(order.totalAmount),
+          order.id,
+        );
+        this.logger.log(
+          `Reward points awarded for delivered order ${order.id}`,
+        );
+      } catch (pointsError) {
+        this.logger.error(
+          `Failed to award points for order ${order.id}:`,
+          pointsError,
+        );
+      }
+      // Reward referral on first completed order
+      try {
+        await this.geopayService.rewardReferralOnFirstOrder(order.customerId);
+      } catch (refError) {
+        this.logger.error(
+          `Failed to reward referral for user ${order.customerId}:`,
+          refError,
+        );
+      }
     }
 
     return updatedOrder;

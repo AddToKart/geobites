@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Ban, MapPin, PackageCheck, ShoppingBag, Star, X } from "lucide-react";
+import { Ban, MapPin, PackageCheck, RefreshCw, ShoppingBag, Star, X } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { Button } from "../../components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -341,6 +341,32 @@ export function OrderTrackingPage() {
             </div>
           </div>
         )}
+
+        {(order.status === "cancelled" || order.status === "rejected") && order.paymentMethod !== "COD" && (
+          <div className="border-l-4 border-blue-500 bg-secondary/5 p-6 md:p-8 flex items-start gap-6 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center bg-blue-500/10 text-blue-500 shrink-0">
+              <RefreshCw className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-medium tracking-tighter text-blue-500">
+                {order.paymentMethod === "GEOPAY"
+                  ? "Refund Issued"
+                  : "Payment Pending Refund"}
+              </h3>
+              <p className="text-lg font-medium text-muted-foreground mt-2">
+                {order.paymentMethod === "GEOPAY"
+                  ? `₱${Number(order.totalAmount).toFixed(2)} has been returned to your GeoPay wallet.`
+                  : `Your ${order.paymentMethod} payment of ₱${Number(order.totalAmount).toFixed(2)} will be refunded within 3-5 business days.`}
+              </p>
+              {order.cancellationReason && (
+                <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground mt-4">
+                  Reason: {order.cancellationReason}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {showRating && (
           <RatingDialog
             orderId={order.id}

@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useWallet, useVendor, useAddresses } from "@/hooks/queries";
+import { useWallet, useVendor, useAddresses, useRewardsBalance } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/helpers";
-import { placeOrder, initiatePayment } from "@/services/orderService";
+import { VoucherDiscountSection } from "@/features/customer/VoucherDiscountSection";
+import { placeOrder } from "@/services/orderService";
 import type { SavedAddress } from "@/services/addressService";
 import { haversineKm, calculateDeliveryFee } from "@/utils/distance";
 import { toast } from "sonner";
@@ -80,6 +81,9 @@ export function CartPage() {
       : null
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | undefined>();
 
   const isCustom = addressMode === "custom";
 
@@ -133,8 +137,8 @@ export function CartPage() {
   }, [vendor, deliveryPin]);
 
   const orderTotal = useMemo(
-    () => total + (deliveryFee ?? 0),
-    [total, deliveryFee],
+    () => Math.max(0, total + (deliveryFee ?? 0) - (voucherDiscount + pointsDiscount)),
+    [total, deliveryFee, voucherDiscount, pointsDiscount],
   );
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -164,6 +168,8 @@ export function CartPage() {
         deliveryLat: deliveryPin.lat,
         deliveryLng: deliveryPin.lng,
         notes: data.notes?.trim() || undefined,
+        discountAmount: pointsDiscount > 0 ? pointsDiscount : undefined,
+        voucherCode: appliedVoucherCode,
         items: items.map((item) => ({
           menuItemId: item.menuItem.id,
           quantity: item.quantity,
@@ -172,18 +178,21 @@ export function CartPage() {
 
       toast.success("Order placed successfully");
 
-      if (data.paymentMethod === "GEOPAY") {
-        toast.info("Processing wallet payment...");
-        try {
-          await initiatePayment(createdOrder.id);
-          toast.success("Paid successfully using GeoPay Wallet!");
-        } catch (payErr) {
-          toast.error(payErr instanceof Error ? payErr.message : "GeoPay Wallet payment failed");
-        }
-      }
-
       clearCart();
-      navigate("/orders");
+
+      const paymentRoutes: Record<string, string> = {
+        GCASH: `/payment/gcash?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        MAYA: `/payment/maya?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        QRPH: `/payment/qrph?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        GEOPAY: `/payment/geopay?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+      };
+
+      const paymentRoute = paymentRoutes[data.paymentMethod];
+      if (paymentRoute) {
+        navigate(paymentRoute);
+      } else {
+        navigate("/orders");
+      }
     } catch (caughtError) {
       toast.error(
         caughtError instanceof Error
@@ -567,6 +576,16 @@ export function CartPage() {
                   )}
                 </div>
               )}
+
+              <VoucherDiscountSection
+                vendorId={vendorId ?? ""}
+                orderAmount={total + (deliveryFee ?? 0)}
+                onDiscountChange={(d) => {
+                  setVoucherDiscount(d.voucherDiscount);
+                  setPointsDiscount(d.pointsDiscount);
+                  setAppliedVoucherCode(d.voucherCode);
+                }}
+              />
 
               <button
                 type="submit"

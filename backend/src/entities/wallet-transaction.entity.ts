@@ -27,9 +27,22 @@ export class WalletTransaction {
 
   @Column({
     type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
-    enum: ['cash_in', 'payment', 'refund', 'vendor_payout', 'vendor_refund', 'withdrawal'],
+    enum: [
+      'cash_in',
+      'payment',
+      'refund',
+      'vendor_payout',
+      'vendor_refund',
+      'withdrawal',
+    ],
   })
-  type!: 'cash_in' | 'payment' | 'refund' | 'vendor_payout' | 'vendor_refund' | 'withdrawal';
+  type!:
+    | 'cash_in'
+    | 'payment'
+    | 'refund'
+    | 'vendor_payout'
+    | 'vendor_refund'
+    | 'withdrawal';
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   referenceId?: string; // e.g., orderId, or external checkout sessionId

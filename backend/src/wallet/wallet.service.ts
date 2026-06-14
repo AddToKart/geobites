@@ -33,7 +33,10 @@ export class WalletService {
     customerId: string,
     orderId: string,
     amount: number,
-  ): Promise<{ customerTransaction: WalletTransaction; vendorTransaction: WalletTransaction | null }> {
+  ): Promise<{
+    customerTransaction: WalletTransaction;
+    vendorTransaction: WalletTransaction | null;
+  }> {
     return await this.dataSource.transaction(async (manager) => {
       const walletRepo = manager.getRepository(Wallet);
       const transactionRepo = manager.getRepository(WalletTransaction);
@@ -59,7 +62,10 @@ export class WalletService {
       let savedVendorTxn: WalletTransaction | null = null;
       const vendorWallet = await walletRepo.findOne({ where: { vendorId } });
       if (vendorWallet) {
-        vendorWallet.balance = Math.max(0, Number(vendorWallet.balance) - Number(amount));
+        vendorWallet.balance = Math.max(
+          0,
+          Number(vendorWallet.balance) - Number(amount),
+        );
         await walletRepo.save(vendorWallet);
 
         const vendorTxn = transactionRepo.create({
@@ -73,8 +79,13 @@ export class WalletService {
         savedVendorTxn = await transactionRepo.save(vendorTxn);
       }
 
-      this.logger.log(`Refunded ₱${amount} for order ${orderId}: customer ${customerId} credited, vendor ${vendorId} debited`);
-      return { customerTransaction: savedCustomerTxn, vendorTransaction: savedVendorTxn };
+      this.logger.log(
+        `Refunded ₱${amount} for order ${orderId}: customer ${customerId} credited, vendor ${vendorId} debited`,
+      );
+      return {
+        customerTransaction: savedCustomerTxn,
+        vendorTransaction: savedVendorTxn,
+      };
     });
   }
 
@@ -327,7 +338,9 @@ export class WalletService {
     },
   ): Promise<WithdrawalRequest> {
     if (amount <= 0) {
-      throw new BadRequestException('Withdrawal amount must be greater than zero');
+      throw new BadRequestException(
+        'Withdrawal amount must be greater than zero',
+      );
     }
 
     const wallet = await this.getOrCreateVendorWallet(vendorId);

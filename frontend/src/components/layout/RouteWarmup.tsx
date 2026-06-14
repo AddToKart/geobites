@@ -13,10 +13,10 @@ function scheduleIdleTask(callback: () => void, timeout = 1000) {
     };
   }
 
-  const timeoutId = globalThis.setTimeout(callback, 140);
+  const timeoutId = setTimeout(callback, 140);
 
   return () => {
-    globalThis.clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
   };
 }
 
@@ -29,7 +29,7 @@ export function RouteWarmup() {
     }
 
     let isCancelled = false;
-    const timeoutIds: number[] = [];
+    const timeoutIds: Array<ReturnType<typeof setTimeout>> = [];
 
     const beginWarmup = () => {
       getWarmupLoadersForRole(user?.role ?? null).forEach((loadRoute, index) => {
@@ -44,7 +44,7 @@ export function RouteWarmup() {
           return;
         }
 
-        timeoutIds.push(globalThis.setTimeout(warmRoute, index * WARMUP_STAGGER_MS));
+        timeoutIds.push(setTimeout(warmRoute, index * WARMUP_STAGGER_MS));
       });
     };
 
@@ -53,7 +53,7 @@ export function RouteWarmup() {
     return () => {
       isCancelled = true;
       cancelIdleTask();
-      timeoutIds.forEach((timeoutId) => globalThis.clearTimeout(timeoutId));
+      timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
     };
   }, [isLoading, user?.role]);
 
