@@ -6,6 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ensureDatabaseExists } from './database/create-db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import * as os from 'os';
 
 const defaultOrigins = [
   'http://localhost:5173',
@@ -13,23 +14,45 @@ const defaultOrigins = [
   'http://localhost:19006',
 ];
 
+function getLocalIpAddresses(): string[] {
+  const interfaces = os.networkInterfaces();
+  const ips: string[] = [];
+  for (const name of Object.keys(interfaces)) {
+    for (const net of interfaces[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        ips.push(net.address);
+      }
+    }
+  }
+  return ips;
+}
+
 function parseCorsOrigins(): string[] {
   const rawOrigins = process.env.CORS_ORIGIN;
-  if (!rawOrigins) {
-    return defaultOrigins;
+  const parsedOrigins = rawOrigins
+    ? rawOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : [];
+
+  const baseOrigins = parsedOrigins.length > 0 ? parsedOrigins : defaultOrigins;
+
+  // Dynamically resolve and add all local IP addresses on relevant ports to CORS
+  const localIps = getLocalIpAddresses();
+  const localIPOrigins: string[] = [];
+  for (const ip of localIps) {
+    localIPOrigins.push(`http://${ip}:3000`);
+    localIPOrigins.push(`http://${ip}:5173`);
+    localIPOrigins.push(`http://${ip}:8081`);
+    localIPOrigins.push(`http://${ip}:19006`);
   }
 
-  const parsedOrigins = rawOrigins
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  return parsedOrigins.length > 0 ? parsedOrigins : defaultOrigins;
+  return [...new Set([...baseOrigins, ...localIPOrigins])];
 }
 
 async function bootstrap() {
   // Ensure the database exists before initializing TypeORM and Auth
-  await ensureDatabaseExists();
+  if (process.env.USE_MEMORY_DB !== 'true') {
+    await ensureDatabaseExists();
+  }
 
   // Dynamically import modules so they only initialize AFTER DB creation
   const { AppModule } = await import('./app.module.js');

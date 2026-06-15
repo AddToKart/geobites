@@ -14,8 +14,8 @@ export function getTypeOrmConfig(
 
   if (useMemoryDb) {
     return {
-      type: 'sqljs',
-      autoSave: false,
+      type: 'better-sqlite3',
+      database: 'geobites-dev.db',
       synchronize: true,
       logging: false,
       autoLoadEntities: true,

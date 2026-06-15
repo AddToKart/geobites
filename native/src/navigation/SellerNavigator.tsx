@@ -1,17 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../utils/colors';
+import { SellerDashboardScreen } from '../screens/seller/SellerDashboardScreen';
+import { SellerShopScreen } from '../screens/seller/SellerShopScreen';
 
 const Tab = createBottomTabNavigator();
-
-function SellerDashboardStub() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Seller Dashboard</Text>
-      <Text style={styles.subtitle}>Mobile seller features coming soon!</Text>
-    </View>
-  );
-}
 
 export function SellerNavigator() {
   return (
@@ -19,33 +11,23 @@ export function SellerNavigator() {
       screenOptions={{
         headerShown: true,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSoft,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarStyle: {
+          backgroundColor: Colors.bgCard,
+          borderTopColor: Colors.borderColor,
+        },
       }}
     >
       <Tab.Screen 
-        name="SellerHome" 
-        component={SellerDashboardStub} 
-        options={{ title: 'Dashboard' }} 
+        name="SellerDashboard" 
+        component={SellerDashboardScreen} 
+        options={{ title: 'Orders Dashboard' }} 
+      />
+      <Tab.Screen 
+        name="SellerShop" 
+        component={SellerShopScreen} 
+        options={{ title: 'My Shop' }} 
       />
     </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.bgPrimary,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textSoft,
-    marginTop: 8,
-  },
-});

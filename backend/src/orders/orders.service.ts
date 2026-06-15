@@ -5,14 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, Repository, Brackets } from 'typeorm';
 import { UserRole } from '../common/constants/roles';
 import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, CreatePosOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
@@ -162,7 +162,142 @@ export class OrdersService {
     return this.findOneForUser(savedOrderId, customerId, 'customer');
   }
 
+  async createPosOrder(
+    createPosDto: CreatePosOrderDto,
+    sellerUserId: string, // This is the user ID of the seller
+  ): Promise<Order> {
+    const menuItemIds = createPosDto.items.map((item) => item.menuItemId);
+    if (new Set(menuItemIds).size !== menuItemIds.length) {
+      throw new BadRequestException(
+        'Duplicate menu items are not allowed in a single order',
+      );
+    }
+
+    const savedOrderId = await this.dataSource.transaction(
+      async (manager) => {
+        const vendorRepository = manager.getRepository(Vendor);
+        const menuItemRepository = manager.getRepository(MenuItem);
+        const orderRepository = manager.getRepository(Order);
+        const orderItemRepository = manager.getRepository(OrderItem);
+
+        const vendor = await vendorRepository.findOne({
+          where: { userId: sellerUserId }, // Validate seller owns this
+        });
+
+        if (!vendor || vendor.id !== createPosDto.vendorId) {
+          throw new ForbiddenException('You can only create POS orders for your own store');
+        }
+
+        const menuItems = await menuItemRepository.find({
+          where: {
+            id: In(menuItemIds),
+            vendorId: vendor.id,
+          },
+        });
+
+        if (menuItems.length !== menuItemIds.length) {
+          throw new BadRequestException('One or more menu items are invalid');
+        }
+
+        const orderItems = createPosDto.items.map((item) => {
+          const menuItem = menuItems.find(
+            (candidate) => candidate.id === item.menuItemId,
+          );
+          if (!menuItem) {
+            throw new BadRequestException('Menu item not found in vendor menu');
+          }
+
+          if (!menuItem.isAvailable) {
+            throw new BadRequestException(
+              `Menu item ${menuItem.name} is not available`,
+            );
+          }
+
+          return {
+            menuItem,
+            quantity: item.quantity,
+            price: Number(menuItem.price),
+            name: menuItem.name,
+          };
+        });
+
+        const totalAmount = orderItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+
+        const order = orderRepository.create({
+          customerId: sellerUserId, // The seller is technically the customer for walk-ins
+          vendorId: vendor.id,
+          status: 'delivered', // POS Walk-in is instantly completed
+          totalAmount,
+          street: 'Walk-in Customer', // Placeholder for POS
+          deliveryAddress: 'Walk-in POS Order', // Placeholder for POS
+          paymentMethod: createPosDto.paymentMethod || 'CASH',
+          paymentStatus: 'paid', // POS orders are assumed paid
+          notes: createPosDto.notes,
+        });
+
+        const savedOrder = await orderRepository.save(order);
+
+        const snapshots = orderItems.map((item) =>
+          orderItemRepository.create({
+            orderId: savedOrder.id,
+            menuItemId: item.menuItem.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          }),
+        );
+
+        await orderItemRepository.save(snapshots);
+
+        return savedOrder.id;
+      },
+    );
+
+    return this.findOneForUser(savedOrderId, sellerUserId, 'seller');
+  }
+
   async findAllForUser(userId: string, role: UserRole, query: QueryOrdersDto) {
+    // --- Mock Data Injector for Rider ---
+    if (role === 'rider') {
+      try {
+        const readyOrders = await this.orderRepository.count({
+          where: { status: 'ready_for_pickup', riderId: null }
+        });
+        if (readyOrders === 0) {
+          const anyVendor = await this.vendorRepository.findOne({ where: {} });
+          if (anyVendor) {
+            const mockOrder = this.orderRepository.create({
+              customerId: 'mock-customer-id',
+              vendorId: anyVendor.id,
+              status: 'ready_for_pickup',
+              totalAmount: 450.00,
+              deliveryAddress: '123 Fake Street, Subdivision',
+              deliveryLat: anyVendor.latitude + 0.01,
+              deliveryLng: anyVendor.longitude + 0.01,
+              paymentMethod: 'cash',
+              notes: 'Please ring the doorbell.',
+            });
+            const savedMock = await this.orderRepository.save(mockOrder);
+            
+            const mockItem = this.orderItemRepository.create({
+              orderId: savedMock.id,
+              menuItemId: 'mock-item-id',
+              name: '2x Spicy Noodles, 1x Coke',
+              quantity: 1,
+              price: 450.00,
+            });
+            await this.orderItemRepository.save(mockItem);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to inject mock order:', e);
+      }
+    }
+    // --- End Mock Data Injector ---
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -187,7 +322,12 @@ export class OrdersService {
         }
         qb.where('order.vendorId = :vendorId', { vendorId: sellerVendor.id });
       } else if (role === 'rider') {
-        qb.where('order.riderId = :userId', { userId });
+        qb.where(
+          new Brackets((qb2) => {
+            qb2.where('order.riderId = :userId', { userId })
+               .orWhere('order.status = :readyStatus AND order.riderId IS NULL', { readyStatus: 'ready_for_pickup' });
+          }),
+        );
       } else {
         throw new BadRequestException(`Invalid role: ${role}`);
       }
