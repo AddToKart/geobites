@@ -94,7 +94,7 @@ class Order {
       riderId: json['riderId'],
       status: json['status'],
       totalAmount: (json['totalAmount'] as num).toDouble(),
-      deliveryAddress: json['deliveryAddress'],
+      deliveryAddress: json['deliveryAddress'] ?? json['street'] ?? 'No address provided',
       deliveryLat: json['deliveryLat'] != null ? (json['deliveryLat'] as num).toDouble() : null,
       deliveryLng: json['deliveryLng'] != null ? (json['deliveryLng'] as num).toDouble() : null,
       riderLat: json['riderLat'] != null ? (json['riderLat'] as num).toDouble() : null,

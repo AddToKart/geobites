@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository, Brackets } from 'typeorm';
+import { DataSource, In, Repository, Brackets, IsNull } from 'typeorm';
 import { UserRole } from '../common/constants/roles';
 import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
@@ -232,8 +232,7 @@ export class OrdersService {
           status: 'delivered', // POS Walk-in is instantly completed
           totalAmount,
           street: 'Walk-in Customer', // Placeholder for POS
-          deliveryAddress: 'Walk-in POS Order', // Placeholder for POS
-          paymentMethod: createPosDto.paymentMethod || 'CASH',
+          paymentMethod: (createPosDto.paymentMethod === 'CASH' ? 'COD' : createPosDto.paymentMethod || 'COD') as any,
           paymentStatus: 'paid', // POS orders are assumed paid
           notes: createPosDto.notes,
         });
@@ -264,7 +263,7 @@ export class OrdersService {
     if (role === 'rider') {
       try {
         const readyOrders = await this.orderRepository.count({
-          where: { status: 'ready_for_pickup', riderId: null }
+          where: { status: 'ready_for_pickup', riderId: IsNull() }
         });
         if (readyOrders === 0) {
           const anyVendor = await this.vendorRepository.findOne({ where: {} });
@@ -274,10 +273,10 @@ export class OrdersService {
               vendorId: anyVendor.id,
               status: 'ready_for_pickup',
               totalAmount: 450.00,
-              deliveryAddress: '123 Fake Street, Subdivision',
+              street: '123 Fake Street, Subdivision',
               deliveryLat: anyVendor.latitude + 0.01,
               deliveryLng: anyVendor.longitude + 0.01,
-              paymentMethod: 'cash',
+              paymentMethod: 'COD',
               notes: 'Please ring the doorbell.',
             });
             const savedMock = await this.orderRepository.save(mockOrder);

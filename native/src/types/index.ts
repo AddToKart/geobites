@@ -73,8 +73,12 @@ export interface Order {
   deliveryAddress: string;
   deliveryLat?: number;
   deliveryLng?: number;
+  riderLat?: number;
+  riderLng?: number;
   notes?: string;
-  vendor?: Pick<Vendor, 'id' | 'name'>;
+  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+  paymentStatus?: 'pending' | 'paid' | 'failed';
+  vendor?: Vendor;
   customer?: Pick<User, 'id' | 'name'>;
   rider?: Pick<User, 'id' | 'name'>;
   items: OrderItem[];

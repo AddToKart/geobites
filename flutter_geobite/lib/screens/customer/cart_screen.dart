@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import 'order_detail_screen.dart';
 import 'map_selection_screen.dart';
+import '../../widgets/glass_toast.dart';
 
 class CartScreen extends StatefulWidget {
   @override
@@ -177,7 +178,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                         onPressed: () async {
                           final status = await Permission.location.request();
                           if (status.isGranted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Locating you...')));
+                            GlassToast.info(context, 'Locating you...');
                             try {
                               final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
                               final newLoc = LatLng(position.latitude, position.longitude);
@@ -186,10 +187,10 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                                 _mapController?.flyTo(newLoc, zoom: 16);
                               });
                             } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to get location: $e')));
+                              GlassToast.error(context, 'Failed to get location: $e');
                             }
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permission denied')));
+                            GlassToast.error(context, 'Location permission denied');
                           }
                         },
                         icon: const Icon(Icons.my_location, size: 16),

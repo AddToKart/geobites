@@ -27,31 +27,109 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   @override
   Widget build(BuildContext context) {
     return GlassScaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(top: BorderSide(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))),
-        ),
-        child: SafeArea(
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined, size: 24), activeIcon: Icon(Icons.dashboard, size: 24), label: 'Overview'),
-              BottomNavigationBarItem(icon: Icon(Icons.kitchen_outlined, size: 24), activeIcon: Icon(Icons.kitchen, size: 24), label: 'KDS'),
-              BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu_outlined, size: 24), activeIcon: Icon(Icons.restaurant_menu, size: 24), label: 'Catalog'),
-              BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined, size: 24), activeIcon: Icon(Icons.receipt_long, size: 24), label: 'Orders'),
-              BottomNavigationBarItem(icon: Icon(Icons.more_horiz, size: 24), activeIcon: Icon(Icons.more_horiz, size: 24), label: 'More'),
-            ],
+      extendBody: true,
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Theme.of(context).colorScheme.surface,
+                    Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+                    Theme.of(context).colorScheme.surface.withValues(alpha: 0.0),
+                  ],
+                  stops: const [0.0, 0.6, 1.0],
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? const Color(0xFF1A1A1A).withValues(alpha: 0.6)
+                          : Colors.white.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                        ),
+                        child: BottomNavigationBar(
+                          currentIndex: _currentIndex,
+                          onTap: (index) => setState(() => _currentIndex = index),
+                          type: BottomNavigationBarType.fixed,
+                          backgroundColor: Colors.transparent,
+                          elevation: 0,
+                          selectedItemColor: AppColors.primary,
+                          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                          showSelectedLabels: true,
+                          showUnselectedLabels: true,
+                          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10),
+                          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 10),
+                          items: [
+                            _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, 'Overview', 0),
+                            _buildNavItem(Icons.kitchen_outlined, Icons.kitchen, 'KDS', 1),
+                            _buildNavItem(Icons.restaurant_menu_outlined, Icons.restaurant_menu, 'Catalog', 2),
+                            _buildNavItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Orders', 3),
+                            _buildNavItem(Icons.more_horiz, Icons.more_horiz, 'More', 4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(IconData icon, IconData activeIcon, String label, int index) {
+    final isSelected = _currentIndex == index;
+    return BottomNavigationBarItem(
+      icon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(isSelected ? activeIcon : icon, size: 24),
+      ),
+      activeIcon: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(activeIcon, size: 24),
+      ),
+      label: label,
     );
   }
 }

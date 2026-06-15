@@ -6,6 +6,7 @@ import 'seller_promotions_screen.dart';
 import 'seller_reviews_screen.dart';
 import 'seller_analytics_screen.dart';
 import 'seller_shop_screen.dart';
+import 'seller_pos_screen.dart';
 
 class SellerMoreScreen extends StatelessWidget {
   const SellerMoreScreen({Key? key}) : super(key: key);
@@ -23,6 +24,8 @@ class SellerMoreScreen extends StatelessWidget {
           _buildMoreItem(context, Icons.star_border, 'Reviews', const SellerReviewsScreen()),
           const SizedBox(height: 8),
           _buildMoreItem(context, Icons.analytics_outlined, 'Analytics', const SellerAnalyticsScreen()),
+          const SizedBox(height: 8),
+          _buildMoreItem(context, Icons.point_of_sale, 'Point of Sale (POS)', const SellerPosScreen()),
           const Divider(height: 32),
           _buildMoreItem(context, Icons.storefront_outlined, 'Shop Settings', const SellerShopScreen()),
           const SizedBox(height: 8),

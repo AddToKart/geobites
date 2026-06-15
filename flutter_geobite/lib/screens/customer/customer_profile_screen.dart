@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
 import '../../theme/glass_theme.dart';
 import 'map_selection_screen.dart';
+import '../../widgets/glass_toast.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({Key? key}) : super(key: key);
@@ -52,7 +53,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
     final address = _addressCtrl.text.trim();
     final phone = _phoneCtrl.text.trim();
     if (address.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields')));
+      GlassToast.info(context, 'Please fill all required fields');
       return;
     }
 
@@ -66,10 +67,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
           'defaultLat': _defaultLocation.latitude,
           'defaultLng': _defaultLocation.longitude,
         });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Default address saved!')));
+        GlassToast.success(context, 'Default address saved!');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
+      GlassToast.error(context, 'Error saving: $e');
     } finally {
       setState(() => _isSaving = false);
     }
@@ -279,7 +280,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
               onPressed: () async {
                 final status = await Permission.location.request();
                 if (status.isGranted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Locating you...')));
+                  GlassToast.info(context, 'Locating you...');
                   try {
                     final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
                     final newLoc = LatLng(position.latitude, position.longitude);
@@ -288,10 +289,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
                       _mapController?.flyTo(newLoc, zoom: 16);
                     });
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to get location: $e')));
+                    GlassToast.error(context, 'Failed to get location: $e');
                   }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permission denied')));
+                  GlassToast.error(context, 'Location permission denied');
                 }
               },
               icon: const Icon(Icons.my_location, size: 14),

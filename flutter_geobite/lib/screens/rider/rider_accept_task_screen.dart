@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../theme/glass_theme.dart';
+import '../../widgets/glass_toast.dart';
 
 class RiderAcceptTaskScreen extends StatefulWidget {
   final Order order;
@@ -72,7 +73,7 @@ class _RiderAcceptTaskScreenState extends State<RiderAcceptTaskScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to accept task: $e')));
+        GlassToast.error(context, 'Failed to accept task: $e');
         setState(() => _isAccepting = false);
       }
     }

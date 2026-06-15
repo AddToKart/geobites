@@ -1,8 +1,14 @@
 import { StyleSheet, TextInput, TextInputProps } from 'react-native';
 import { Colors } from '../../utils/colors';
 
-export function AppInput(props: TextInputProps) {
-  return <TextInput placeholderTextColor={Colors.textSecondary} style={styles.input} {...props} />;
+export function AppInput({ style, ...props }: TextInputProps) {
+  return (
+    <TextInput
+      placeholderTextColor={Colors.textSecondary}
+      style={[styles.input, style]}
+      {...props}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

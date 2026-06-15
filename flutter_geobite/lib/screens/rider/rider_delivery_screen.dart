@@ -8,6 +8,8 @@ import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../theme/glass_theme.dart';
 import 'package:intl/intl.dart';
+import 'rider_proof_of_delivery_screen.dart';
+import '../../widgets/glass_toast.dart';
 
 class RiderDeliveryScreen extends StatefulWidget {
   final Order order;
@@ -192,7 +194,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+        GlassToast.error(context, 'Failed to update status: $e');
         setState(() => _isLoading = false);
       }
     }
@@ -315,7 +317,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            bottom: _isCardMinimized ? 120 : 320,
+            bottom: _isCardMinimized ? 180 : 320,
             left: 16,
             child: Container(
               width: 70,
@@ -351,7 +353,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            bottom: _isCardMinimized ? 120 : 320,
+            bottom: _isCardMinimized ? 180 : 320,
             right: 16,
             child: Container(
               padding: const EdgeInsets.all(4),
@@ -377,7 +379,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            bottom: _isCardMinimized ? -180 : 0,
+            bottom: _isCardMinimized ? -140 : 0,
             left: 0,
             right: 0,
             child: GestureDetector(
@@ -480,7 +482,12 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
                           const SizedBox(width: 16),
                           Expanded(
                             child: FilledButton(
-                              onPressed: _isLoading ? null : () => _updateStatus('delivered'),
+                              onPressed: _isLoading ? null : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => RiderProofOfDeliveryScreen(order: widget.order)),
+                                );
+                              },
                               style: FilledButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 16)),
                               child: _isLoading
                                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

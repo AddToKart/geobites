@@ -76,6 +76,13 @@ async function bootstrap() {
     }),
   );
 
+  app.use('/api', (req: any, res: any, next: any) => {
+    console.log(`[Incoming Request] ${req.method} ${req.originalUrl}`);
+    console.log(`[Headers] Authorization: ${req.headers.authorization}`);
+    console.log(`[Headers] Cookie: ${req.headers.cookie}`);
+    next();
+  });
+
   app.use('/api/auth', toNodeHandler(auth));
 
   const port = Number(process.env.PORT ?? 3000);

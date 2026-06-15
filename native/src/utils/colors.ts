@@ -1,16 +1,16 @@
 export const Colors = {
-  primary: '#FF6B35', // Vibrant Coral
-  primaryDark: '#E85A28',
-  primaryLight: '#FFA07A',
-  primarySoft: '#FFEFE9',
-  secondary: '#2D231F', // Dark roast brown
-  accent: '#F59E0B', // Mustard yellow
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  bgPrimary: '#FFFDF9', // Warm cream
-  bgCard: '#FFFFFF',
-  textPrimary: '#2D231F',
-  textSecondary: '#857971',
-  borderColor: '#E8E3DA',
+  primary: '#FF5E3A', // Apple Food Coral
+  primaryDark: '#FF7D5E', // Brighter orange for dark mode readability
+  primaryLight: '#FFAF9B',
+  primarySoft: 'rgba(255, 94, 58, 0.12)', // Translucent orange backdrop
+  secondary: '#1C1C1E', // iOS Dark System Fill
+  accent: '#0A84FF', // iOS Dark System Blue
+  success: '#30D158', // iOS Dark System Green
+  warning: '#FF9F0A', // iOS Dark System Orange
+  danger: '#FF453A', // iOS Dark System Red
+  bgPrimary: '#0C0C10', // Dark obsidian background
+  bgCard: 'rgba(255, 255, 255, 0.08)', // Frosted glass card fill (dark mode)
+  textPrimary: '#FFFFFF', // iOS Primary Dark Label
+  textSecondary: '#8E8E93', // iOS Secondary Dark Label
+  borderColor: 'rgba(255, 255, 255, 0.14)', // Glass border highlight
 } as const;

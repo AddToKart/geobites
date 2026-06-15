@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import '../theme/glass_theme.dart';
 
+import '../models/menu_item.dart';
+
 class GlassMenuDialog extends StatefulWidget {
   final Function(String name, String description, double price) onSave;
+  final MenuItem? initialItem;
 
-  const GlassMenuDialog({Key? key, required this.onSave}) : super(key: key);
+  const GlassMenuDialog({Key? key, required this.onSave, this.initialItem}) : super(key: key);
 
   @override
   _GlassMenuDialogState createState() => _GlassMenuDialogState();
@@ -17,6 +20,16 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialItem != null) {
+      _nameController.text = widget.initialItem!.name;
+      _descController.text = widget.initialItem!.description ?? '';
+      _priceController.text = widget.initialItem!.price.toString();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +44,9 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.5),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.1),
@@ -49,7 +62,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                     Text(
-                      'Add Menu Item',
+                      widget.initialItem == null ? 'Add Menu Item' : 'Edit Menu Item',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -78,7 +91,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                     context: context,
                     controller: _priceController,
                     label: 'Price',
-                    icon: Icons.attach_money,
+                    prefixText: '₱ ',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                     validator: (val) => val == null || val.isEmpty ? 'Required' : null,
@@ -105,7 +118,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                               widget.onSave(
                                 _nameController.text.trim(),
                                 _descController.text.trim(),
-                                double.parse(_priceController.text.trim()),
+                                double.parse(_priceController.text),
                               );
                               Navigator.pop(context);
                             }
@@ -115,7 +128,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: const Text('Save Item', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(widget.initialItem == null ? 'Save Item' : 'Save Changes', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ),
                     ],
@@ -133,7 +146,8 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
     required BuildContext context,
     required TextEditingController controller,
     required String label,
-    required IconData icon,
+    IconData? icon,
+    String? prefixText,
     int maxLines = 1,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
@@ -149,9 +163,11 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-        prefixIcon: maxLines == 1 ? Icon(icon, color: AppColors.primary.withValues(alpha: 0.5)) : null,
+        prefixIcon: icon != null && maxLines == 1 ? Icon(icon, color: AppColors.primary.withValues(alpha: 0.5)) : null,
+        prefixText: prefixText,
+        prefixStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.6),
+        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,

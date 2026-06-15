@@ -21,15 +21,47 @@ const OrdersStack = createNativeStackNavigator<CustomerOrdersStackParamList>();
 
 function CustomerBrowseStackNavigator() {
   return (
-    <BrowseStack.Navigator>
-      <BrowseStack.Screen name="Browse" component={BrowseScreen} options={{ title: 'Vendors' }} />
+    <BrowseStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: 'transparent',
+        },
+        headerTitleStyle: {
+          fontWeight: '700',
+          color: Colors.textPrimary,
+        },
+        headerTintColor: Colors.primary,
+      }}
+    >
+      <BrowseStack.Screen 
+        name="Browse" 
+        component={BrowseScreen} 
+        options={{ headerShown: false }} 
+      />
       <BrowseStack.Screen
         name="VendorDetail"
         component={VendorDetailScreen}
-        options={({ route }) => ({ title: route.params.vendorName })}
+        options={({ route }) => ({ 
+          title: route.params.vendorName,
+          headerTransparent: true,
+        })}
       />
-      <BrowseStack.Screen name="Cart" component={CartScreen} />
-      <BrowseStack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order' }} />
+      <BrowseStack.Screen 
+        name="Cart" 
+        component={CartScreen} 
+        options={{ 
+          title: '',
+          headerTransparent: true,
+        }}
+      />
+      <BrowseStack.Screen 
+        name="OrderDetail" 
+        component={OrderDetailScreen} 
+        options={{ 
+          title: '',
+          headerTransparent: true,
+        }} 
+      />
     </BrowseStack.Navigator>
   );
 }

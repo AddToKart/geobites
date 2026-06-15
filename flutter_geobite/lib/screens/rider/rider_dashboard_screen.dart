@@ -6,8 +6,10 @@ import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../providers/theme_provider.dart';
 import 'rider_accept_task_screen.dart';
 import 'rider_delivery_screen.dart';
+import '../../widgets/glass_toast.dart';
 
 class RiderDashboardScreen extends StatefulWidget {
   const RiderDashboardScreen({Key? key}) : super(key: key);
@@ -142,18 +144,101 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: AppColors.primary, size: 20),
-                              const SizedBox(width: 8),
-                              const Text('Santa Maria, Bulacan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            ],
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Santa Maria, Bulacan',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           Row(
                             children: [
                               Text(_temperature, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               const SizedBox(width: 8),
                               Icon(_weatherIcon, color: Colors.orange, size: 20),
+                              const SizedBox(width: 12),
+                              Container(width: 1, height: 16, color: Colors.grey.withValues(alpha: 0.3)),
+                              const SizedBox(width: 4),
+                              Consumer<ThemeProvider>(
+                                builder: (context, themeProvider, _) {
+                                  return IconButton(
+                                    icon: Icon(Theme.of(context).brightness == Brightness.dark ? Icons.dark_mode : Icons.light_mode, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      themeProvider.toggleTheme();
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 12),
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.notifications_none, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    offset: const Offset(0, 40),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    color: Theme.of(context).colorScheme.surface,
+                                    onSelected: (value) {
+                                      if (value == 'read_all') {
+                                        GlassToast.info(context, 'All marked as read');
+                                      } else if (value == 'clear') {
+                                        GlassToast.info(context, 'Notifications removed');
+                                      }
+                                    },
+                                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                      const PopupMenuItem<String>(
+                                        value: 'view_1',
+                                        child: Text('System: New deliveries available in Santa Maria!'),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem<String>(
+                                        value: 'read_all',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.checklist, size: 18),
+                                            SizedBox(width: 8),
+                                            Text('Mark all as read'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem<String>(
+                                        value: 'clear',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Remove all notifications', style: TextStyle(color: Colors.red)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ],
@@ -296,6 +381,7 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
 
   Widget _buildQuickStat(String title, String value, IconData icon, Color color) {
     return NeumorphicCard(
+      glowColor: color,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

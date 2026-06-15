@@ -8,8 +8,8 @@ class AppColors {
   static const Color primaryDark = Color(0xFFE67A00);
 
   // Dark Theme Colors
-  static const Color darkBg = Color(0xFF1E1F24);
-  static const Color darkCard = Color(0xFF2A2C31);
+  static const Color darkBg = Color(0xFF000000); // True Black
+  static const Color darkCard = Color(0xFF0A0A0A); // Deepest Grey/Black
   static const Color darkTextPrimary = Color(0xFFF8FAFC);
   static const Color darkTextSecondary = Color(0xFF94A3B8);
 
@@ -30,7 +30,7 @@ class AppColors {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return LinearGradient(
       colors: isDark
-          ? [const Color(0xFF32353B), const Color(0xFF26282D)]
+          ? [const Color(0xFF000000), primary.withValues(alpha: 0.05)]
           : [const Color(0xFFFFFFFF), const Color(0xFFE6EBF2)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -95,6 +95,7 @@ class NeumorphicCard extends StatelessWidget {
   final double borderRadius;
   final bool isPressed;
   final bool useGradient;
+  final Color? glowColor;
 
   const NeumorphicCard({
     Key? key,
@@ -103,15 +104,16 @@ class NeumorphicCard extends StatelessWidget {
     this.borderRadius = 24.0,
     this.isPressed = false,
     this.useGradient = false,
+    this.glowColor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Shadows
-    final lightShadowColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
-    final darkShadowColor = isDark ? Colors.black.withValues(alpha: 0.5) : const Color(0xFFA6B4C8).withValues(alpha: 0.6);
+    // Shadows / Glows
+    final lightShadowColor = isDark ? Colors.transparent : Colors.white;
+    final darkShadowColor = isDark ? Colors.transparent : const Color(0xFFA6B4C8).withValues(alpha: 0.6);
     
     // Background color
     final bgColor = isDark ? AppColors.darkCard : AppColors.lightCard;
@@ -124,22 +126,31 @@ class NeumorphicCard extends StatelessWidget {
         gradient: useGradient ? AppColors.primaryGradient : null,
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: isPressed
-            ? null // If pressed, we remove drop shadows to simulate it being pushed in
+            ? null
             : [
-                // Bottom Right Dark Shadow
-                BoxShadow(
-                  color: useGradient ? AppColors.primaryDark.withValues(alpha: 0.5) : darkShadowColor,
-                  offset: const Offset(6, 6),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                ),
-                // Top Left Light Shadow
-                BoxShadow(
-                  color: useGradient ? AppColors.primaryLight.withValues(alpha: 0.5) : lightShadowColor,
-                  offset: const Offset(-6, -6),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                ),
+                if (isDark) // Neon Glow in Dark Mode
+                  BoxShadow(
+                    color: glowColor?.withValues(alpha: 0.15) ?? AppColors.primary.withValues(alpha: 0.03),
+                    offset: const Offset(0, 0),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                  )
+                else ...[
+                  // Bottom Right Dark Shadow
+                  BoxShadow(
+                    color: useGradient ? AppColors.primaryDark.withValues(alpha: 0.5) : darkShadowColor,
+                    offset: const Offset(6, 6),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                  // Top Left Light Shadow
+                  BoxShadow(
+                    color: useGradient ? AppColors.primaryLight.withValues(alpha: 0.5) : lightShadowColor,
+                    offset: const Offset(-6, -6),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ],
               ],
       ),
       child: child,
@@ -174,24 +185,41 @@ class GlassScaffold extends StatelessWidget {
       appBar: appBar,
       body: Stack(
         children: [
-          // Ambient Blob 1 (Top Right)
+          // Ambient Glowing Blobs
+        if (Theme.of(context).brightness == Brightness.dark) ...[
           Positioned(
-            top: -50,
-            right: -100,
+            top: -100,
+            left: -100,
             child: Container(
               width: 300,
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.primary.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                child: Container(color: Colors.transparent),
               ),
             ),
           ),
+          Positioned(
+            bottom: -50,
+            right: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryLight.withValues(alpha: 0.03),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+          ),
+        ],
           // Main Content
           SafeArea(
             bottom: false,

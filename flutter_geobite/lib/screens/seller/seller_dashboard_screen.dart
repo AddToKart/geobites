@@ -5,6 +5,7 @@ import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/receipt_widget.dart';
+import '../../widgets/glass_toast.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({Key? key}) : super(key: key);
@@ -41,9 +42,18 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
     try {
       await orderService.updateOrderStatus(orderId, newStatus);
       _loadOrders();
+      
+      // Simulate Cross-App Notification
+      if (newStatus == 'accepted') {
+        GlassToast.success(context, 'Order accepted! Notification sent to Customer.');
+      } else if (newStatus == 'ready_for_pickup') {
+        GlassToast.success(context, 'Order ready! Notification sent to Rider & Customer.');
+      } else {
+        GlassToast.info(context, 'Order updated to $newStatus');
+      }
     } catch (e) {
       print('Error updating status: $e');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to update status')));
+      GlassToast.error(context, 'Failed to update status');
     }
   }
 
@@ -76,7 +86,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Printing Receipt...')));
+                          GlassToast.info(context, 'Printing Receipt...');
                           Navigator.pop(context);
                         },
                         icon: const Icon(Icons.print),
@@ -105,6 +115,24 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         backgroundColor: Colors.transparent,
         title: Text('Live Orders', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
         actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface),
+                onPressed: () => GlassToast.info(context, 'You have 3 new notifications'),
+              ),
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: const Text('3', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(Icons.logout, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Provider.of<AuthProvider>(context, listen: false).signOut(),

@@ -12,7 +12,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SessionGuard } from '../common/guards/session.guard';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, CreatePosOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
@@ -29,6 +29,15 @@ export class OrdersController {
     @CurrentUser('id') userId: string,
   ) {
     return this.ordersService.create(createOrderDto, userId);
+  }
+
+  @Post('pos')
+  @Roles('seller')
+  createPos(
+    @Body() createPosDto: CreatePosOrderDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.ordersService.createPosOrder(createPosDto, userId);
   }
 
   @Get()

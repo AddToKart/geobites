@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { bearer } from 'better-auth/plugins';
 import { Pool } from 'pg';
 // @ts-expect-error - missing type definitions for better-sqlite3
 import Database from 'better-sqlite3';
@@ -217,4 +218,5 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [bearer()],
 });

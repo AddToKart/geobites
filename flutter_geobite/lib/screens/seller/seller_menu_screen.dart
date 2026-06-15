@@ -7,6 +7,7 @@ import '../../services/vendor_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_menu_dialog.dart';
+import '../../widgets/glass_toast.dart';
 
 class SellerMenuScreen extends StatefulWidget {
   const SellerMenuScreen({Key? key}) : super(key: key);
@@ -51,7 +52,7 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
       await menuService.deleteMenuItem(id);
       _loadData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete item')));
+      GlassToast.error(context, 'Failed to delete item');
     }
   }
 
@@ -84,6 +85,30 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
     );
   }
 
+  void _showEditItemDialog(MenuItem item) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return GlassMenuDialog(
+          initialItem: item,
+          onSave: (name, description, price) async {
+            try {
+              final updates = {
+                'name': name,
+                'description': description,
+                'price': price,
+              };
+              await menuService.updateMenuItem(item.id, updates);
+              _loadData();
+            } catch (e) {
+              print('Error updating item: $e');
+            }
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,6 +116,14 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text('Manage Menu', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_circle, size: 28),
+            color: AppColors.primary,
+            onPressed: _showAddItemDialog,
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -130,6 +163,10 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
                               activeColor: AppColors.primary,
                             ),
                             IconButton(
+                              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                              onPressed: () => _showEditItemDialog(item),
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.delete_outline, color: Colors.red),
                               onPressed: () => _deleteItem(item.id),
                             ),
@@ -139,27 +176,6 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.transparent, // Let the gradient shine through
-        elevation: 0,
-        onPressed: _showAddItemDialog,
-        child: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: AppColors.primaryGradient,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              )
-            ],
-          ),
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      ),
     );
   }
 }

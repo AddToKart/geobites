@@ -5,6 +5,8 @@ import '../../models/vendor.dart';
 import '../../services/vendor_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../widgets/glass_toast.dart';
+import '../../widgets/location_picker_dialog.dart';
 
 class SellerShopScreen extends StatefulWidget {
   const SellerShopScreen({Key? key}) : super(key: key);
@@ -14,6 +16,7 @@ class SellerShopScreen extends StatefulWidget {
 }
 
 class _SellerShopScreenState extends State<SellerShopScreen> {
+  final _userNameCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   Vendor? _vendor;
@@ -21,7 +24,6 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
   bool _isSaving = false;
 
   LatLng _shopLocation = const LatLng(14.8214, 120.9565); // Default to Santa Maria
-  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -34,6 +36,8 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
     try {
       final vendors = await vendorService.getVendors();
       final auth = Provider.of<AuthProvider>(context, listen: false);
+      _userNameCtrl.text = auth.user?.name ?? '';
+      
       final myVendor = vendors.firstWhere((v) => v.userId == auth.user?.id, orElse: () => throw Exception('Not found'));
       
       _vendor = myVendor;
@@ -73,9 +77,9 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
         // Update
         await vendorService.updateVendor(_vendor!.id, payload);
       }
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Shop Profile Saved!')));
+      GlassToast.success(context, 'Shop Profile Saved!');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
+      GlassToast.error(context, 'Error saving: $e');
     } finally {
       setState(() => _isSaving = false);
     }
@@ -97,48 +101,143 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Mock Image Upload for User
+                    Center(
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            backgroundImage: const NetworkImage('https://i.pravatar.cc/150?img=11'),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: () {
+                                GlassToast.info(context, 'Image upload simulation');
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Account Owner', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _userNameCtrl,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: 'Your Full Name',
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.person)),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text('Shop Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    // Mock Shop Cover Upload
+                    GestureDetector(
+                      onTap: () => GlassToast.info(context, 'Shop cover upload simulation'),
+                      child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.primary.withValues(alpha: 0.8)),
+                            const SizedBox(height: 8),
+                            Text('Upload Shop Cover Photo', style: TextStyle(color: AppColors.primary.withValues(alpha: 0.8))),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     TextField(
                       controller: _nameCtrl,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Shop Name',
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.storefront)),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _addressCtrl,
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Shop Address',
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.location_on)),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('Pin Location (Drag map)', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12), 
-                        border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Stack(
-                          alignment: Alignment.center,
+                    const SizedBox(height: 16),
+                    const Text('Location', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () async {
+                        final newLocation = await showGeneralDialog<LatLng>(
+                          context: context,
+                          barrierDismissible: false,
+                          pageBuilder: (context, animation, secondaryAnimation) {
+                            return LocationPickerDialog(initialLocation: _shopLocation);
+                          },
+                        );
+                        if (newLocation != null) {
+                          setState(() => _shopLocation = newLocation);
+                          if (mounted) GlassToast.success(context, 'Location pinned successfully!');
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            GoogleMap(
-                              initialCameraPosition: CameraPosition(target: _shopLocation, zoom: 15),
-                              onMapCreated: (controller) => _mapController = controller,
-                              onCameraMove: (position) => _shopLocation = position.target,
-                              myLocationEnabled: true,
-                              myLocationButtonEnabled: false,
-                              zoomControlsEnabled: false,
+                            Row(
+                              children: [
+                                const Icon(Icons.map, color: AppColors.primary),
+                                const SizedBox(width: 12),
+                                Text('Pin Location on Map', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                              ],
                             ),
-                            const Icon(Icons.storefront, size: 40, color: AppColors.primary),
+                            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                           ],
                         ),
                       ),
@@ -147,13 +246,15 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                     FilledButton(
                       onPressed: _isSaving ? null : _saveProfile,
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       ),
                       child: _isSaving 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Save Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('SAVE SETTINGS', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.white)),
                     ),
+                    const SizedBox(height: 80), // Padding for navbar
                   ],
                 ),
               ),

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/glass_theme.dart';
+import 'rider_vehicle_screen.dart';
+import 'rider_earnings_screen.dart';
 
 class RiderProfileScreen extends StatelessWidget {
   const RiderProfileScreen({Key? key}) : super(key: key);
@@ -111,9 +113,9 @@ class RiderProfileScreen extends StatelessWidget {
                   children: [
                     _buildListTile(context, Icons.person_outline, 'Personal Information'),
                     const Divider(height: 1, indent: 56),
-                    _buildListTile(context, Icons.two_wheeler_outlined, 'Vehicle Details'),
+                    _buildListTile(context, Icons.two_wheeler_outlined, 'Vehicle Details', destination: const RiderVehicleScreen()),
                     const Divider(height: 1, indent: 56),
-                    _buildListTile(context, Icons.account_balance_wallet_outlined, 'Earnings History'),
+                    _buildListTile(context, Icons.account_balance_wallet_outlined, 'Earnings History', destination: const RiderEarningsScreen()),
                   ],
                 ),
               ),
@@ -184,12 +186,14 @@ class RiderProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(BuildContext context, IconData icon, String title) {
+  Widget _buildListTile(BuildContext context, IconData icon, String title, {Widget? destination}) {
     return ListTile(
       leading: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {},
+      onTap: destination != null
+          ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => destination))
+          : () {}, // Future placeholder
     );
   }
 }

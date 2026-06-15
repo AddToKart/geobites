@@ -4,6 +4,7 @@ import '../../theme/glass_theme.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../widgets/receipt_widget.dart';
+import '../../widgets/glass_toast.dart';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({Key? key}) : super(key: key);
@@ -68,7 +69,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       ElevatedButton.icon(
                         onPressed: () {
                           // Print logic would go here
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Printing Receipt...')));
+                          GlassToast.info(context, 'Printing Receipt...');
                           Navigator.pop(context);
                         },
                         icon: const Icon(Icons.print),

@@ -7,6 +7,7 @@ export interface PlaceOrderPayload {
   deliveryLat?: number;
   deliveryLng?: number;
   notes?: string;
+  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
   items: Array<{ menuItemId: string; quantity: number }>;
 }
 

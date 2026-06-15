@@ -77,3 +77,22 @@ export class CreateOrderDto {
   @Type(() => CreateOrderItemDto)
   items!: CreateOrderItemDto[];
 }
+
+export class CreatePosOrderDto {
+  @IsString()
+  vendorId!: string;
+
+  @IsEnum(['CASH', 'GCASH', 'MAYA', 'QRPH'])
+  @IsOptional()
+  paymentMethod?: 'CASH' | 'GCASH' | 'MAYA' | 'QRPH';
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderItemDto)
+  items!: CreateOrderItemDto[];
+}
