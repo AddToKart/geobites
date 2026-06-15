@@ -16,6 +16,8 @@ class SellerOrdersScreen extends StatefulWidget {
 class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
   List<Order> _orders = [];
   bool _isLoading = true;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
 
   @override
   void initState() {
@@ -102,13 +104,21 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _orders.isEmpty
               ? const Center(child: Text('No orders found.'))
-              : RefreshIndicator(
-                  onRefresh: _loadOrders,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
+              : Builder(
+                  builder: (context) {
+                    final int totalPages = (_orders.length / _itemsPerPage).ceil();
+                    final paginatedOrders = _orders.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: _loadOrders,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              itemCount: paginatedOrders.length,
+                              itemBuilder: (context, index) {
+                                final order = paginatedOrders[index];
                       DateTime date;
                       try {
                         date = DateTime.parse(order.createdAt);
@@ -157,8 +167,39 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                         ),
                       ),
                     );
+
                   },
-                  ),
+                ),
+              ),
+                        if (totalPages > 1)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+                                  icon: const Icon(Icons.chevron_left),
+                                  label: const Text('Previous'),
+                                ),
+                                Text('Page ${_currentPage + 1} of $totalPages', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                TextButton(
+                                  onPressed: _currentPage < totalPages - 1 ? () => setState(() => _currentPage++) : null,
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [Text('Next'), Icon(Icons.chevron_right)],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
     );
   }

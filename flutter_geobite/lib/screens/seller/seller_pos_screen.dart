@@ -8,6 +8,7 @@ import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
+import 'seller_receipt_screen.dart';
 
 class SellerPosScreen extends StatefulWidget {
   const SellerPosScreen({Key? key}) : super(key: key);
@@ -152,7 +153,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
           }).toList(),
         };
 
-        await orderService.placePosOrder(payload);
+        final order = await orderService.placePosOrder(payload);
         
         // Clear cart on success
         setState(() {
@@ -161,8 +162,11 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
         });
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order processed successfully!'), backgroundColor: Colors.green),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SellerReceiptScreen(order: order),
+            ),
           );
         }
       } catch (e) {
@@ -345,7 +349,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                     ),
                     
                     // Mobile Bottom Bar
-                    if (!isDesktop && _cart.isNotEmpty)
+                    if (!isDesktop)
                       Container(
                         padding: EdgeInsets.only(left: 16, right: 16, top: 16, bottom: MediaQuery.of(context).padding.bottom + 16),
                         decoration: BoxDecoration(

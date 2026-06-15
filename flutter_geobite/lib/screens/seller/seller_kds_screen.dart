@@ -125,7 +125,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
             )
           else
             SizedBox(
-              height: 200, // Fixed height for horizontal scrolling cards
+              height: 220, // Fixed height for horizontal scrolling cards
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
