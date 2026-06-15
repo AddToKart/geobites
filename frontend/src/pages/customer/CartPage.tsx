@@ -1,37 +1,77 @@
-import { type FormEvent, useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Home, MapPin, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet, useVendor, useAddresses, useRewardsBalance } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/helpers";
-import { placeOrder, initiatePayment } from "@/services/orderService";
-import { getWallet } from "@/services/walletService";
-import { getVendorById } from "@/services/vendorService";
-import { getAddresses, SavedAddress } from "@/services/addressService";
+import { VoucherDiscountSection } from "@/features/customer/VoucherDiscountSection";
+import { placeOrder } from "@/services/orderService";
+import type { SavedAddress } from "@/services/addressService";
 import { haversineKm, calculateDeliveryFee } from "@/utils/distance";
 import { toast } from "sonner";
-import type { Vendor } from "@/types";
+
+const cartSchema = z.object({
+  street: z.string().min(1, "Street/Unit is required"),
+  barangay: z.string().min(1, "Barangay is required"),
+  landmark: z.string().optional(),
+  notes: z.string().optional(),
+  paymentMethod: z.enum(["COD", "GCASH", "MAYA", "QRPH", "GEOPAY"]),
+  paymentRef: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (["GCASH", "MAYA", "QRPH"].includes(data.paymentMethod)) {
+    const ref = data.paymentRef ?? "";
+    if (!ref.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Reference number is required", path: ["paymentRef"] });
+    } else if (ref.trim().length < 4) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Reference number must be at least 4 digits", path: ["paymentRef"] });
+    }
+  }
+});
+
+type CartFormData = z.infer<typeof cartSchema>;
 
 export function CartPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, total, updateQuantity, removeItem, clearCart, vendorId } =
     useCart();
-  
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors },
+  } = useForm<CartFormData>({
+    resolver: zodResolver(cartSchema),
+    defaultValues: {
+      street: user?.street || "",
+      barangay: user?.barangay || "",
+      landmark: user?.landmark || "",
+      notes: "",
+      paymentMethod: "COD",
+      paymentRef: "",
+    },
+  });
+
+  const paymentMethod = watch("paymentMethod");
+  const paymentRefValue = watch("paymentRef") ?? "";
+
+  const { data: wallet } = useWallet();
+  const { data: vendor } = useVendor(vendorId ?? "");
+  const { data: fetchedAddresses = [] } = useAddresses();
+
   const [addressMode, setAddressMode] = useState<'custom' | 'default' | 'saved'>('custom');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
-
-  const [street, setStreet] = useState(user?.street || "");
-  const [barangay, setBarangay] = useState(user?.barangay || "");
-  const [landmark, setLandmark] = useState(user?.landmark || "");
-  const [paymentMethod, setPaymentMethod] = useState<
-    "COD" | "GCASH" | "MAYA" | "QRPH" | "GEOPAY"
-  >("COD");
   const [deliveryPin, setDeliveryPin] = useState<{
     lat: number;
     lng: number;
@@ -40,31 +80,42 @@ export function CartPage() {
       ? { lat: Number(user.deliveryLat), lng: Number(user.deliveryLng) }
       : null
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState<string | undefined>();
 
-  // Load saved addresses
+  const isCustom = addressMode === "custom";
+
+  // Sync addresses from hook into local state
   useEffect(() => {
-    getAddresses().then((addrs) => {
-      setSavedAddresses(addrs);
-      const defaultAddr = addrs.find((a) => a.isDefault);
-      if (defaultAddr && addressMode === 'custom') {
-        setAddressMode('default');
-        applySavedAddress(defaultAddr);
-      }
-    }).catch(() => {});
+    setSavedAddresses(fetchedAddresses);
+  }, [fetchedAddresses]);
+
+  // Auto-apply default address on initial load
+  const autoApplied = useRef(false);
+  useEffect(() => {
+    if (autoApplied.current || fetchedAddresses.length === 0) return;
+    autoApplied.current = true;
+    const defaultAddr = fetchedAddresses.find((a) => a.isDefault);
+    if (defaultAddr && addressMode === 'custom') {
+      setAddressMode('default');
+      applySavedAddress(defaultAddr);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchedAddresses]);
 
   // Sync inputs with selected saved address
   const applySavedAddress = useCallback((addr: SavedAddress) => {
-    setStreet(addr.street || "");
-    setBarangay(addr.barangay || "");
-    setLandmark(addr.landmark || "");
+    setValue("street", addr.street || "");
+    setValue("barangay", addr.barangay || "");
+    setValue("landmark", addr.landmark || "");
     setDeliveryPin(
       addr.deliveryLat && addr.deliveryLng
         ? { lat: addr.deliveryLat, lng: addr.deliveryLng }
         : null
     );
-  }, []);
+  }, [setValue]);
 
   useEffect(() => {
     if (addressMode === 'saved' && selectedSavedId) {
@@ -72,29 +123,6 @@ export function CartPage() {
       if (addr) applySavedAddress(addr);
     }
   }, [addressMode, selectedSavedId, savedAddresses, applySavedAddress]);
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<{ street?: string; barangay?: string; paymentRef?: string }>({});
-
-  const validateField = (field: string, value: string) => {
-    if ((field === 'street' || field === 'barangay') && !value.trim()) return `${field === 'street' ? 'Street/Unit' : 'Barangay'} is required`;
-    if (field === 'paymentRef' && !value.trim()) return 'Reference number is required';
-    if (field === 'paymentRef' && value.trim().length < 4) return 'Reference number must be at least 4 digits';
-    return undefined;
-  };
-
-  const handleBlur = (field: string) => {
-    const value = field === 'street' ? street : field === 'barangay' ? barangay : field === 'paymentRef' ? paymentRef : '';
-    const error = validateField(field, value);
-    setErrors((prev) => ({ ...prev, [field]: error }));
-  };
-
-  const clearError = (field: string) => {
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
-  const [paymentRef, setPaymentRef] = useState("");
-  const [wallet, setWallet] = useState<{ balance: number } | null>(null);
-  const [vendor, setVendor] = useState<Vendor | null>(null);
 
   // Live delivery fee computed from vendor → pin distance
   const deliveryFee = useMemo(() => {
@@ -109,32 +137,13 @@ export function CartPage() {
   }, [vendor, deliveryPin]);
 
   const orderTotal = useMemo(
-    () => total + (deliveryFee ?? 0),
-    [total, deliveryFee],
+    () => Math.max(0, total + (deliveryFee ?? 0) - (voucherDiscount + pointsDiscount)),
+    [total, deliveryFee, voucherDiscount, pointsDiscount],
   );
-
-  useEffect(() => {
-    async function fetchBalance() {
-      try {
-        const data = await getWallet();
-        setWallet(data);
-      } catch (err) {
-        console.error("Failed to fetch wallet:", err);
-      }
-    }
-    fetchBalance();
-  }, []);
-
-  useEffect(() => {
-    if (!vendorId) return;
-    getVendorById(vendorId).then(setVendor).catch(console.error);
-  }, [vendorId]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const onSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-
+  const onSubmit = async (data: CartFormData) => {
     if (!vendorId || items.length === 0) {
       toast.error("Your cart is empty");
       return;
@@ -145,29 +154,22 @@ export function CartPage() {
       return;
     }
 
-    const streetError = validateField('street', street);
-    const barangayError = validateField('barangay', barangay);
-    const isDigital = ["GCASH", "MAYA", "QRPH"].includes(paymentMethod);
-    const refError = isDigital ? validateField('paymentRef', paymentRef) : undefined;
-    setErrors({ street: streetError, barangay: barangayError, paymentRef: refError });
-
-    if (streetError || barangayError || refError) {
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      const isDigital = ["GCASH", "MAYA", "QRPH"].includes(data.paymentMethod);
       const createdOrder = await placeOrder({
         vendorId,
-        street: street.trim(),
-        barangay: barangay.trim(),
-        landmark: landmark.trim() || undefined,
-        paymentMethod,
-        paymentReference: isDigital ? paymentRef.trim() : undefined,
+        street: data.street.trim(),
+        barangay: data.barangay.trim(),
+        landmark: data.landmark?.trim() || undefined,
+        paymentMethod: data.paymentMethod,
+        paymentReference: isDigital ? data.paymentRef?.trim() : undefined,
         deliveryLat: deliveryPin.lat,
         deliveryLng: deliveryPin.lng,
-        notes: notes.trim() || undefined,
+        notes: data.notes?.trim() || undefined,
+        discountAmount: pointsDiscount > 0 ? pointsDiscount : undefined,
+        voucherCode: appliedVoucherCode,
         items: items.map((item) => ({
           menuItemId: item.menuItem.id,
           quantity: item.quantity,
@@ -176,18 +178,21 @@ export function CartPage() {
 
       toast.success("Order placed successfully");
 
-      if (paymentMethod === "GEOPAY") {
-        toast.info("Processing wallet payment...");
-        try {
-          await initiatePayment(createdOrder.id);
-          toast.success("Paid successfully using GeoPay Wallet!");
-        } catch (payErr) {
-          toast.error(payErr instanceof Error ? payErr.message : "GeoPay Wallet payment failed");
-        }
-      }
-
       clearCart();
-      navigate("/orders");
+
+      const paymentRoutes: Record<string, string> = {
+        GCASH: `/payment/gcash?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        MAYA: `/payment/maya?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        QRPH: `/payment/qrph?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+        GEOPAY: `/payment/geopay?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
+      };
+
+      const paymentRoute = paymentRoutes[data.paymentMethod];
+      if (paymentRoute) {
+        navigate(paymentRoute);
+      } else {
+        navigate("/orders");
+      }
     } catch (caughtError) {
       toast.error(
         caughtError instanceof Error
@@ -301,7 +306,7 @@ export function CartPage() {
           </div>
 
           <form
-            onSubmit={onSubmit}
+            onSubmit={handleSubmit(onSubmit)}
             className="xl:sticky xl:top-12 xl:self-start space-y-12"
           >
             <div className="bg-background border border-border p-8 md:p-10">
@@ -434,48 +439,42 @@ export function CartPage() {
                 <div className="space-y-4">
                   <Input
                     placeholder="Street / Unit Number"
-                    value={street}
-                    disabled={addressMode !== 'custom'}
-                    onBlur={() => handleBlur('street')}
-                    onChange={(e) => { setStreet(e.target.value); clearError('street'); }}
+                    disabled={!isCustom}
+                    {...register("street")}
                     className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.street ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.street)}
                     aria-describedby={errors.street ? 'street-error' : undefined}
                     required
                   />
-                  {errors.street && <p id="street-error" className="text-xs font-semibold text-red-500">{errors.street}</p>}
+                  {errors.street && <p id="street-error" className="text-xs font-semibold text-red-500">{errors.street.message}</p>}
                   
                   <Input
                     placeholder="Barangay"
-                    value={barangay}
-                    disabled={addressMode !== 'custom'}
-                    onBlur={() => handleBlur('barangay')}
-                    onChange={(e) => { setBarangay(e.target.value); clearError('barangay'); }}
+                    disabled={!isCustom}
+                    {...register("barangay")}
                     className={`h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed ${errors.barangay ? 'border-red-500 bg-red-500/5' : ''}`}
                     aria-invalid={Boolean(errors.barangay)}
                     aria-describedby={errors.barangay ? 'barangay-error' : undefined}
                     required
                   />
-                  {errors.barangay && <p id="barangay-error" className="text-xs font-semibold text-red-500">{errors.barangay}</p>}
+                  {errors.barangay && <p id="barangay-error" className="text-xs font-semibold text-red-500">{errors.barangay.message}</p>}
                   
                   <Input
                     placeholder="Landmark (Optional)"
-                    value={landmark}
-                    disabled={addressMode !== 'custom'}
-                    onChange={(e) => setLandmark(e.target.value)}
+                    disabled={!isCustom}
+                    {...register("landmark")}
                     className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <Textarea
                     className="min-h-[100px] resize-none rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
                     placeholder="Notes for rider (Gate code, instructions...)"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    {...register("notes")}
                   />
                   <div className="pt-2">
                     <LazyDeliveryLocationPicker
                       value={deliveryPin}
                       onChange={setDeliveryPin}
-                      disabled={addressMode !== 'custom'}
+                      disabled={!isCustom}
                       vendorCoords={
                         vendor
                           ? { lat: Number(vendor.latitude), lng: Number(vendor.longitude) }
@@ -495,7 +494,7 @@ export function CartPage() {
                     <button
                       key={method}
                       type="button"
-                      onClick={() => setPaymentMethod(method)}
+                      onClick={() => setValue("paymentMethod", method, { shouldValidate: true })}
                       className={`h-14 font-bold tracking-widest border transition-colors ${
                         paymentMethod === method 
                           ? "bg-foreground text-background border-foreground" 
@@ -541,13 +540,13 @@ export function CartPage() {
                     </label>
                     <Input
                       placeholder="e.g. 5013..."
-                      value={paymentRef}
-                      onBlur={() => handleBlur('paymentRef')}
-                      onChange={(e) => { setPaymentRef(e.target.value.replace(/\D/g, "")); clearError('paymentRef'); }}
+                      value={paymentRefValue}
+                      onChange={(e) => setValue("paymentRef", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
+                      onBlur={() => trigger("paymentRef")}
                       className={`h-14 rounded-none border-border bg-background shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.paymentRef ? 'border-red-500 bg-red-500/5' : ''}`}
                       required
                     />
-                    {errors.paymentRef && <p className="text-xs font-semibold text-red-500">{errors.paymentRef}</p>}
+                    {errors.paymentRef && <p className="text-xs font-semibold text-red-500">{errors.paymentRef.message}</p>}
                   </div>
                 </div>
               )}
@@ -578,10 +577,20 @@ export function CartPage() {
                 </div>
               )}
 
+              <VoucherDiscountSection
+                vendorId={vendorId ?? ""}
+                orderAmount={total + (deliveryFee ?? 0)}
+                onDiscountChange={(d) => {
+                  setVoucherDiscount(d.voucherDiscount);
+                  setPointsDiscount(d.pointsDiscount);
+                  setAppliedVoucherCode(d.voucherCode);
+                }}
+              />
+
               <button
                 type="submit"
                 className="w-full h-16 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet !== null && wallet.balance < orderTotal)}
+                disabled={isSubmitting || (paymentMethod === "GEOPAY" && wallet != null && wallet.balance < orderTotal)}
               >
                 {isSubmitting ? "Processing..." : "Place order"}
                 <ArrowRight className="h-5 w-5" />

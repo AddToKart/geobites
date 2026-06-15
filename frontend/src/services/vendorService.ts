@@ -49,3 +49,7 @@ export async function updateVendor(id: string, payload: Partial<Vendor>): Promis
   const response = await api.put<Vendor>(`/vendors/${id}`, payload);
   return response.data;
 }
+
+export async function deleteVendor(id: string): Promise<void> {
+  await api.delete(`/vendors/${id}`);
+}

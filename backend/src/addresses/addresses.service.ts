@@ -24,7 +24,8 @@ export class AddressesService {
   async findOne(id: string, userId: string): Promise<Address> {
     const address = await this.addressRepository.findOne({ where: { id } });
     if (!address) throw new NotFoundException('Address not found');
-    if (address.userId !== userId) throw new ForbiddenException('Not your address');
+    if (address.userId !== userId)
+      throw new ForbiddenException('Not your address');
     return address;
   }
 
@@ -42,7 +43,10 @@ export class AddressesService {
     },
   ): Promise<Address> {
     if (data.isDefault) {
-      await this.addressRepository.update({ userId, isDefault: true }, { isDefault: false });
+      await this.addressRepository.update(
+        { userId, isDefault: true },
+        { isDefault: false },
+      );
     }
     const address = this.addressRepository.create({ userId, ...data });
     return this.addressRepository.save(address);
@@ -64,7 +68,10 @@ export class AddressesService {
   ): Promise<Address> {
     const address = await this.findOne(id, userId);
     if (data.isDefault) {
-      await this.addressRepository.update({ userId, isDefault: true }, { isDefault: false });
+      await this.addressRepository.update(
+        { userId, isDefault: true },
+        { isDefault: false },
+      );
     }
     Object.assign(address, data);
     return this.addressRepository.save(address);

@@ -1,7 +1,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
-import { createVendor, getVendors, updateVendor } from '@/services/vendorService';
+import { createVendor, deleteVendor, getVendors, updateVendor } from '@/services/vendorService';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import { MenuItem, Vendor, OperatingHours } from '@/types';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ const defaultVendorForm: VendorFormState = {
 
 export function MenuManagementPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [newItem, setNewItem] = useState<NewMenuItemFormState>({
@@ -223,6 +225,25 @@ export function MenuManagementPage() {
     }
   };
 
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleCloseShop = async () => {
+    if (!vendor) return;
+    setIsClosing(true);
+    try {
+      await deleteVendor(vendor.id);
+      toast.success("Shop closed successfully");
+      navigate("/seller");
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Failed to close shop";
+      toast.error(message);
+    } finally {
+      setIsClosing(false);
+      setShowCloseConfirm(false);
+    }
+  };
+
   const addMenuItem = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -347,6 +368,49 @@ export function MenuManagementPage() {
               error={error}
             />
           </section>
+        )}
+
+        {activeWorkspaceTab === 'profile' && vendor && (
+          <div className="border-t border-red-500/30 pt-12 mt-12">
+            <div className="max-w-xl">
+              <h3 className="text-lg font-bold tracking-tight text-red-500 mb-2">Danger Zone</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Closing your shop will permanently delete your vendor profile, menu items, and promotions. This action cannot be undone.
+              </p>
+              <button
+                onClick={() => setShowCloseConfirm(true)}
+                className="border border-red-500 text-red-500 px-8 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-red-500 hover:text-white transition-colors"
+              >
+                Close Shop
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showCloseConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-full max-w-md bg-background border border-border p-8 mx-4">
+              <h3 className="text-2xl font-bold tracking-tight text-red-500 mb-4">Close shop?</h3>
+              <p className="text-muted-foreground mb-8">
+                This will permanently delete your vendor profile, all menu items, and promotions. Customers will no longer find your shop.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowCloseConfirm(false)}
+                  className="flex-1 border border-border px-6 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCloseShop}
+                  disabled={isClosing}
+                  className="flex-1 bg-red-500 text-white px-6 py-3.5 text-xs font-bold uppercase tracking-widest hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {isClosing ? "Closing..." : "Yes, close shop"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {activeWorkspaceTab === 'menu' && (

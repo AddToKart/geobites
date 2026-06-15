@@ -97,7 +97,7 @@ export function SellerKDS() {
             kitchenOrders.map((order) => {
               const age = orderAge(order.createdAt);
               const actions = PREP_ACTIONS[order.status] ?? [];
-              const totalPrepTime = order.items.reduce((sum, item) => sum + ((item as any).prepTimeMinutes || 5), 0);
+              const totalPrepTime = order.items.reduce((sum, item) => sum + (item.prepTimeMinutes || 5), 0);
 
               return (
                 <div
@@ -163,7 +163,7 @@ export function SellerKDS() {
                   <div className="px-5 py-3 border-b border-border flex items-center gap-2 text-xs text-muted-foreground">
                     <TimerReset className="h-3.5 w-3.5" />
                     <span>Est. total prep: <strong className="text-foreground">{totalPrepTime} min</strong></span>
-                    {order.items.some((i) => !(i as any).prepTimeMinutes) && (
+                    {order.items.some((i) => !i.prepTimeMinutes) && (
                       <span className="text-[9px] text-muted-foreground/60">(defaults used for some items)</span>
                     )}
                   </div>

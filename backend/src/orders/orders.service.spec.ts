@@ -7,6 +7,9 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
+import { GeopayService } from '../geopay/geopay.service';
+import { VouchersService } from '../vouchers/vouchers.service';
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
@@ -22,6 +25,17 @@ describe('OrdersService', () => {
   };
   const notificationsService = {
     create: jest.fn(),
+  };
+  const walletService = {
+    refundGeoPayOrder: jest.fn(),
+  };
+  const geopayService = {
+    awardPoints: jest.fn(),
+    rewardReferralOnFirstOrder: jest.fn(),
+    consumeDiscount: jest.fn(),
+  };
+  const vouchersService = {
+    applyVoucher: jest.fn().mockResolvedValue(0),
   };
 
   const transactionVendorRepository = {
@@ -86,6 +100,18 @@ describe('OrdersService', () => {
         {
           provide: NotificationsService,
           useValue: notificationsService,
+        },
+        {
+          provide: WalletService,
+          useValue: walletService,
+        },
+        {
+          provide: GeopayService,
+          useValue: geopayService,
+        },
+        {
+          provide: VouchersService,
+          useValue: vouchersService,
         },
         {
           provide: DataSource,

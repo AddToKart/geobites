@@ -145,6 +145,18 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: decimalNumberTransformer,
+  })
+  discountAmount!: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  discountLabel?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
@@ -164,4 +176,11 @@ export class Order {
 
   @OneToMany(() => Rating, (rating) => rating.order)
   ratings!: Rating[];
+
+  riderName?: string;
+  riderPhone?: string;
+  customerName?: string;
+  customerPhone?: string;
+  vendorPhone?: string;
 }
+

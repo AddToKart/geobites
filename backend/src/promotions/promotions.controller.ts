@@ -54,20 +54,14 @@ export class PromotionsController {
   @Patch('promotions/:id/toggle')
   @UseGuards(SessionGuard, RolesGuard)
   @Roles('seller')
-  toggleActive(
-    @Param('id') id: string,
-    @CurrentUser('id') sellerId: string,
-  ) {
+  toggleActive(@Param('id') id: string, @CurrentUser('id') sellerId: string) {
     return this.promotionsService.toggleActive(id, sellerId);
   }
 
   @Delete('promotions/:id')
   @UseGuards(SessionGuard, RolesGuard)
   @Roles('seller')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser('id') sellerId: string,
-  ) {
+  remove(@Param('id') id: string, @CurrentUser('id') sellerId: string) {
     return this.promotionsService.remove(id, sellerId);
   }
 }

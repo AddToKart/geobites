@@ -58,7 +58,16 @@ export class MenuService {
     // Group by vendor
     const grouped: Record<
       string,
-      { vendor: { id: string; name: string; imageUrl?: string; rating: number; totalRatings: number }; items: typeof items }
+      {
+        vendor: {
+          id: string;
+          name: string;
+          imageUrl?: string;
+          rating: number;
+          totalRatings: number;
+        };
+        items: typeof items;
+      }
     > = {};
 
     for (const item of items) {

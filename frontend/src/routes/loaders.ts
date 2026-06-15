@@ -78,6 +78,48 @@ export const loadWalletPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadFavoritesPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/FavoritesPage').then((module) => ({
+    default: module.FavoritesPage,
+  })),
+);
+
+export const loadSearchResultsPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/SearchResultsPage').then((module) => ({
+    default: module.SearchResultsPage,
+  })),
+);
+
+export const loadPaymentReceiptPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/PaymentReceiptPage').then((module) => ({
+    default: module.PaymentReceiptPage,
+  })),
+);
+
+export const loadPaymentGcashPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/PaymentGcashPage').then((module) => ({
+    default: module.PaymentGcashPage,
+  })),
+);
+
+export const loadPaymentMayaPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/PaymentMayaPage').then((module) => ({
+    default: module.PaymentMayaPage,
+  })),
+);
+
+export const loadPaymentQrphPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/PaymentQrphPage').then((module) => ({
+    default: module.PaymentQrphPage,
+  })),
+);
+
+export const loadPaymentGeoPayPage = memoizeRouteLoader(() =>
+  import('@/pages/customer/PaymentGeoPayPage').then((module) => ({
+    default: module.PaymentGeoPayPage,
+  })),
+);
+
 export const loadActiveDeliveryPage = memoizeRouteLoader(() =>
   import('@/pages/rider/ActiveDeliveryPage').then((module) => ({
     default: module.ActiveDeliveryPage,
@@ -138,6 +180,12 @@ export const loadSellerRatingsPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadSellerVouchersPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerVouchersPage').then((module) => ({
+    default: module.SellerVouchersPage,
+  })),
+);
+
 export const loadSellerWalletPage = memoizeRouteLoader(() =>
   import('@/pages/seller/SellerWalletPage').then((module) => ({
     default: module.SellerWalletPage,
@@ -164,10 +212,18 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/seller/payouts': loadSellerPayoutsPage,
   '/seller/kds': loadSellerKDSPage,
   '/seller/promotions': loadSellerPromotionsPage,
+  '/seller/vouchers': loadSellerVouchersPage,
   '/seller/ratings': loadSellerRatingsPage,
   '/seller/wallet': loadSellerWalletPage,
   '/mock-payment': loadMockPaymentPage,
   '/wallet': loadWalletPage,
+  '/favorites': loadFavoritesPage,
+  '/search': loadSearchResultsPage,
+  '/receipt/:orderId': loadPaymentReceiptPage,
+  '/payment/gcash': loadPaymentGcashPage,
+  '/payment/maya': loadPaymentMayaPage,
+  '/payment/qrph': loadPaymentQrphPage,
+  '/payment/geopay': loadPaymentGeoPayPage,
 };
 
 const dynamicRouteLoaders: Array<{
@@ -185,6 +241,26 @@ const dynamicRouteLoaders: Array<{
   {
     load: loadActiveDeliveryPage,
     matches: (pathname) => /^\/rider\/delivery\/[^/]+$/.test(pathname),
+  },
+  {
+    load: loadPaymentReceiptPage,
+    matches: (pathname) => /^\/receipt\/[^/]+$/.test(pathname),
+  },
+  {
+    load: loadPaymentGcashPage,
+    matches: (pathname) => pathname === '/payment/gcash',
+  },
+  {
+    load: loadPaymentMayaPage,
+    matches: (pathname) => pathname === '/payment/maya',
+  },
+  {
+    load: loadPaymentQrphPage,
+    matches: (pathname) => pathname === '/payment/qrph',
+  },
+  {
+    load: loadPaymentGeoPayPage,
+    matches: (pathname) => pathname === '/payment/geopay',
   },
 ];
 
@@ -226,6 +302,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadSellerWalletPage,
         loadSellerKDSPage,
         loadSellerPromotionsPage,
+        loadSellerVouchersPage,
         loadSellerRatingsPage,
         ...commonLoaders,
       ];
@@ -240,6 +317,13 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadOrderTrackingPage,
         loadWalletPage,
         loadMockPaymentPage,
+        loadFavoritesPage,
+        loadSearchResultsPage,
+        loadPaymentReceiptPage,
+        loadPaymentGcashPage,
+        loadPaymentMayaPage,
+        loadPaymentQrphPage,
+        loadPaymentGeoPayPage,
         ...commonLoaders,
       ];
   }

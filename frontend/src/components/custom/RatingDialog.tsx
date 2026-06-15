@@ -14,8 +14,8 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
           onClick={() => onChange(star)}
           className={`p-1 transition-all ${
             star <= value
-              ? 'text-yellow-400 scale-110'
-              : 'text-muted-foreground/30 hover:text-yellow-400/60'
+              ? 'text-warning scale-110'
+              : 'text-muted-foreground/30 hover:text-warning/60'
           }`}
         >
           <Star className="h-8 w-8" fill={star <= value ? 'currentColor' : 'none'} strokeWidth={1.5} />

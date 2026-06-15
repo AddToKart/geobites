@@ -73,6 +73,16 @@ export class CreateOrderDto {
   @IsOptional()
   notes?: string;
 
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  discountAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  voucherCode?: string;
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

@@ -12,6 +12,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SessionGuard } from '../common/guards/session.guard';
+import type { UserRole } from '../common/constants/roles';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -35,15 +36,11 @@ export class OrdersController {
   @Roles('customer', 'seller', 'rider')
   async findAll(
     @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
+    @CurrentUser('role') role: UserRole,
     @Query() query: QueryOrdersDto,
   ) {
     try {
-      return await this.ordersService.findAllForUser(
-        userId,
-        role as 'customer' | 'seller' | 'rider',
-        query,
-      );
+      return await this.ordersService.findAllForUser(userId, role, query);
     } catch (error) {
       console.error('Error fetching orders:', error);
       throw error;
@@ -54,13 +51,9 @@ export class OrdersController {
   findOne(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.ordersService.findOneForUser(
-      id,
-      userId,
-      role as 'customer' | 'seller' | 'rider',
-    );
+    return this.ordersService.findOneForUser(id, userId, role);
   }
 
   @Patch(':id/status')
@@ -69,14 +62,9 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() updateStatusDto: UpdateOrderStatusDto,
     @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
+    @CurrentUser('role') role: UserRole,
   ) {
-    return this.ordersService.updateStatus(
-      id,
-      updateStatusDto,
-      userId,
-      role as 'customer' | 'seller' | 'rider',
-    );
+    return this.ordersService.updateStatus(id, updateStatusDto, userId, role);
   }
 
   @Get('riders/available')

@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
 import { Home, Mail, MapPin, Phone, Plus, Shield, Star, Trash2, User, X, Loader2, Save, Settings, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -13,21 +16,38 @@ import { Stagger, StaggerItem } from '@/components/motion/Reveal';
 
 type SettingsTab = 'profile' | 'business' | 'addresses' | 'preferences';
 
+const profileSchema = z.object({
+  name: z.string().min(1, 'Full name is required'),
+  phone: z.string().optional(),
+});
+
+const businessSchema = z.object({
+  storeName: z.string().min(1, 'Store name is required'),
+  businessPermit: z.string().optional(),
+});
+
+const addressSchema = z.object({
+  label: z.string().min(1, 'Label is required'),
+  street: z.string().min(1, 'Street address is required'),
+  barangay: z.string().optional(),
+  landmark: z.string().optional(),
+  floorOrGate: z.string().optional(),
+  isDefault: z.boolean().optional(),
+});
+
+const preferencesSchema = z.object({
+  orderAlerts: z.boolean(),
+  marketingEmails: z.boolean(),
+});
+
+type ProfileFormData = z.infer<typeof profileSchema>;
+type BusinessFormData = z.infer<typeof businessSchema>;
+type AddressFormData = z.infer<typeof addressSchema>;
+type PreferencesFormData = z.infer<typeof preferencesSchema>;
+
 export function SettingsPage() {
   const { user, refreshSession } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-
-  // Profile Form States
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-
-  // Business Form States (for sellers)
-  const [storeName, setStoreName] = useState('');
-  const [businessPermit, setBusinessPermit] = useState('');
-
-  // Preference States
-  const [marketingEmails, setMarketingEmails] = useState(true);
-  const [orderAlerts, setOrderAlerts] = useState(true);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -36,14 +56,40 @@ export function SettingsPage() {
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
-  const [addressLabel, setAddressLabel] = useState('');
-  const [addressStreet, setAddressStreet] = useState('');
-  const [addressBarangay, setAddressBarangay] = useState('');
-  const [addressLandmark, setAddressLandmark] = useState('');
-  const [addressFloor, setAddressFloor] = useState('');
   const [addressPin, setAddressPin] = useState<{ lat: number; lng: number } | null>(null);
-  const [addressIsDefault, setAddressIsDefault] = useState(false);
   const [addressSaving, setAddressSaving] = useState(false);
+
+  // Profile form
+  const profileForm = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: { name: user?.name || '', phone: user?.phone || '' },
+  });
+
+  // Business form
+  const businessForm = useForm<BusinessFormData>({
+    resolver: zodResolver(businessSchema),
+    defaultValues: { storeName: user?.storeName || '', businessPermit: user?.businessPermit || '' },
+  });
+
+  // Address form
+  const addressForm = useForm<AddressFormData>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: { label: '', street: '', barangay: '', landmark: '', floorOrGate: '', isDefault: false },
+  });
+
+  // Preferences form
+  const preferencesForm = useForm<PreferencesFormData>({
+    defaultValues: { orderAlerts: true, marketingEmails: true },
+  });
+
+  // Initialize forms from user profile data
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({ name: user.name || '', phone: user.phone || '' });
+      businessForm.reset({ storeName: user.storeName || '', businessPermit: user.businessPermit || '' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Load saved addresses
   useEffect(() => {
@@ -53,45 +99,65 @@ export function SettingsPage() {
     }
   }, [activeTab]);
 
-  const resetAddressForm = () => {
-    setAddressLabel('');
-    setAddressStreet('');
-    setAddressBarangay('');
-    setAddressLandmark('');
-    setAddressFloor('');
+  const closeAddressForm = useCallback(() => {
+    addressForm.reset({ label: '', street: '', barangay: '', landmark: '', floorOrGate: '', isDefault: false });
     setAddressPin(null);
-    setAddressIsDefault(false);
     setEditingAddressId(null);
     setShowAddressForm(false);
-  };
+  }, [addressForm]);
 
-  const openEditAddress = (addr: SavedAddress) => {
-    setAddressLabel(addr.label);
-    setAddressStreet(addr.street || '');
-    setAddressBarangay(addr.barangay || '');
-    setAddressLandmark(addr.landmark || '');
-    setAddressFloor(addr.floorOrGate || '');
+  const openEditAddress = useCallback((addr: SavedAddress) => {
+    addressForm.reset({
+      label: addr.label,
+      street: addr.street || '',
+      barangay: addr.barangay || '',
+      landmark: addr.landmark || '',
+      floorOrGate: addr.floorOrGate || '',
+      isDefault: addr.isDefault,
+    });
     setAddressPin(addr.deliveryLat && addr.deliveryLng ? { lat: addr.deliveryLat, lng: addr.deliveryLng } : null);
-    setAddressIsDefault(addr.isDefault);
     setEditingAddressId(addr.id);
     setShowAddressForm(true);
+  }, [addressForm]);
+
+  const onSaveProfile = async (data: ProfileFormData) => {
+    setIsSaving(true);
+    try {
+      await updateProfile({ name: data.name.trim(), phone: data.phone?.trim() || undefined });
+      await refreshSession();
+      toast.success('Profile details updated successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!addressLabel.trim()) { toast.error('Address label is required'); return; }
-    if (!addressStreet.trim()) { toast.error('Street address is required'); return; }
+  const onSaveBusiness = async (data: BusinessFormData) => {
+    setIsSaving(true);
+    try {
+      await updateProfile({ storeName: data.storeName.trim(), businessPermit: data.businessPermit?.trim() || undefined });
+      await refreshSession();
+      toast.success('Business details updated successfully');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update business details');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const onSaveAddress = async (data: AddressFormData) => {
     setAddressSaving(true);
     try {
       const payload: CreateAddressPayload = {
-        label: addressLabel.trim(),
-        street: addressStreet.trim(),
-        barangay: addressBarangay.trim() || undefined,
-        landmark: addressLandmark.trim() || undefined,
-        floorOrGate: addressFloor.trim() || undefined,
+        label: data.label.trim(),
+        street: data.street.trim(),
+        barangay: data.barangay?.trim() || undefined,
+        landmark: data.landmark?.trim() || undefined,
+        floorOrGate: data.floorOrGate?.trim() || undefined,
         deliveryLat: addressPin?.lat,
         deliveryLng: addressPin?.lng,
-        isDefault: addressIsDefault,
+        isDefault: data.isDefault ?? false,
       };
       if (editingAddressId) {
         await updateAddress(editingAddressId, payload);
@@ -100,9 +166,9 @@ export function SettingsPage() {
         await createAddress(payload);
         toast.success('Address saved');
       }
-      resetAddressForm();
-      const data = await getAddresses();
-      setAddresses(data);
+      closeAddressForm();
+      const addrData = await getAddresses();
+      setAddresses(addrData);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save address');
     } finally {
@@ -127,79 +193,13 @@ export function SettingsPage() {
     } catch { toast.error('Failed to set default address'); }
   };
 
-  // Initialize states from user profile data
-  useEffect(() => {
-    if (user) {
-      setName(user.name || '');
-      setPhone(user.phone || '');
-      setStoreName(user.storeName || '');
-      setBusinessPermit(user.businessPermit || '');
-    }
-  }, [user]);
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast.error('Full name is required');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await updateProfile({
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-      });
-      await refreshSession();
-      toast.success('Profile details updated successfully');
-    } catch (err) {
-      console.error(err);
-      toast.error(err instanceof Error ? err.message : 'Failed to update profile');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSaveBusinessDetails = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!storeName.trim()) {
-      toast.error('Store name is required');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await updateProfile({
-        storeName: storeName.trim(),
-        businessPermit: businessPermit.trim() || undefined,
-      });
-      await refreshSession();
-      toast.success('Business details updated successfully');
-    } catch (err) {
-      console.error(err);
-      toast.error(err instanceof Error ? err.message : 'Failed to update business details');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSavePreferences = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSavePreferences = (data: PreferencesFormData) => {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
       toast.success('Preferences updated successfully');
     }, 400);
   };
-
-  // Check if active tab has modified fields
-  const hasProfileChanges =
-    user && (name !== (user.name || '') || phone !== (user.phone || ''));
-
-  const hasBusinessChanges =
-    user &&
-    (storeName !== (user.storeName || '') ||
-      businessPermit !== (user.businessPermit || ''));
 
   const isSeller = user?.role === 'seller';
 
@@ -247,7 +247,7 @@ export function SettingsPage() {
         <div className="max-w-4xl">
           {/* PROFILE DETAILS TAB */}
           {activeTab === 'profile' && (
-            <form onSubmit={handleSaveProfile} className="space-y-12">
+            <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-12">
               <div>
                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-8">
                   Profile Details
@@ -260,11 +260,13 @@ export function SettingsPage() {
                     </label>
                     <Input
                       placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      {...profileForm.register('name')}
                       className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
                       required
                     />
+                    {profileForm.formState.errors.name && (
+                      <p className="text-xs font-semibold text-red-500">{profileForm.formState.errors.name.message}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -273,8 +275,7 @@ export function SettingsPage() {
                     </label>
                     <Input
                       placeholder="e.g. 09171234567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      {...profileForm.register('phone')}
                       className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
                     />
                   </div>
@@ -301,7 +302,7 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              {hasProfileChanges && (
+              {profileForm.formState.isDirty && (
                 <div className="flex gap-4">
                   <button
                     type="submit"
@@ -317,12 +318,7 @@ export function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (user) {
-                        setName(user.name || '');
-                        setPhone(user.phone || '');
-                      }
-                    }}
+                    onClick={() => profileForm.reset({ name: user?.name || '', phone: user?.phone || '' })}
                     className="h-14 px-8 border border-border hover:bg-secondary/20 font-bold uppercase tracking-widest text-xs transition-colors"
                   >
                     Discard Changes
@@ -340,7 +336,7 @@ export function SettingsPage() {
                   Saved Addresses
                 </h2>
                 <Button
-                  onClick={() => { resetAddressForm(); setShowAddressForm(true); }}
+                  onClick={() => { closeAddressForm(); setShowAddressForm(true); }}
                   className="h-10 px-5 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] rounded-none flex items-center gap-2"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -361,39 +357,42 @@ export function SettingsPage() {
                           {editingAddressId ? 'Update address details' : 'Add a delivery address'}
                         </h2>
                       </div>
-                      <button onClick={resetAddressForm} className="h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
+                      <button onClick={closeAddressForm} className="h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
                         <X className="h-4 w-4" />
                       </button>
                     </div>
 
-                    <form onSubmit={handleSaveAddress} className="space-y-6">
+                    <form onSubmit={addressForm.handleSubmit(onSaveAddress)} className="space-y-6">
                       <div>
                         <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Label *</label>
                         <Input
                           placeholder="e.g. Home, Office, Grandma's House"
-                          value={addressLabel}
-                          onChange={(e) => setAddressLabel(e.target.value)}
+                          {...addressForm.register('label')}
                           className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
                           required
                         />
+                        {addressForm.formState.errors.label && (
+                          <p className="text-xs font-semibold text-red-500 mt-1">{addressForm.formState.errors.label.message}</p>
+                        )}
                       </div>
                       <div className="grid gap-6 md:grid-cols-2">
                         <div>
                           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Street / Unit *</label>
                           <Input
                             placeholder="Street, building, unit"
-                            value={addressStreet}
-                            onChange={(e) => setAddressStreet(e.target.value)}
+                            {...addressForm.register('street')}
                             className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
                             required
                           />
+                          {addressForm.formState.errors.street && (
+                            <p className="text-xs font-semibold text-red-500 mt-1">{addressForm.formState.errors.street.message}</p>
+                          )}
                         </div>
                         <div>
                           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Barangay</label>
                           <Input
                             placeholder="Barangay"
-                            value={addressBarangay}
-                            onChange={(e) => setAddressBarangay(e.target.value)}
+                            {...addressForm.register('barangay')}
                             className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
                           />
                         </div>
@@ -403,8 +402,7 @@ export function SettingsPage() {
                           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Landmark</label>
                           <Input
                             placeholder="Nearby landmark"
-                            value={addressLandmark}
-                            onChange={(e) => setAddressLandmark(e.target.value)}
+                            {...addressForm.register('landmark')}
                             className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
                           />
                         </div>
@@ -412,8 +410,7 @@ export function SettingsPage() {
                           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Floor / Gate</label>
                           <Input
                             placeholder="Floor, gate, etc."
-                            value={addressFloor}
-                            onChange={(e) => setAddressFloor(e.target.value)}
+                            {...addressForm.register('floorOrGate')}
                             className="h-14 rounded-none border-border bg-transparent focus-visible:ring-0 focus-visible:border-foreground shadow-none"
                           />
                         </div>
@@ -431,8 +428,7 @@ export function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer pt-2">
                         <input
                           type="checkbox"
-                          checked={addressIsDefault}
-                          onChange={(e) => setAddressIsDefault(e.target.checked)}
+                          {...addressForm.register('isDefault')}
                           className="h-5 w-5 accent-primary cursor-pointer border border-border bg-background"
                         />
                         <span className="text-sm font-medium">Set as default delivery address</span>
@@ -441,7 +437,7 @@ export function SettingsPage() {
                         <Button type="submit" disabled={addressSaving} className="flex-1 h-14 rounded-none bg-primary text-primary-foreground hover:opacity-90 font-bold uppercase tracking-widest text-xs">
                           {addressSaving ? 'Saving...' : editingAddressId ? 'Update address' : 'Save address'}
                         </Button>
-                        <Button type="button" variant="outline" onClick={resetAddressForm} className="h-14 rounded-none border-border font-bold uppercase tracking-widest text-xs">
+                        <Button type="button" variant="outline" onClick={closeAddressForm} className="h-14 rounded-none border-border font-bold uppercase tracking-widest text-xs">
                           Cancel
                         </Button>
                       </div>
@@ -462,7 +458,7 @@ export function SettingsPage() {
                   <MapPin className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
                   <p className="text-lg font-medium tracking-tighter mb-2">No saved addresses</p>
                   <p className="text-sm text-muted-foreground mb-6">Add addresses for faster checkout.</p>
-                  <Button onClick={() => { resetAddressForm(); setShowAddressForm(true); }} className="h-10 px-6 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] rounded-none">
+                  <Button onClick={() => { closeAddressForm(); setShowAddressForm(true); }} className="h-10 px-6 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] rounded-none">
                     <Plus className="h-3.5 w-3.5 mr-1.5" />
                     Add your first address
                   </Button>
@@ -517,7 +513,7 @@ export function SettingsPage() {
 
           {/* SYSTEM PREFERENCES TAB */}
           {activeTab === 'preferences' && (
-            <form onSubmit={handleSavePreferences} className="space-y-12">
+            <form onSubmit={preferencesForm.handleSubmit(onSavePreferences)} className="space-y-12">
               <div>
                 <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-8">
                   System Preferences
@@ -543,8 +539,7 @@ export function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={orderAlerts}
-                          onChange={(e) => setOrderAlerts(e.target.checked)}
+                          {...preferencesForm.register('orderAlerts')}
                           className="h-5 w-5 accent-primary cursor-pointer border border-border bg-background"
                         />
                         <span className="text-sm font-medium flex items-center gap-1.5">
@@ -555,8 +550,7 @@ export function SettingsPage() {
                       <label className="flex items-center gap-3 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={marketingEmails}
-                          onChange={(e) => setMarketingEmails(e.target.checked)}
+                          {...preferencesForm.register('marketingEmails')}
                           className="h-5 w-5 accent-primary cursor-pointer border border-border bg-background"
                         />
                         <span className="text-sm font-medium">

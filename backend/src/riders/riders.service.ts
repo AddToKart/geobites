@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
@@ -17,14 +17,16 @@ export class RidersService {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly notificationsService: NotificationsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
     const type = query.type ?? 'available';
+    let orders: Order[] = [];
 
     if (type === 'available') {
       // Global booking pool: orders accepted by seller, not yet claimed by a rider
-      return this.orderRepository.find({
+      orders = await this.orderRepository.find({
         where: {
           status: 'accepted',
           riderId: IsNull(),
@@ -35,10 +37,8 @@ export class RidersService {
         },
         order: { updatedAt: 'DESC' },
       });
-    }
-
-    if (type === 'active') {
-      return this.orderRepository.find({
+    } else if (type === 'active') {
+      orders = await this.orderRepository.find({
         where: [
           { riderId, status: 'accepted' },
           { riderId, status: 'preparing' },
@@ -54,7 +54,11 @@ export class RidersService {
       });
     }
 
-    return [];
+    for (const order of orders) {
+      await this.enrichOrderDetails(order);
+    }
+
+    return orders;
   }
 
   async acceptDelivery(orderId: string, riderId: string) {
@@ -79,6 +83,7 @@ export class RidersService {
       throw new NotFoundException('Order not found');
     }
 
+    await this.enrichOrderDetails(updatedOrder);
     await this.notifyDeliveryAccepted(updatedOrder);
     return updatedOrder;
   }
@@ -118,6 +123,7 @@ export class RidersService {
 
     order.status = updateStatusDto.status;
     const updatedOrder = await this.orderRepository.save(order);
+    await this.enrichOrderDetails(updatedOrder);
     await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
     return updatedOrder;
   }
@@ -209,5 +215,47 @@ export class RidersService {
         referenceId: order.id,
       });
     }
+  }
+
+  async enrichOrderDetails(order: Order): Promise<Order> {
+    if (order.riderId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const riders = await this.dataSource.query(query, [order.riderId]);
+      if (riders && riders[0]) {
+        order.riderName = riders[0].name;
+        order.riderPhone = riders[0].phone || 'N/A';
+      }
+    }
+    if (order.customerId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const customers = await this.dataSource.query(query, [order.customerId]);
+      if (customers && customers[0]) {
+        order.customerName = customers[0].name;
+        order.customerPhone = customers[0].phone || 'N/A';
+      }
+    }
+    if (order.vendor && order.vendor.userId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT phone FROM user WHERE id = ?'
+        : 'SELECT phone FROM "user" WHERE id = $1';
+      const sellers = await this.dataSource.query(query, [order.vendor.userId]);
+      if (sellers && sellers[0]) {
+        order.vendorPhone = sellers[0].phone || 'N/A';
+      }
+    }
+    return order;
   }
 }

@@ -39,8 +39,17 @@ export async function getWallet(): Promise<Wallet> {
   return response.data;
 }
 
-export async function getTransactions(): Promise<WalletTransaction[]> {
-  const response = await api.get<WalletTransaction[]>('/wallet/transactions');
+export interface PaginatedTransactions {
+  data: WalletTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export async function getTransactions(page = 1, limit = 15): Promise<PaginatedTransactions> {
+  const response = await api.get<PaginatedTransactions>('/wallet/transactions', {
+    params: { page, limit },
+  });
   return response.data;
 }
 
@@ -55,7 +64,7 @@ export async function initiateCashIn(
   return response.data;
 }
 
-export async function getVendorWallet(): Promise<Wallet> {
+export async function getVendorWallet(): Promise<Wallet | { needsSetup: boolean }> {
   const response = await api.get<Wallet>('/wallet/vendor');
   return response.data;
 }
@@ -83,5 +92,26 @@ export async function requestVendorWithdrawal(
 
 export async function getVendorWithdrawals(): Promise<VendorWithdrawal[]> {
   const response = await api.get<VendorWithdrawal[]>('/wallet/vendor/withdrawals');
+  return response.data;
+}
+
+export async function requestCustomerWithdrawal(
+  amount: number,
+  accountDetails: {
+    accountName: string;
+    accountNumber: string;
+    accountType: 'bank' | 'ewallet';
+    accountProvider: string;
+  },
+): Promise<VendorWithdrawal> {
+  const response = await api.post<VendorWithdrawal>('/wallet/withdraw', {
+    amount,
+    ...accountDetails,
+  });
+  return response.data;
+}
+
+export async function getCustomerWithdrawals(): Promise<VendorWithdrawal[]> {
+  const response = await api.get<VendorWithdrawal[]>('/wallet/withdrawals');
   return response.data;
 }

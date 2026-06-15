@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
+import { Clock3, MapPin, PackageCheck, Sparkles, Phone, Smartphone } from 'lucide-react';
+import { toast } from 'sonner';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -27,6 +28,15 @@ export function ActiveDeliveryPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+
+  const toggleCheckedItem = (itemId: string) => {
+    setCheckedItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
+  };
+
 
   useVisiblePolling(
     async () => {
@@ -194,9 +204,79 @@ export function ActiveDeliveryPage() {
                 <p className="text-sm text-[color:var(--color-text-soft)]">No further rider actions right now.</p>
               ) : null}
 
+              {order.deliveryLat && order.deliveryLng && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${order.deliveryLat},${order.deliveryLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-12 bg-secondary text-foreground border border-border hover:bg-secondary/80 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest mt-2"
+                >
+                  <MapPin className="w-4 h-4 text-primary" /> Open Waze / Google Maps
+                </a>
+              )}
+
               <Button variant="ghost" className="w-full" asChild>
                 <Link to="/rider">Back to dashboard</Link>
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Verification Checklist */}
+          <Card>
+            <CardContent className="space-y-4 p-5">
+              <div>
+                <p className="eyebrow flex items-center gap-2"><PackageCheck className="w-3.5 h-3.5 text-primary" /> Inventory Check</p>
+                <h2 className="mt-2 text-2xl font-semibold">Bag Verification</h2>
+                <p className="subtle-copy">Verify items with kitchen staff before leaving.</p>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                {order.items.map((item) => (
+                  <label
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 border border-border bg-secondary/5 hover:bg-secondary/10 transition-colors cursor-pointer select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={Boolean(checkedItems[item.id])}
+                      onChange={() => toggleCheckedItem(item.id)}
+                      className="h-4 w-4 rounded-none accent-primary border-border focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold text-[color:var(--color-text)] ${checkedItems[item.id] ? 'line-through text-muted-foreground' : ''}`}>
+                        {item.quantity}x {item.name}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Support & Quick Contact */}
+          <Card>
+            <CardContent className="space-y-4 p-5">
+              <div>
+                <p className="eyebrow flex items-center gap-2"><Smartphone className="w-3.5 h-3.5 text-primary" /> Communications</p>
+                <h2 className="mt-2 text-2xl font-semibold font-sans">Contact Parties</h2>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => toast.success(`Calling Kitchen: ${order.vendor?.name || "Seller"} (${order.vendorPhone || "N/A"})`)}
+                  className="flex items-center justify-center gap-2 h-12 text-xs font-bold uppercase tracking-widest border border-border rounded-none"
+                >
+                  <Phone className="w-3.5 h-3.5 text-primary" /> Kitchen
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => toast.success(`Calling Customer: ${order.customerName || "Client"} (${order.customerPhone || "N/A"})`)}
+                  className="flex items-center justify-center gap-2 h-12 text-xs font-bold uppercase tracking-widest border border-border rounded-none"
+                >
+                  <Phone className="w-3.5 h-3.5 text-primary" /> Customer
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -244,21 +324,18 @@ export function ActiveDeliveryPage() {
           <Card>
             <CardContent className="space-y-3 p-5">
               <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {order.notes || 'No customer notes were added to this delivery.'}
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <PackageCheck className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {order.items.map((item) => `${item.quantity}x ${item.name}`).join(', ')}
-                </p>
+                <Clock3 className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)] animate-pulse" />
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Customer Notes</p>
+                  <p className="text-sm text-[color:var(--color-text-soft)]">
+                    {order.notes || 'No customer notes were added to this delivery.'}
+                  </p>
+                </div>
               </div>
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  This side rail now carries the control flow and delivery context instead of a thin button stack.
+                  Use the checkpoint timeline to follow standard rider guidelines.
                 </p>
               </div>
             </CardContent>

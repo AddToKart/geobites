@@ -1,5 +1,5 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
 import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
@@ -63,8 +63,44 @@ export function BrowseVendorsPagePremium() {
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
   const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
   const [searchingDishes, setSearchingDishes] = useState(false);
-  const deferredSearch = useDeferredValue(search);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  // Stable ref so search effect doesn't re-run when vendor list updates
+  const allVendorsRef = useRef<BrowseVendor[]>([]);
+
+  const allVendors = useMemo(() => {
+    const merged = [
+      ...demoVendors.map((vendor) => ({
+        ...vendor,
+        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
+      })),
+      ...liveVendors
+        .map((vendor) => toBrowseVendor(vendor, coords))
+        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
+        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
+    ];
+    allVendorsRef.current = merged;
+    return merged;
+  }, [coords, liveVendors]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    setShowSuggestions(search.trim().length >= 2);
+    if (search.trim().length < 2) {
+      setDishResults([]);
+      setSearchingDishes(false);
+    }
+  }, [search]);
 
   useEffect(() => {
     const loadBrowseData = async () => {
@@ -103,49 +139,65 @@ export function BrowseVendorsPagePremium() {
     }
   }, 15000);
 
-  // Dish search — runs when deferred search changes
+  // Dish search — debounced 300ms, uses stable allVendorsRef to avoid retriggering on vendor updates
   useEffect(() => {
-    const trimmed = deferredSearch.trim();
-    if (trimmed.length < 2) {
-      setDishResults([]);
-      return;
-    }
+    const trimmed = search.trim();
+    if (trimmed.length < 2) return;
+
     let cancelled = false;
     setSearchingDishes(true);
-    searchMenuItems(trimmed).then((results) => {
-      if (!cancelled) {
-        setDishResults(results);
-        setSearchingDishes(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [deferredSearch]);
 
-  const allVendors = useMemo(() => {
-    return [
-      ...demoVendors.map((vendor) => ({
-        ...vendor,
-        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
-      })),
-      ...liveVendors
-        .map((vendor) => toBrowseVendor(vendor, coords))
-        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
-        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
-    ];
-  }, [coords, liveVendors]);
+    const timerId = setTimeout(async () => {
+      try {
+        // 1. Run dish search (client-side for demo vendors + backend for live)
+        const dishSearchResults = await searchMenuItems(trimmed);
+        if (cancelled) return;
+
+        // 2. Find vendors whose NAME or DESCRIPTION match — no extra menu fetches needed
+        const queryLower = trimmed.toLowerCase();
+        const vendorNameMatches = allVendorsRef.current
+          .filter(
+            (vendor) =>
+              vendor.name.toLowerCase().includes(queryLower) ||
+              (vendor.description?.toLowerCase() ?? '').includes(queryLower),
+          )
+          .filter((vendor) => !dishSearchResults.some((r) => r.vendor.id === vendor.id));
+
+        // Represent vendor-name matches as a result entry with empty items
+        // so the dropdown shows the vendor card without fetching its full menu
+        const vendorNameResults: DishSearchResult[] = vendorNameMatches.map((vendor) => ({
+          vendor: {
+            id: vendor.id,
+            name: vendor.name,
+            imageUrl: vendor.imageUrl,
+            rating: vendor.rating,
+            totalRatings: vendor.totalRatings,
+          },
+          items: [],
+        }));
+
+        if (!cancelled) {
+          setDishResults([...dishSearchResults, ...vendorNameResults]);
+          setSearchingDishes(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setDishResults([]);
+          setSearchingDishes(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
+  }, [search]);
+
 
   const browseVendors = useMemo(() => {
-    const normalizedSearch = deferredSearch.trim().toLowerCase();
-
     const filtered = allVendors.filter((vendor) => {
-      // 1. Search query filter
-      const matchesSearch = !normalizedSearch || [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(normalizedSearch));
-
-      if (!matchesSearch) return false;
-
-      // 2. Category selection filter
+      // Category selection filter only — search drives the dropdown, not this grid.
       if (selectedCategory === 'All') return true;
 
       const categoryLower = selectedCategory.toLowerCase();
@@ -180,7 +232,7 @@ export function BrowseVendorsPagePremium() {
 
       return secondVendor.rating - firstVendor.rating;
     });
-  }, [allVendors, deferredSearch, sortBy, selectedCategory]);
+  }, [allVendors, sortBy, selectedCategory]);
 
   const selectedVendor = useMemo(
     () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
@@ -208,6 +260,72 @@ export function BrowseVendorsPagePremium() {
     });
   };
 
+  const dishSuggestions = search.trim().length >= 2 && (dishResults.length > 0 || searchingDishes) ? (
+    <Reveal className="absolute top-full left-0 right-0 z-50 mt-1 max-h-[400px] overflow-y-auto border border-border bg-background/98 backdrop-blur-md shadow-2xl">
+      <div className="divide-y divide-border">
+        <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-background/50">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {searchingDishes
+              ? 'Searching...'
+              : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) · ${dishResults.length} restaurant(s)`}
+          </p>
+        </div>
+        {dishResults.length > 0 && (
+          <Stagger className="divide-y divide-border">
+            {dishResults.map((result) => (
+              <StaggerItem key={result.vendor.id}>
+                <div className="px-6 py-5 hover:bg-secondary/10 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <Link to={`/vendor/${result.vendor.id}`} className="group/vendor">
+                      <p className="text-sm font-bold tracking-tight text-foreground group-hover/vendor:text-primary transition-colors">
+                        {result.vendor.name} →
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
+                      </p>
+                    </Link>
+                  </div>
+                  {result.items.length > 0 ? (
+                    <div className="grid gap-2">
+                      {result.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
+                          <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
+                            <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
+                            )}
+                            <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDishToCart(item, result.vendor.id);
+                            }}
+                            className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
+                            title="Add to cart"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Link
+                      to={`/vendor/${result.vendor.id}`}
+                      className="inline-flex items-center gap-2 pl-4 border-l-2 border-primary text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+                    >
+                      Visit Restaurant →
+                    </Link>
+                  )}
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
+      </div>
+    </Reveal>
+  ) : null;
+
   if (viewMode === 'map') {
     return (
       <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-background">
@@ -225,13 +343,14 @@ export function BrowseVendorsPagePremium() {
           }}
         />
         <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-8 pt-[80px] md:pt-8">
-          <div className="pointer-events-auto max-w-3xl mx-auto">
+          <div className="pointer-events-auto max-w-3xl mx-auto" ref={searchContainerRef}>
             <BrowseOverviewSection
               search={search}
               onSearchChange={setSearch}
               browseCount={browseVendors.length}
               activeOrder={activeOrder}
               isMapMode={true}
+              suggestions={showSuggestions ? dishSuggestions : null}
             />
           </div>
         </div>
@@ -255,63 +374,15 @@ export function BrowseVendorsPagePremium() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <div className="flex flex-col w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12 lg:py-16">
-        <BrowseOverviewSection
-          search={search}
-          onSearchChange={setSearch}
-          browseCount={browseVendors.length}
-          activeOrder={activeOrder}
-        />
-
-        {/* Dish Search Results */}
-        {deferredSearch.trim().length >= 2 && dishResults.length > 0 && (
-          <Reveal>
-            <div className="border border-border bg-background mb-8 mt-8">
-              <div className="border-b border-border px-6 py-4 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                  {searchingDishes ? "Searching dishes..." : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) found across ${dishResults.length} vendor(s)`}
-                </p>
-              </div>
-              <Stagger className="divide-y divide-border">
-                {dishResults.map((result) => (
-                  <StaggerItem key={result.vendor.id}>
-                    <div className="px-6 py-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-sm font-bold tracking-tight text-foreground">
-                            {result.vendor.name}
-                          </p>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid gap-2">
-                        {result.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border">
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-foreground">{item.name}</p>
-                              {item.description && (
-                                <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
-                              )}
-                              <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
-                            </div>
-                            <button
-                              onClick={() => handleAddDishToCart(item, result.vendor.id)}
-                              className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors"
-                              title="Add to cart"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </StaggerItem>
-                ))}
-              </Stagger>
-            </div>
-          </Reveal>
-        )}
+        <div ref={searchContainerRef} className="relative w-full z-40">
+          <BrowseOverviewSection
+            search={search}
+            onSearchChange={setSearch}
+            browseCount={browseVendors.length}
+            activeOrder={activeOrder}
+            suggestions={showSuggestions ? dishSuggestions : null}
+          />
+        </div>
 
         {/* Sticky Categories Bar */}
         <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">

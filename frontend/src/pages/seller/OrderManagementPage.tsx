@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle, Bike } from 'lucide-react';
+import { CheckCircle2, Clock3, MapPin, PackageCheck, Search, XCircle, Bike, Phone } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '../../components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -461,16 +461,36 @@ export function OrderManagementPage() {
                           </div>
 
                           {selectedOrder.riderId ? (
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Rider ID</span>
                                 <span className="font-mono text-xs font-bold text-primary">
                                   #{selectedOrder.riderId.slice(0, 8).toUpperCase()}
                                 </span>
                               </div>
-                              <p className="text-xs text-muted-foreground leading-relaxed pt-1">
-                                A rider has claimed this delivery from the booking pool.
-                              </p>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Rider Name</span>
+                                <span className="font-semibold text-foreground">
+                                  {selectedOrder.riderName || 'Assigned'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm pb-2 border-b border-border/40">
+                                <span className="text-muted-foreground">Rider Contact</span>
+                                <span className="font-mono text-xs font-bold text-foreground">
+                                  {selectedOrder.riderPhone || 'N/A'}
+                                </span>
+                              </div>
+                              {selectedOrder.riderPhone && selectedOrder.riderPhone !== 'N/A' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full h-10 mt-1 rounded-none text-xs font-bold uppercase tracking-widest border border-border"
+                                  onClick={() => toast.success(`Calling Rider: ${selectedOrder.riderName} (${selectedOrder.riderPhone})`)}
+                                >
+                                  <Phone className="h-3.5 w-3.5 mr-2 text-primary" />
+                                  Call Rider
+                                </Button>
+                              )}
                             </div>
                           ) : selectedOrder.status === 'accepted' ? (
                             <div className="space-y-1">

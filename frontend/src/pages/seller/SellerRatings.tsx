@@ -14,9 +14,9 @@ function StarDisplay({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: full }).map((_, i) => (
-        <Star key={`full-${i}`} className="h-3.5 w-3.5 text-yellow-400" fill="currentColor" />
+        <Star key={`full-${i}`} className="h-3.5 w-3.5 text-warning" fill="currentColor" />
       ))}
-      {half && <StarHalf className="h-3.5 w-3.5 text-yellow-400" fill="currentColor" />}
+      {half && <StarHalf className="h-3.5 w-3.5 text-warning" fill="currentColor" />}
       {Array.from({ length: empty }).map((_, i) => (
         <Star key={`empty-${i}`} className="h-3.5 w-3.5 text-muted-foreground/30" />
       ))}
@@ -134,7 +134,7 @@ export function SellerRatings() {
           <div className="border border-border p-6 bg-background">
             <div className="flex items-start justify-between mb-4">
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Shop rating</span>
-              <Star className="h-4 w-4 text-yellow-400" fill="currentColor" />
+              <Star className="h-4 w-4 text-warning" fill="currentColor" />
             </div>
             <p className="text-3xl font-semibold tracking-tight">{vendor.rating.toFixed(1)}</p>
             <p className="text-xs text-muted-foreground mt-1">{vendor.totalRatings} total on profile</p>

@@ -25,9 +25,10 @@ export class VendorsService {
     const qb = this.vendorRepository.createQueryBuilder('vendor');
 
     if (query.search) {
-      qb.where('LOWER(vendor.name) LIKE LOWER(:search)', {
-        search: `%${query.search}%`,
-      });
+      qb.where(
+        '(LOWER(vendor.name) LIKE LOWER(:search) OR LOWER(vendor.description) LIKE LOWER(:search))',
+        { search: `%${query.search}%` },
+      );
     }
 
     const sortBy = query.sortBy ?? 'rating';
@@ -115,5 +116,21 @@ export class VendorsService {
 
     Object.assign(vendor, updateVendorDto);
     return this.vendorRepository.save(vendor);
+  }
+
+  async remove(id: string, ownerUserId: string): Promise<void> {
+    const vendor = await this.vendorRepository.findOne({
+      where: { id },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+
+    if (vendor.userId !== ownerUserId) {
+      throw new ForbiddenException('You can only delete your own vendor');
+    }
+
+    await this.vendorRepository.remove(vendor);
   }
 }

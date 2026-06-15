@@ -120,7 +120,7 @@ export function SellerAnalytics() {
       ? Math.round(prepTimes.reduce((s, t) => s + t, 0) / prepTimes.length)
       : 0;
 
-    const ratings = orders.filter((o) => (o as any).customerRating != null).map((o) => (o as any).customerRating as number);
+    const ratings = orders.filter((o) => o.customerRating != null).map((o) => o.customerRating as number);
     const avgRating = ratings.length > 0
       ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1)
       : 'N/A';

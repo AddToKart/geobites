@@ -16,6 +16,11 @@ import { Wallet } from './entities/wallet.entity';
 import { WalletTransaction } from './entities/wallet-transaction.entity';
 import { WithdrawalRequest } from './entities/withdrawal-request.entity';
 import { Address } from './entities/address.entity';
+import { Favorite } from './entities/favorite.entity';
+import { RewardPoints } from './entities/reward-points.entity';
+import { RewardTransaction } from './entities/reward-transaction.entity';
+import { Referral } from './entities/referral.entity';
+import { Voucher } from './entities/voucher.entity';
 import { AddressesModule } from './addresses/addresses.module';
 import { MenuModule } from './menu/menu.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -24,9 +29,12 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
+import { FavoritesModule } from './favorites/favorites.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PaymentsModule } from './payments/payments.module';
 import { WalletModule } from './wallet/wallet.module';
+import { GeopayModule } from './geopay/geopay.module';
+import { VouchersModule } from './vouchers/vouchers.module';
 
 @Module({
   imports: [
@@ -51,6 +59,11 @@ import { WalletModule } from './wallet/wallet.module';
       WalletTransaction,
       WithdrawalRequest,
       Address,
+      Favorite,
+      RewardPoints,
+      RewardTransaction,
+      Referral,
+      Voucher,
     ]),
     VendorsModule,
     MenuModule,
@@ -58,10 +71,13 @@ import { WalletModule } from './wallet/wallet.module';
     PromotionsModule,
     RidersModule,
     RatingsModule,
+    FavoritesModule,
     NotificationsModule,
     TrackingModule,
     PaymentsModule,
     WalletModule,
+    GeopayModule,
+    VouchersModule,
     AddressesModule,
   ],
   controllers: [AppController],

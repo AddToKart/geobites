@@ -1,6 +1,7 @@
 ﻿import { DataSource } from 'typeorm';
 import { Vendor } from '../entities/vendor.entity';
 import { MenuItem } from '../entities/menu-item.entity';
+import { Voucher } from '../entities/voucher.entity';
 
 const demoVendors = [
   {
@@ -55,7 +56,7 @@ const demoVendors = [
     totalRatings: 121,
     isActive: true,
   },
-{
+  {
     id: 'demo-don-silog-house',
     userId: 'demo-seller-don-silog-house',
     name: 'Don Silog House',
@@ -679,12 +680,19 @@ const demoVendors = [
     totalRatings: 49,
     isActive: true,
   },
-
-
 ];
 
-
-const demoMenus: Record<string, Array<{ id: string; name: string; description: string; price: number; category: string; isAvailable: boolean }>> = {
+const demoMenus: Record<
+  string,
+  Array<{
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    category: string;
+    isAvailable: boolean;
+  }>
+> = {
   'demo-kape-baryo': [
     {
       id: 'demo-kape-baryo-tapsilog',
@@ -697,7 +705,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-kape-baryo-pandesal-set',
       name: 'Pandesal Breakfast Box',
-      description: 'Fresh pandesal, kesong puti spread, and brewed barako coffee.',
+      description:
+        'Fresh pandesal, kesong puti spread, and brewed barako coffee.',
       price: 120,
       category: 'Breakfast plates',
       isAvailable: true,
@@ -713,7 +722,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-kape-baryo-chicken-arroz',
       name: 'Chicken Arroz Caldo',
-      description: 'Slow-cooked rice porridge with toasted garlic and boiled egg.',
+      description:
+        'Slow-cooked rice porridge with toasted garlic and boiled egg.',
       price: 130,
       category: 'Comfort bowls',
       isAvailable: true,
@@ -869,7 +879,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-pancit-palengke-pancit-palabok',
       name: 'Pancit Palabok',
-      description: 'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
+      description:
+        'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
       price: 135,
       category: 'Pancit',
       isAvailable: true,
@@ -2671,7 +2682,7 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-lola-goto-place-item-1',
       name: 'Goto Lugaw Mix',
-      description: 'Half goto half lugaw with tokwa\'t baboy on top.',
+      description: "Half goto half lugaw with tokwa't baboy on top.",
       price: 135,
       category: 'Goto',
       isAvailable: true,
@@ -2679,7 +2690,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-lola-goto-place-item-2',
       name: 'Special Goto Bowl',
-      description: 'Loaded goto with beef slices, tripe, and crushed chicharon.',
+      description:
+        'Loaded goto with beef slices, tripe, and crushed chicharon.',
       price: 155,
       category: 'Goto',
       isAvailable: true,
@@ -2769,7 +2781,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-nanay-lomi-spot-item-4',
       name: 'La Paz Batchoy',
-      description: 'Miki noodles in beef broth with pork, liver, and chicharon.',
+      description:
+        'Miki noodles in beef broth with pork, liver, and chicharon.',
       price: 135,
       category: 'Batchoy',
       isAvailable: true,
@@ -2933,7 +2946,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-sir-batchoy-express-item-7',
       name: 'La Paz Batchoy',
-      description: 'Miki noodles in beef broth with pork, liver, and chicharon.',
+      description:
+        'Miki noodles in beef broth with pork, liver, and chicharon.',
       price: 135,
       category: 'Batchoy',
       isAvailable: true,
@@ -2949,7 +2963,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-sir-batchoy-express-item-9',
       name: 'Pancit Palabok',
-      description: 'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
+      description:
+        'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
       price: 135,
       category: 'Pancit',
       isAvailable: true,
@@ -3313,7 +3328,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-kuya-longganisa-stop-item-0',
       name: 'Tapsilog Supreme',
-      description: 'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
+      description:
+        'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
       price: 145,
       category: 'Silog',
       isAvailable: true,
@@ -3501,7 +3517,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-tito-silog-haven-item-5',
       name: 'Tapsilog Supreme',
-      description: 'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
+      description:
+        'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
       price: 145,
       category: 'Silog',
       isAvailable: true,
@@ -3641,7 +3658,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-lolo-pancit-paluto-item-2',
       name: 'Pancit Palabok',
-      description: 'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
+      description:
+        'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
       price: 135,
       category: 'Pancit',
       isAvailable: true,
@@ -3995,7 +4013,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-maam-lumpia-kitchen-item-2',
       name: 'Pancit Palabok',
-      description: 'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
+      description:
+        'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
       price: 135,
       category: 'Pancit',
       isAvailable: true,
@@ -4479,7 +4498,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-ate-pasta-diner-item-5',
       name: 'Pancit Palabok',
-      description: 'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
+      description:
+        'Rice noodles topped with shrimp, pork, eggs, and annatto sauce.',
       price: 135,
       category: 'Pancit',
       isAvailable: true,
@@ -4635,7 +4655,8 @@ const demoMenus: Record<string, Array<{ id: string; name: string; description: s
     {
       id: 'demo-tita-tapsi-grill-item-4',
       name: 'Tapsilog Supreme',
-      description: 'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
+      description:
+        'Cured beef tapa, garlic rice, and fried egg with vinegar dip.',
       price: 145,
       category: 'Silog',
       isAvailable: true,
@@ -4855,5 +4876,147 @@ export async function seedDemoData(dataSource: DataSource) {
   }
 
   console.log('Demo data seeded successfully');
-}
 
+  // Seed demo vouchers
+  const voucherRepo = dataSource.getRepository(Voucher);
+  const now = new Date();
+  const threeMonthsFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  const demoVouchers = [
+    {
+      vendorId: 'demo-kape-baryo',
+      code: 'BREW10',
+      title: '10% off your order',
+      discountType: 'percentage' as const,
+      discountValue: 10,
+      minOrderAmount: 100,
+    },
+    {
+      vendorId: 'demo-kape-baryo',
+      code: 'SILOG50',
+      title: '₱50 off silog meals',
+      discountType: 'fixed' as const,
+      discountValue: 50,
+      minOrderAmount: 150,
+    },
+    {
+      vendorId: 'demo-ihaw-central',
+      code: 'INASAL20',
+      title: '₱20 off grilled items',
+      discountType: 'fixed' as const,
+      discountValue: 20,
+      minOrderAmount: 100,
+    },
+    {
+      vendorId: 'demo-ihaw-central',
+      code: 'FAMILY100',
+      title: '₱100 off family platters',
+      discountType: 'fixed' as const,
+      discountValue: 100,
+      minOrderAmount: 400,
+    },
+    {
+      vendorId: 'demo-pancit-palengke',
+      code: 'PANCIT15',
+      title: '15% off pancit trays',
+      discountType: 'percentage' as const,
+      discountValue: 15,
+      minOrderAmount: 150,
+    },
+    {
+      vendorId: 'demo-pancit-palengke',
+      code: 'MERIENDA25',
+      title: '₱25 off merienda combos',
+      discountType: 'fixed' as const,
+      discountValue: 25,
+      minOrderAmount: 80,
+    },
+    {
+      vendorId: 'demo-garden-sweets',
+      code: 'HALO30',
+      title: '₱30 off halo-halo jars',
+      discountType: 'fixed' as const,
+      discountValue: 30,
+      minOrderAmount: 100,
+    },
+    {
+      vendorId: 'demo-garden-sweets',
+      code: 'SWEET10',
+      title: '10% off all desserts',
+      discountType: 'percentage' as const,
+      discountValue: 10,
+      minOrderAmount: 50,
+    },
+    {
+      vendorId: 'demo-don-silog-house',
+      code: 'SILOG20',
+      title: '₱20 off any silog',
+      discountType: 'fixed' as const,
+      discountValue: 20,
+      minOrderAmount: 100,
+    },
+    {
+      vendorId: 'demo-dona-ihaw-kitchen',
+      code: 'DONA50',
+      title: '₱50 off family meals',
+      discountType: 'fixed' as const,
+      discountValue: 50,
+      minOrderAmount: 300,
+    },
+    {
+      vendorId: 'demo-manong-pancit-corner',
+      code: 'MANONG15',
+      title: '15% off pancit orders',
+      discountType: 'percentage' as const,
+      discountValue: 15,
+      minOrderAmount: 100,
+    },
+    {
+      vendorId: 'demo-manang-bbq-place',
+      code: 'BBQ30',
+      title: '₱30 off BBQ platters',
+      discountType: 'fixed' as const,
+      discountValue: 30,
+      minOrderAmount: 150,
+    },
+    {
+      vendorId: 'demo-kuya-inasal-spot',
+      code: 'KUYA25',
+      title: '₱25 off inasal meals',
+      discountType: 'fixed' as const,
+      discountValue: 25,
+      minOrderAmount: 120,
+    },
+    {
+      vendorId: 'demo-ate-lechon-hub',
+      code: 'LECHON100',
+      title: '₱100 off lechon orders',
+      discountType: 'fixed' as const,
+      discountValue: 100,
+      minOrderAmount: 500,
+    },
+    {
+      vendorId: 'demo-tito-sisig-express',
+      code: 'SISIG20',
+      title: '₱20 off sisig',
+      discountType: 'fixed' as const,
+      discountValue: 20,
+      minOrderAmount: 100,
+    },
+  ];
+
+  for (const v of demoVouchers) {
+    const existing = await voucherRepo.findOne({ where: { code: v.code } });
+    if (!existing) {
+      console.log(`Creating voucher: ${v.code} for vendor ${v.vendorId}`);
+      await voucherRepo.save({
+        ...v,
+        startsAt: new Date('2025-01-01'),
+        expiresAt: threeMonthsFromNow,
+        maxUses: 100,
+        currentUses: 0,
+        isActive: true,
+      });
+    }
+  }
+}
