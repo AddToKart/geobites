@@ -309,7 +309,7 @@ class _WalletScreenState extends State<WalletScreen> {
     return GlassScaffold(
       appBar: GlassAppBar(
         title: Text(
-          isCustomer ? 'GeoPay Wallet' : 'Rider Payouts',
+          'GeoPay Wallet',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Theme.of(context).colorScheme.onSurface),
         ),
         automaticallyImplyLeading: false,

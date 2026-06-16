@@ -13,6 +13,8 @@ import 'rider_accept_task_screen.dart';
 import 'rider_delivery_screen.dart';
 import '../../widgets/glass_toast.dart';
 import '../../services/socket_service.dart';
+import '../../services/wallet_service.dart';
+import '../customer/wallet_screen.dart';
 import 'dart:async';
 
 class RiderDashboardScreen extends StatefulWidget {
@@ -28,6 +30,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   bool _isLoading = true;
   String _temperature = '32°C';
   IconData _weatherIcon = Icons.wb_sunny;
+  double _walletBalance = 0.0;
+  int _completedDeliveries = 0;
   
   int _currentPage = 0;
   static const int _itemsPerPage = 5;
@@ -90,13 +94,26 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
     try {
-      final orders = await orderService.getOrders();
       final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.id;
+      
+      // Fetch wallet balance
+      double balance = 0.0;
+      try {
+        final wallet = await walletService.getWallet();
+        balance = (wallet['balance'] as num?)?.toDouble() ?? 0.0;
+      } catch (e) {
+        print('Error loading rider wallet balance: $e');
+      }
+
+      final orders = await orderService.getOrders();
       
       final available = orders.where((o) => o.status == 'ready_for_pickup' && o.riderId == null).toList();
       final mine = orders.where((o) => o.riderId == currentUserId && (o.status == 'ready_for_pickup' || o.status == 'picked_up' || o.status == 'delivering')).toList();
+      final completedCount = orders.where((o) => o.riderId == currentUserId && o.status == 'delivered').length;
 
       setState(() {
+        _walletBalance = balance;
+        _completedDeliveries = completedCount;
         _availableOrders = available;
         _myDeliveries = mine;
         _isLoading = false;
@@ -275,9 +292,31 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                     // Quick Stats Cards
                     Row(
                       children: [
-                        Expanded(child: _buildQuickStat('Earnings', '₱1,250', Icons.account_balance_wallet, Colors.green)),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WalletScreen()),
+                              ).then((_) => _loadOrders());
+                            },
+                            child: _buildQuickStat(
+                              'GeoPay',
+                              '₱${_walletBalance.toStringAsFixed(2)}',
+                              Icons.account_balance_wallet,
+                              Colors.green,
+                            ),
+                          ),
+                        ),
                         const SizedBox(width: 16),
-                        Expanded(child: _buildQuickStat('Deliveries', '14', Icons.local_shipping, Colors.blue)),
+                        Expanded(
+                          child: _buildQuickStat(
+                            'Deliveries',
+                            '$_completedDeliveries',
+                            Icons.local_shipping,
+                            Colors.blue,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 32),

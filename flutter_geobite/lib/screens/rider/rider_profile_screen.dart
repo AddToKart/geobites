@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/glass_theme.dart';
+import 'rider_settings_screen.dart';
+import '../../core/api_client.dart';
 import 'rider_vehicle_screen.dart';
 import 'rider_earnings_screen.dart';
 import '../customer/wallet_screen.dart';
@@ -23,7 +25,12 @@ class RiderProfileScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.onSurface),
-            onPressed: () {}, // Future settings
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RiderSettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -43,10 +50,26 @@ class RiderProfileScreen extends StatelessWidget {
                     Stack(
                       alignment: Alignment.bottomRight,
                       children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          child: const Icon(Icons.two_wheeler, size: 48, color: AppColors.primary),
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                              width: 2,
+                            ),
+                          ),
+                          child: CircleAvatar(
+                            radius: 48,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                            backgroundImage: user?.image != null && user!.image!.isNotEmpty
+                                ? NetworkImage(user!.image!.startsWith('http')
+                                    ? user!.image!
+                                    : "${ApiClient.socketUrl}${user!.image}")
+                                : null,
+                            child: (user?.image == null || user!.image!.isEmpty)
+                                ? const Icon(Icons.two_wheeler, size: 48, color: AppColors.primary)
+                                : null,
+                          ),
                         ),
                         Container(
                           padding: const EdgeInsets.all(4),
@@ -112,7 +135,12 @@ class RiderProfileScreen extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    _buildListTile(context, Icons.person_outline, 'Personal Information'),
+                    _buildListTile(
+                      context,
+                      Icons.person_outline,
+                      'Personal Information',
+                      destination: const RiderSettingsScreen(),
+                    ),
                     const Divider(height: 1, indent: 56),
                     _buildListTile(context, Icons.two_wheeler_outlined, 'Vehicle Details', destination: const RiderVehicleScreen()),
                     const Divider(height: 1, indent: 56),
