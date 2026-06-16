@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../main.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../core/api_client.dart';
@@ -128,8 +129,8 @@ class _RiderSettingsScreenState extends State<RiderSettingsScreen> {
 
   Widget _buildProfilePictureSection() {
     final user = Provider.of<AuthProvider>(context, listen: false).user;
-    final initials = user != null && user.name.isNotEmpty
-        ? user.name.split(' ').map((e) => e[0]).take(2).join('').toUpperCase()
+    final initials = user != null && user.name.trim().isNotEmpty
+        ? user.name.trim().split(' ').where((e) => e.trim().isNotEmpty).map((e) => e.trim()[0]).take(2).join('').toUpperCase()
         : '?';
 
     ImageProvider? imageProvider;
@@ -331,7 +332,15 @@ class _RiderSettingsScreenState extends State<RiderSettingsScreen> {
                   side: const BorderSide(color: Colors.red),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
-                onPressed: () => auth.signOut(),
+                onPressed: () async {
+                  await auth.signOut();
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                      (route) => false,
+                    );
+                  }
+                },
               ),
             ),
             const SizedBox(height: 100),

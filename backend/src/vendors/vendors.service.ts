@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import {
   ForbiddenException,
   Injectable,
@@ -90,6 +91,7 @@ export class VendorsService {
     }
 
     const vendor = this.vendorRepository.create({
+      id: randomUUID(),
       ...createVendorDto,
       userId: ownerUserId,
     });

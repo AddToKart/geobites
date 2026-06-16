@@ -131,6 +131,7 @@ export class OrdersService {
 
         let deliveryFee = 0;
         if (
+          createOrderDto.orderType !== 'PICKUP' &&
           createOrderDto.deliveryLat !== undefined &&
           createOrderDto.deliveryLng !== undefined
         ) {
@@ -184,6 +185,7 @@ export class OrdersService {
           status: 'pending',
           totalAmount,
           deliveryFee,
+          orderType: createOrderDto.orderType || 'DELIVERY',
           street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,
@@ -228,17 +230,14 @@ export class OrdersService {
       referenceId: savedOrderId,
     });
 
-    const newOrder = await this.findOneForUser(savedOrderId, customerId, 'customer');
+    const newOrder = await this.findOneForUser(
+      savedOrderId,
+      customerId,
+      'customer',
+    );
 
     // Push real-time new_order event to the seller
     this.eventsGateway.emitNewOrder(sellerUserId, newOrder);
-    // Push notification to seller
-    this.eventsGateway.emitNotification(sellerUserId, {
-      title: 'New Order',
-      message: 'You have received a new order',
-      type: 'order_update',
-      referenceId: savedOrderId,
-    });
 
     return newOrder;
   }
@@ -254,6 +253,7 @@ export class OrdersService {
         .leftJoinAndSelect('order.vendor', 'vendor')
         .leftJoinAndSelect('order.items', 'items')
         .leftJoinAndSelect('order.ratings', 'ratings')
+        .leftJoinAndSelect('order.riderRatings', 'riderRatings')
         .orderBy('order.createdAt', 'DESC')
         .skip(skip)
         .take(limit);
@@ -311,6 +311,7 @@ export class OrdersService {
         items: true,
         vendor: true,
         ratings: true,
+        riderRatings: true,
       },
     });
 
@@ -389,7 +390,10 @@ export class OrdersService {
         );
       }
 
-      const allowed = sellerTransitions[currentStatus] ?? [];
+      const allowed = [...(sellerTransitions[currentStatus] ?? [])];
+      if (order.orderType === 'PICKUP' && currentStatus === 'ready_for_pickup') {
+        allowed.push('delivered');
+      }
       if (!allowed.includes(nextStatus)) {
         throw new BadRequestException('Invalid seller status transition');
       }
@@ -436,8 +440,14 @@ export class OrdersService {
       updatedAt: new Date().toISOString(),
     };
     // Broadcast to the order-specific room and to the customer's room
-    this.eventsGateway.emitOrderStatusUpdated(`order_${updatedOrder.id}`, statusPayload);
-    this.eventsGateway.emitOrderStatusUpdated(`customer_${updatedOrder.customerId}`, statusPayload);
+    this.eventsGateway.emitOrderStatusUpdated(
+      `order_${updatedOrder.id}`,
+      statusPayload,
+    );
+    this.eventsGateway.emitOrderStatusUpdated(
+      `customer_${updatedOrder.customerId}`,
+      statusPayload,
+    );
 
     // If cancelled by customer and paid via GeoPay, refund the customer wallet
     if (
@@ -463,20 +473,29 @@ export class OrdersService {
         );
       }
     }
-
-    // Notify seller when customer cancels
+    // Notify seller and rider when customer cancels
     if (
       nextStatus === 'cancelled' &&
-      role === 'customer' &&
-      order.vendor?.userId
+      role === 'customer'
     ) {
-      await this.notificationsService.create({
-        userId: order.vendor.userId,
-        title: 'Order Cancelled',
-        message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
-        type: 'order_update',
-        referenceId: order.id,
-      });
+      if (order.vendor?.userId) {
+        await this.notificationsService.create({
+          userId: order.vendor.userId,
+          title: 'Order Cancelled',
+          message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
+          type: 'order_update',
+          referenceId: order.id,
+        });
+      }
+      if (order.riderId) {
+        await this.notificationsService.create({
+          userId: order.riderId,
+          title: 'Delivery Cancelled',
+          message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
+          type: 'order_update',
+          referenceId: order.id,
+        });
+      }
     }
 
     // Create notifications based on status change
@@ -488,6 +507,17 @@ export class OrdersService {
         type: 'order_update',
         referenceId: order.id,
       });
+
+      // Broadcast to all online riders that a new delivery task is available
+      if (order.orderType !== 'PICKUP') {
+        this.eventsGateway.server.to('riders').emit('notification', {
+          id: `delivery_${order.id}`,
+          title: 'New Delivery Task Available',
+          message: `A new delivery is available from ${order.vendor?.name || 'a local shop'}`,
+          type: 'delivery_request',
+          referenceId: order.id,
+        });
+      }
     } else if (nextStatus === 'rejected') {
       await this.notificationsService.create({
         userId: order.customerId,
@@ -697,4 +727,3 @@ export class OrdersService {
     return order;
   }
 }
-

@@ -11,9 +11,21 @@ import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
 import { VouchersService } from '../vouchers/vouchers.service';
 import { OrdersService } from './orders.service';
+import { EventsGateway } from '../events/events.gateway';
 
 describe('OrdersService', () => {
   let service: OrdersService;
+
+  const eventsGateway = {
+    emitNewOrder: jest.fn(),
+    emitOrderStatusUpdated: jest.fn(),
+    emitNotification: jest.fn(),
+    server: {
+      to: jest.fn().mockReturnValue({
+        emit: jest.fn(),
+      }),
+    },
+  };
 
   const orderRepository = {
     findOne: jest.fn(),
@@ -53,6 +65,10 @@ describe('OrdersService', () => {
     save: jest.fn(),
   };
   const dataSource = {
+    options: {
+      type: 'postgres',
+    },
+    query: jest.fn().mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
     transaction: jest.fn(async (callback: (manager: unknown) => unknown) =>
       callback({
         getRepository: (entity: unknown) => {
@@ -116,6 +132,10 @@ describe('OrdersService', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: EventsGateway,
+          useValue: eventsGateway,
         },
       ],
     }).compile();

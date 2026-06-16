@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../providers/notification_provider.dart';
+import '../../widgets/glass_toast.dart';
 import 'browse_screen.dart';
 import 'customer_activity_screen.dart';
 import '../../services/socket_service.dart';
 import 'customer_profile_screen.dart';
 import 'cart_screen.dart';
 import 'wallet_screen.dart';
+import '../../providers/auth_provider.dart';
 
 class CustomerMainScreen extends StatefulWidget {
   const CustomerMainScreen({Key? key}) : super(key: key);
@@ -16,6 +20,28 @@ class CustomerMainScreen extends StatefulWidget {
 
 class _CustomerMainScreenState extends State<CustomerMainScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.user != null) {
+        Provider.of<NotificationProvider>(context, listen: false).initialize(
+          auth.user!.id,
+          onNotificationReceived: (notification) {
+            GlassToast.show(
+              context,
+              notification['title'] ?? 'Notification',
+              description: notification['message'] ?? '',
+              icon: Icons.notifications_active,
+              color: AppColors.primary,
+            );
+          },
+        );
+      }
+    });
+  }
 
   final List<Widget> _screens = [
     BrowseScreen(),

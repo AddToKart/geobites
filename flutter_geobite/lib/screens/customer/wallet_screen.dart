@@ -48,6 +48,7 @@ class _WalletScreenState extends State<WalletScreen> {
   // ── Form Controllers & Settings ───────────────────────────────────────────
   final TextEditingController _cashInAmountCtrl = TextEditingController();
   String _paymentMethod = 'GCASH'; // GCASH, MAYA, QRPH
+  bool _isCashInMode = true;
 
   // Rider Cash Out Form
   final TextEditingController _withdrawAmountCtrl = TextEditingController();
@@ -362,22 +363,19 @@ class _WalletScreenState extends State<WalletScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  if (isCustomer) ...[
-                    // ── Customer Cash In Card ───────────────────────────────
-                    _buildCustomerCashInCard(),
-                    const SizedBox(height: 24),
+                  // ── Cash In / Cash Out Interactive Toggle Card ───────────
+                  _buildInteractiveWalletCard(),
+                  const SizedBox(height: 24),
 
+                  if (isCustomer) ...[
                     // ── Loyalty Rewards Card ────────────────────────────────
                     _buildLoyaltyRewardsCard(),
                     const SizedBox(height: 24),
 
                     // ── Referrals Card ──────────────────────────────────────
                     _buildReferralCard(),
-                  ] else ...[
-                    // ── Rider Cash Out Card ─────────────────────────────────
-                    _buildRiderCashOutCard(),
+                    const SizedBox(height: 24),
                   ],
-                  const SizedBox(height: 24),
 
                   // ── Activity History Card ─────────────────────────────────
                   _buildActivityCard(totalPages),
@@ -389,86 +387,323 @@ class _WalletScreenState extends State<WalletScreen> {
 
   // ── View Builders ─────────────────────────────────────────────────────────
 
-  Widget _buildCustomerCashInCard() {
+  Widget _buildInteractiveWalletCard() {
+    final activeColor = _isCashInMode ? Colors.green.shade600 : Colors.red.shade600;
+
     return NeumorphicCard(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('CASH IN', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.primary)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _cashInAmountCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              prefixText: '₱ ',
-              prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-              hintText: '0.00',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          // Mode Toggle Switcher
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
             ),
-          ),
-          const SizedBox(height: 12),
-          // Quick amounts helper
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [100, 200, 500, 1000].map((amt) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: OutlinedButton(
-                    onPressed: () => setState(() => _cashInAmountCtrl.text = amt.toString()),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            child: Stack(
+              children: [
+                AnimatedAlign(
+                  alignment: _isCashInMode ? Alignment.centerLeft : Alignment.centerRight,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOutCubic,
+                  child: FractionallySizedBox(
+                    widthFactor: 0.5,
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: activeColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeColor.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Text('+$amt'),
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          const Text('FUNDING SOURCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
-          const SizedBox(height: 8),
-          Row(
-            children: ['GCASH', 'MAYA', 'QRPH'].map((method) {
-              final isSelected = _paymentMethod == method;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: ElevatedButton(
-                    onPressed: () => setState(() => _paymentMethod = method),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.1),
-                      foregroundColor: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isCashInMode = true),
+                        behavior: HitTestBehavior.opaque,
+                        child: Center(
+                          child: Text(
+                            'CASH IN',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              color: _isCashInMode ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: Text(method, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isCashInMode = false),
+                        behavior: HitTestBehavior.opaque,
+                        child: Center(
+                          child: Text(
+                            'CASH OUT',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              color: !_isCashInMode ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton(
-              onPressed: _isSubmittingCashIn ? null : _handleCashIn,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isSubmittingCashIn
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Proceed to Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-          ),
+
+          // Render active card content
+          _isCashInMode ? _buildCashInContent() : _buildCashOutContent(),
         ],
       ),
+    );
+  }
+
+  Widget _buildCashInContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _cashInAmountCtrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            prefixText: '₱ ',
+            prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+            hintText: '0.00',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.green, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Quick amounts helper
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [100, 200, 500, 1000].map((amt) {
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _cashInAmountCtrl.text = amt.toString()),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    foregroundColor: Colors.green.shade600,
+                    side: BorderSide(color: Colors.green.shade600.withValues(alpha: 0.3)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text('+$amt'),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+        const Text('FUNDING SOURCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Colors.grey)),
+        const SizedBox(height: 8),
+        Row(
+          children: ['GCASH', 'MAYA', 'QRPH'].map((method) {
+            final isSelected = _paymentMethod == method;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: ElevatedButton(
+                  onPressed: () => setState(() => _paymentMethod = method),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSelected ? Colors.green.shade600 : Colors.grey.withValues(alpha: 0.1),
+                    foregroundColor: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: Text(method, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            onPressed: _isSubmittingCashIn ? null : _handleCashIn,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _isSubmittingCashIn
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Proceed to Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCashOutContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _withdrawAmountCtrl,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            prefixText: '₱ ',
+            prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+            hintText: '0.00',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('METHOD TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _withdrawAccountType,
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: 'ewallet', child: Text('E-Wallet')),
+                          DropdownMenuItem(value: 'bank', child: Text('Bank Account')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _withdrawAccountType = val;
+                              _withdrawProvider = val == 'ewallet' ? 'GCASH' : 'BDO';
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('PROVIDER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _withdrawProvider,
+                        isExpanded: true,
+                        items: _withdrawAccountType == 'ewallet'
+                            ? const [
+                                DropdownMenuItem(value: 'GCASH', child: Text('GCash')),
+                                DropdownMenuItem(value: 'MAYA', child: Text('Maya')),
+                              ]
+                            : const [
+                                DropdownMenuItem(value: 'BDO', child: Text('BDO')),
+                                DropdownMenuItem(value: 'BPI', child: Text('BPI')),
+                                DropdownMenuItem(value: 'UNIONBANK', child: Text('UnionBank')),
+                                DropdownMenuItem(value: 'METROBANK', child: Text('Metrobank')),
+                              ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _withdrawProvider = val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _withdrawAccountNameCtrl,
+          decoration: InputDecoration(
+            labelText: 'ACCOUNT NAME',
+            labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _withdrawAccountNumberCtrl,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'ACCOUNT NUMBER',
+            labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            onPressed: _isSubmittingWithdraw ? null : _handleRiderWithdrawal,
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: _isSubmittingWithdraw
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Submit Cash Out Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+          ),
+        ),
+      ],
     );
   }
 
@@ -792,144 +1027,7 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildRiderCashOutCard() {
-    return NeumorphicCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('CASH OUT (WITHDRAW)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AppColors.primary)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _withdrawAmountCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              prefixText: '₱ ',
-              prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
-              hintText: '0.00',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('METHOD TYPE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _withdrawAccountType,
-                          isExpanded: true,
-                          items: const [
-                            DropdownMenuItem(value: 'ewallet', child: Text('E-Wallet')),
-                            DropdownMenuItem(value: 'bank', child: Text('Bank Account')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _withdrawAccountType = val;
-                                _withdrawProvider = val == 'ewallet' ? 'GCASH' : 'BDO';
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('PROVIDER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15)),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _withdrawProvider,
-                          isExpanded: true,
-                          items: _withdrawAccountType == 'ewallet'
-                              ? const [
-                                  DropdownMenuItem(value: 'GCASH', child: Text('GCash')),
-                                  DropdownMenuItem(value: 'MAYA', child: Text('Maya')),
-                                ]
-                              : const [
-                                  DropdownMenuItem(value: 'BDO', child: Text('BDO')),
-                                  DropdownMenuItem(value: 'BPI', child: Text('BPI')),
-                                  DropdownMenuItem(value: 'UNIONBANK', child: Text('UnionBank')),
-                                  DropdownMenuItem(value: 'METROBANK', child: Text('Metrobank')),
-                                ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _withdrawProvider = val);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _withdrawAccountNameCtrl,
-            decoration: InputDecoration(
-              labelText: 'ACCOUNT NAME',
-              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _withdrawAccountNumberCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'ACCOUNT NUMBER',
-              labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: FilledButton(
-              onPressed: _isSubmittingWithdraw ? null : _handleRiderWithdrawal,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isSubmittingWithdraw
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Submit Cash Out Request', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed _buildRiderCashOutCard since we are using unified toggled layout content.
 
   Widget _buildActivityCard(int totalPages) {
     return NeumorphicCard(

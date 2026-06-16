@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../providers/notification_provider.dart';
+import '../../widgets/glass_toast.dart';
 import 'rider_dashboard_screen.dart';
 import 'rider_profile_screen.dart';
 import '../customer/wallet_screen.dart';
+import '../../providers/auth_provider.dart';
 
 class RiderMainScreen extends StatefulWidget {
   const RiderMainScreen({Key? key}) : super(key: key);
@@ -13,6 +17,28 @@ class RiderMainScreen extends StatefulWidget {
 
 class _RiderMainScreenState extends State<RiderMainScreen> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.user != null) {
+        Provider.of<NotificationProvider>(context, listen: false).initialize(
+          auth.user!.id,
+          onNotificationReceived: (notification) {
+            GlassToast.show(
+              context,
+              notification['title'] ?? 'Notification',
+              description: notification['message'] ?? '',
+              icon: Icons.notifications_active,
+              color: AppColors.primary,
+            );
+          },
+        );
+      }
+    });
+  }
 
   final List<Widget> _screens = [
     const RiderDashboardScreen(),

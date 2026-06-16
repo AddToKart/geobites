@@ -32,9 +32,13 @@ function allowOrigin(
     .map((o) => o.trim())
     .filter(Boolean);
 
-  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+  const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+    origin,
+  );
   const isEmulator = /^https?:\/\/10\.0\.2\.2(:\d+)?$/.test(origin);
-  const isLanIp = origin.startsWith(`http://${lanIp}`) || origin.startsWith(`https://${lanIp}`);
+  const isLanIp =
+    origin.startsWith(`http://${lanIp}`) ||
+    origin.startsWith(`https://${lanIp}`);
   const isExtraAllowed = extraOrigins.includes(origin);
 
   if (isLocalhost || isEmulator || isLanIp || isExtraAllowed) {
@@ -99,9 +103,13 @@ async function bootstrap() {
     const origin: string | undefined = req.headers['origin'];
     if (!origin) return next();
 
-    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+      origin,
+    );
     const isEmulator = /^https?:\/\/10\.0\.2\.2(:\d+)?$/.test(origin);
-    const isLanIp = origin.startsWith(`http://${lanIp}`) || origin.startsWith(`https://${lanIp}`);
+    const isLanIp =
+      origin.startsWith(`http://${lanIp}`) ||
+      origin.startsWith(`https://${lanIp}`);
 
     if (isLocalhost || isEmulator || isLanIp) {
       // Rewrite to a canonical trusted origin so Better Auth's check passes

@@ -12,6 +12,7 @@ import {
 import { decimalNumberTransformer } from '../database/decimal-number.transformer';
 import { OrderItem } from './order-item.entity';
 import { Rating } from './rating.entity';
+import { RiderRating } from './rider-rating.entity';
 import { Vendor } from './vendor.entity';
 
 @Entity('orders')
@@ -58,6 +59,13 @@ export class Order {
     | 'delivered'
     | 'rejected'
     | 'cancelled';
+
+  @Column({
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
+    enum: ['DELIVERY', 'PICKUP'],
+    default: 'DELIVERY',
+  })
+  orderType!: 'DELIVERY' | 'PICKUP';
 
   @Column({
     type: 'decimal',
@@ -177,10 +185,12 @@ export class Order {
   @OneToMany(() => Rating, (rating) => rating.order)
   ratings!: Rating[];
 
+  @OneToMany(() => RiderRating, (riderRating) => riderRating.order)
+  riderRatings!: RiderRating[];
+
   riderName?: string;
   riderPhone?: string;
   customerName?: string;
   customerPhone?: string;
   vendorPhone?: string;
 }
-

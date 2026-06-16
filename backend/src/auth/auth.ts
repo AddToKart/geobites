@@ -10,13 +10,32 @@ function buildTrustedOrigins(): string[] {
   // Enumerate common Flutter Web / Vite / Expo / DevTools ports so Better Auth
   // accepts requests from any of them. Flutter Web randomises its port on every run.
   const commonPorts = [
-    3000, 5173, 8080, 8081, 8082, 8083, 8084, 8085,
-    19000, 19001, 19002, 19006,
+    3000,
+    5173,
+    8080,
+    8081,
+    8082,
+    8083,
+    8084,
+    8085,
+    19000,
+    19001,
+    19002,
+    19006,
     // Flutter Web range — covers the most common random dev ports
     ...Array.from({ length: 200 }, (_, i) => 49152 + i * 50),
     // Additional common Flutter Web ports observed in practice
-    56000, 57000, 58000, 59000, 60000, 61000, 62000,
-    63000, 63856, 64000, 65000,
+    56000,
+    57000,
+    58000,
+    59000,
+    60000,
+    61000,
+    62000,
+    63000,
+    63856,
+    64000,
+    65000,
   ];
 
   const localhostOrigins = commonPorts.flatMap((p) => [
@@ -44,7 +63,6 @@ function buildTrustedOrigins(): string[] {
 
   return [...new Set([...baseOrigins, ...localhostOrigins, ...extraOrigins])];
 }
-
 
 const useSqlite = process.env.DB_TYPE === 'sqlite';
 

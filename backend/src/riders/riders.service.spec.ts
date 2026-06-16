@@ -1,7 +1,8 @@
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
-import { IsNull } from 'typeorm';
+import { IsNull, DataSource } from 'typeorm';
 import { Order } from '../entities/order.entity';
+import { RiderRating } from '../entities/rider-rating.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RidersService } from './riders.service';
 
@@ -14,8 +15,21 @@ describe('RidersService', () => {
     save: jest.fn(),
     update: jest.fn(),
   };
+  const riderRatingRepository = {
+    createQueryBuilder: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    getRawOne: jest.fn().mockResolvedValue({ totalRatings: '0', averageScore: null }),
+  };
   const notificationsService = {
     create: jest.fn(),
+  };
+  const dataSource = {
+    options: {
+      type: 'postgres',
+    },
+    query: jest.fn().mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
   };
 
   beforeEach(async () => {
@@ -29,8 +43,16 @@ describe('RidersService', () => {
           useValue: orderRepository,
         },
         {
+          provide: getRepositoryToken(RiderRating),
+          useValue: riderRatingRepository,
+        },
+        {
           provide: NotificationsService,
           useValue: notificationsService,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
       ],
     }).compile();

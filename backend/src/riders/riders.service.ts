@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
+import { RiderRating } from '../entities/rider-rating.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
@@ -16,9 +17,36 @@ export class RidersService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(RiderRating)
+    private readonly riderRatingRepository: Repository<RiderRating>,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
   ) {}
+
+  async getRiderStats(riderId: string) {
+    const rawSummary = await this.riderRatingRepository
+      .createQueryBuilder('riderRating')
+      .select('COUNT(riderRating.id)', 'totalRatings')
+      .addSelect('AVG(riderRating.score)', 'averageScore')
+      .where('riderRating.riderId = :riderId', { riderId })
+      .getRawOne<{ totalRatings: string; averageScore: string | null }>();
+
+    const totalRatings = Number(rawSummary?.totalRatings ?? 0);
+    const average = Number(rawSummary?.averageScore ?? 0);
+
+    const totalDeliveries = await this.orderRepository.count({
+      where: {
+        riderId,
+        status: 'delivered',
+      },
+    });
+
+    return {
+      averageRating: totalRatings === 0 ? 0.0 : Number(average.toFixed(2)),
+      totalRatings,
+      totalDeliveries,
+    };
+  }
 
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
     const type = query.type ?? 'available';
@@ -30,6 +58,7 @@ export class RidersService {
         where: {
           status: 'accepted',
           riderId: IsNull(),
+          orderType: 'DELIVERY',
         },
         relations: {
           vendor: true,

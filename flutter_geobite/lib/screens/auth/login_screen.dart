@@ -172,7 +172,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => RegisterScreen()),
+                            PageRouteBuilder(
+                              pageBuilder: (context, animation, secondaryAnimation) => RegisterScreen(),
+                              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                const begin = Offset(0.0, 1.0);
+                                const end = Offset.zero;
+                                const curve = Curves.easeInOutCubic;
+                                var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                return SlideTransition(
+                                  position: animation.drive(tween),
+                                  child: child,
+                                );
+                              },
+                              transitionDuration: const Duration(milliseconds: 600),
+                            ),
                           );
                         },
                         child: RichText(

@@ -28,12 +28,19 @@ import { Server, Socket } from 'socket.io';
  */
 @WebSocketGateway({
   cors: {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) return callback(null, true);
       const lanIp = process.env.LAN_IP || '192.168.100.116';
-      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+        origin,
+      );
       const isEmulator = /^https?:\/\/10\.0\.2\.2(:\d+)?$/.test(origin);
-      const isLanIp = origin.startsWith(`http://${lanIp}`) || origin.startsWith(`https://${lanIp}`);
+      const isLanIp =
+        origin.startsWith(`http://${lanIp}`) ||
+        origin.startsWith(`https://${lanIp}`);
       return callback(null, isLocalhost || isEmulator || isLanIp);
     },
     credentials: true,

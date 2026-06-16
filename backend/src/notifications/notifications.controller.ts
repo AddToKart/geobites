@@ -16,6 +16,17 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  @Get('unread-count')
+  getUnreadCount(@CurrentUser('id') userId: string) {
+    return this.notificationsService.getUnreadCount(userId);
+  }
+
+  @Patch('read-all')
+  async markAllAsRead(@CurrentUser('id') userId: string) {
+    await this.notificationsService.markAllAsRead(userId);
+    return { success: true };
+  }
+
   @Get()
   findAll(
     @CurrentUser('id') userId: string,

@@ -108,11 +108,22 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       );
     }
 
-    final displayTimeline = (_order!.status == 'cancelled' || _order!.status == 'rejected')
-        ? ['pending', _order!.status]
+    final isPickup = _order!.orderType == 'PICKUP';
+    final activeTimeline = isPickup
+        ? ['pending', 'accepted', 'preparing', 'ready_for_pickup', 'delivered']
         : _timeline;
 
+    final displayTimeline = (_order!.status == 'cancelled' || _order!.status == 'rejected')
+        ? ['pending', _order!.status]
+        : activeTimeline;
+
     final currentStep = displayTimeline.indexOf(_order!.status);
+
+    final LatLng? orderLocation = (isPickup && _order!.vendor != null)
+        ? LatLng(_order!.vendor!.latitude, _order!.vendor!.longitude)
+        : (_order?.deliveryLat != null && _order?.deliveryLng != null
+            ? LatLng(_order!.deliveryLat!, _order!.deliveryLng!)
+            : null);
 
     return GlassScaffold(
       appBar: GlassAppBar(
@@ -129,8 +140,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: Mapcn(
-                  initialCenter: const LatLng(14.5995, 120.9842), // Manila
-                  initialZoom: 13,
+                  initialCenter: orderLocation ?? const LatLng(14.8214, 120.9565), // Default to Santa Maria
+                  initialZoom: 15,
                   style: Theme.of(context).brightness == Brightness.dark 
                       ? MapcnStyle.midnight 
                       : MapcnStyle.normal,
@@ -144,8 +155,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   points: [
                     if (_riderLocation != null) _riderLocation!,
-                    if (_order?.deliveryLat != null && _order?.deliveryLng != null)
-                      LatLng(_order!.deliveryLat!, _order!.deliveryLng!),
+                    if (orderLocation != null) orderLocation,
                   ],
                 ),
               ),
@@ -171,7 +181,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text('Store: ${_order!.vendor?.name ?? 'Local Merchant'}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-                  Text('Drop-off: ${_order!.deliveryAddress}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                  Text(isPickup ? 'Pick-up Address: ${_order!.deliveryAddress}' : 'Drop-off: ${_order!.deliveryAddress}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
                   if (_order!.paymentMethod != null)
                     Text('Payment: ${_order!.paymentMethod} • Status: ${_order!.paymentStatus ?? 'pending'}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                 ],
@@ -272,13 +282,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               const SizedBox(height: 16),
               NeumorphicCard(child: Text('"Rider Notes: ${_order!.notes!}"', style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)))),
             ],
-            // Only show the rating button if the order is delivered and has not been rated yet
-            if (_order!.status == 'delivered' && !_order!.isRated) ...[
+            // Only show the rating button if the order is delivered and needs rating
+            if (_order!.status == 'delivered' && 
+                (!_order!.isRated || (_order!.riderId != null && !_order!.riderRatings.any((r) => r.raterRole == 'customer')))) ...[
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: () => _showRatingDialog(context),
                 icon: const Icon(Icons.star, color: Colors.orange),
-                label: const Text('Rate Your Order', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(
+                  !_order!.isRated && _order!.riderId != null && !_order!.riderRatings.any((r) => r.raterRole == 'customer')
+                      ? 'Rate Order & Rider'
+                      : !_order!.isRated
+                          ? 'Rate Your Order'
+                          : 'Rate Your Rider',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -296,8 +314,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   void _showRatingDialog(BuildContext context) {
-    int rating = 5;
-    final feedbackController = TextEditingController();
+    final hasRider = _order!.riderId != null;
+    final isRiderRated = _order!.riderRatings.any((r) => r.raterRole == 'customer');
+    
+    final showShopRating = !_order!.isRated;
+    final showRiderRating = hasRider && !isRiderRated;
+
+    int shopRating = 5;
+    final shopFeedbackController = TextEditingController();
+    int riderRating = 5;
+    final riderFeedbackController = TextEditingController();
     bool isSubmitting = false;
 
     showModalBottomSheet(
@@ -316,66 +342,119 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Rate Your Order', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return IconButton(
-                      icon: Icon(
-                        index < rating ? Icons.star : Icons.star_border,
-                        color: Colors.orange,
-                        size: 40,
-                      ),
-                      onPressed: () => setModalState(() => rating = index + 1),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: feedbackController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Tell us about your food...',
-                    filled: true,
-                    fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: isSubmitting ? null : () async {
-                      setModalState(() => isSubmitting = true);
-                      try {
-                        await ratingService.submitRating(_order!.id, rating, feedbackController.text);
-                        if (mounted) {
-                          Navigator.pop(context);
-                          GlassToast.success(context, 'Thank you for your feedback!');
-                          _loadOrder();
-                        }
-                      } catch (e) {
-                        setModalState(() => isSubmitting = false);
-                        if (mounted) {
-                          GlassToast.error(context, e.toString().replaceAll('Exception: Failed to submit rating: ', ''));
-                        }
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Text(
+                      showShopRating && showRiderRating 
+                          ? 'Rate Your Experience'
+                          : showShopRating 
+                              ? 'Rate Your Order' 
+                              : 'Rate Your Rider',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-                    child: isSubmitting 
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Submit Review', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  
+                  if (showShopRating) ...[
+                    const Text('Rate the Shop', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < shopRating ? Icons.star : Icons.star_border,
+                            color: Colors.orange,
+                            size: 36,
+                          ),
+                          onPressed: () => setModalState(() => shopRating = index + 1),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: shopFeedbackController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'Tell us about your food...',
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  if (showRiderRating) ...[
+                    const Text('Rate the Rider', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < riderRating ? Icons.star : Icons.star_border,
+                            color: Colors.orange,
+                            size: 36,
+                          ),
+                          onPressed: () => setModalState(() => riderRating = index + 1),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: riderFeedbackController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: 'Tell us about your delivery...',
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: isSubmitting ? null : () async {
+                        setModalState(() => isSubmitting = true);
+                        try {
+                          if (showShopRating) {
+                            await ratingService.submitRating(_order!.id, shopRating, shopFeedbackController.text);
+                          }
+                          if (showRiderRating) {
+                            await ratingService.submitRiderRating(_order!.id, riderRating, riderFeedbackController.text);
+                          }
+                          if (mounted) {
+                            Navigator.pop(context);
+                            GlassToast.success(context, 'Thank you for your feedback!');
+                            _loadOrder();
+                          }
+                        } catch (e) {
+                          setModalState(() => isSubmitting = false);
+                          if (mounted) {
+                            GlassToast.error(context, e.toString().replaceAll('Exception: Failed to submit rating: ', '').replaceAll('Exception: Failed to submit rider rating: ', ''));
+                          }
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: isSubmitting 
+                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Submit Review', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

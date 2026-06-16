@@ -21,6 +21,11 @@ import { RidersService } from './riders.service';
 export class RidersController {
   constructor(private readonly ridersService: RidersService) {}
 
+  @Get('stats')
+  async getStats(@CurrentUser('id') riderId: string) {
+    return this.ridersService.getRiderStats(riderId);
+  }
+
   @Get('deliveries')
   findDeliveries(
     @CurrentUser('id') riderId: string,

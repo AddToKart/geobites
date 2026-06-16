@@ -83,6 +83,9 @@ class AuthProvider with ChangeNotifier {
     SocketService().connect().then((_) {
       // Join generic role room after connection is established
       SocketService().joinRoom('${user.role}_${user.id}');
+      if (user.role == 'rider') {
+        SocketService().joinRoom('riders');
+      }
     });
   }
 }

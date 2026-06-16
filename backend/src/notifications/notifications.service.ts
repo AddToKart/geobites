@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../entities/notification.entity';
 import { QueryNotificationsDto } from './dto/query-notifications.dto';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async findForUser(userId: string, query: QueryNotificationsDto) {
@@ -50,12 +52,36 @@ export class NotificationsService {
     return this.notificationRepository.save(notification);
   }
 
+  async getUnreadCount(userId: string): Promise<{ count: number }> {
+    const count = await this.notificationRepository.count({
+      where: { userId, isRead: false },
+    });
+    return { count };
+  }
+
+  async markAllAsRead(userId: string): Promise<void> {
+    await this.notificationRepository.update(
+      { userId, isRead: false },
+      { isRead: true },
+    );
+  }
+
   async create(data: Partial<Notification>) {
     const notification = this.notificationRepository.create({
       type: 'system',
       isRead: false,
       ...data,
     });
-    return this.notificationRepository.save(notification);
+    const saved = await this.notificationRepository.save(notification);
+    if (saved.userId) {
+      this.eventsGateway.emitNotification(saved.userId, {
+        id: saved.id,
+        title: saved.title,
+        message: saved.message,
+        type: saved.type,
+        referenceId: saved.referenceId,
+      });
+    }
+    return saved;
   }
 }

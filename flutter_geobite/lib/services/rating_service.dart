@@ -17,6 +17,21 @@ class RatingService {
     }
   }
 
+  Future<void> submitRiderRating(String orderId, int score, String? feedback) async {
+    try {
+      await apiClient.dio.post(
+        '/rider-ratings',
+        data: {
+          'orderId': orderId,
+          'score': score,
+          'feedback': feedback,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to submit rider rating: $e');
+    }
+  }
+
   Future<VendorRatingSummary> getVendorRatings(String vendorId) async {
     try {
       final response = await apiClient.dio.get('/vendors/$vendorId/ratings');

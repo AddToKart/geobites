@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../main.dart';
 import '../../models/vendor.dart';
 import '../../services/vendor_service.dart';
 import '../../services/order_service.dart';
@@ -235,9 +236,16 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                // Sign Out Button
                 OutlinedButton.icon(
-                  onPressed: () => auth.signOut(),
+                  onPressed: () async {
+                    await auth.signOut();
+                    if (mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                        (route) => false,
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.logout, color: Colors.red),
                   label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
                   style: OutlinedButton.styleFrom(

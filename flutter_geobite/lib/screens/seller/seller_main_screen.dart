@@ -10,6 +10,8 @@ import '../../providers/auth_provider.dart';
 import '../../services/vendor_service.dart';
 import 'package:provider/provider.dart';
 import '../../services/socket_service.dart';
+import '../../providers/notification_provider.dart';
+import '../../widgets/glass_toast.dart';
 
 class SellerMainScreen extends StatefulWidget {
   const SellerMainScreen({Key? key}) : super(key: key);
@@ -35,6 +37,23 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   void initState() {
     super.initState();
     _checkVendorProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.user != null) {
+        Provider.of<NotificationProvider>(context, listen: false).initialize(
+          auth.user!.id,
+          onNotificationReceived: (notification) {
+            GlassToast.show(
+              context,
+              notification['title'] ?? 'Notification',
+              description: notification['message'] ?? '',
+              icon: Icons.notifications_active,
+              color: AppColors.primary,
+            );
+          },
+        );
+      }
+    });
   }
 
   Future<void> _checkVendorProfile() async {

@@ -39,6 +39,18 @@ class WalletService {
 
   // ── Vendor wallet ──────────────────────────────────────────────────────────
 
+  Future<Map<String, dynamic>> initiateVendorCashIn(double amount, String paymentMethod) async {
+    try {
+      final response = await apiClient.dio.post('/wallet/vendor/cash-in', data: {
+        'amount': amount,
+        'paymentMethod': paymentMethod,
+      });
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to initiate vendor cash-in: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getVendorWallet() async {
     try {
       final response = await apiClient.dio.get('/wallet/vendor');

@@ -13,6 +13,8 @@ import 'vendor_detail_screen.dart';
 import 'customer_profile_screen.dart';
 import 'cart_screen.dart';
 import '../../widgets/pagination_controls.dart';
+import '../../providers/notification_provider.dart';
+import '../../widgets/glass_toast.dart';
 
 const int _kPageSize = 12;
 
@@ -200,6 +202,144 @@ class _BrowseScreenState extends State<BrowseScreen> {
             onPressed: () =>
                 Provider.of<ThemeProvider>(context, listen: false)
                     .toggleTheme(),
+          ),
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, _) {
+              final unreadCount = notificationProvider.unreadCount;
+              final notifications = notificationProvider.notifications;
+              
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface, size: 24),
+                    padding: EdgeInsets.zero,
+                    offset: const Offset(0, 40),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    color: Theme.of(context).colorScheme.surface,
+                    onSelected: (value) {
+                      if (value == 'read_all') {
+                        notificationProvider.markAllAsRead();
+                        GlassToast.success(context, 'All marked as read');
+                      } else if (value == 'clear') {
+                        notificationProvider.clearLocal();
+                        GlassToast.info(context, 'Notifications cleared');
+                      } else {
+                        notificationProvider.markAsRead(value);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) {
+                      final List<PopupMenuEntry<String>> items = [];
+                      
+                      if (notifications.isEmpty) {
+                        items.add(
+                          const PopupMenuItem<String>(
+                            enabled: false,
+                            child: Text('No notifications', style: TextStyle(color: Colors.grey)),
+                          ),
+                        );
+                      } else {
+                        for (var notification in notifications.take(5)) {
+                          final isRead = notification['isRead'] as bool? ?? false;
+                          items.add(
+                            PopupMenuItem<String>(
+                              value: notification['id'],
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (!isRead)
+                                        Container(
+                                          margin: const EdgeInsets.only(right: 6),
+                                          width: 6,
+                                          height: 6,
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: Text(
+                                          notification['title'] ?? 'Notification',
+                                          style: TextStyle(
+                                            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    notification['message'] ?? '',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                          items.add(const PopupMenuDivider());
+                        }
+                      }
+                      
+                      items.addAll([
+                        const PopupMenuItem<String>(
+                          value: 'read_all',
+                          child: Row(
+                            children: [
+                              Icon(Icons.checklist, size: 18),
+                              SizedBox(width: 8),
+                              Text('Mark all as read'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'clear',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Remove all notifications', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ]);
+                      
+                      return items;
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           IconButton(
             icon: Icon(Icons.shopping_bag_outlined,

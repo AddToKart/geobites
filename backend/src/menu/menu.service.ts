@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import {
   ForbiddenException,
   Injectable,
@@ -108,6 +109,7 @@ export class MenuService {
     }
 
     const menuItem = this.menuRepository.create({
+      id: randomUUID(),
       ...createMenuItemDto,
       isAvailable: createMenuItemDto.isAvailable ?? true,
     });

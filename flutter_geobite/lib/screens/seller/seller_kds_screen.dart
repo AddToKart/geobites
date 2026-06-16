@@ -210,10 +210,16 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
           else if (order.status == 'ready_for_pickup')
              SizedBox(
               width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {}, // Handled by dashboard/rider
-                child: const Text('Waiting for Rider/Customer'),
-              ),
+              child: (order.orderType == 'PICKUP' || order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided')
+                  ? FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                      onPressed: () => _updateStatus(order.id, 'delivered'),
+                      child: const Text('Complete Pickup'),
+                    )
+                  : OutlinedButton(
+                      onPressed: () {},
+                      child: const Text('Waiting for Rider'),
+                    ),
             ),
         ],
       ),

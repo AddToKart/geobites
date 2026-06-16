@@ -40,7 +40,8 @@ export class SessionGuard implements CanActivate {
       // Reconstruct cookie header from Bearer token so Better Auth can validate it
       const token = authHeader.slice(7);
       const existingCookie = cookieHeader ? `${cookieHeader}; ` : '';
-      headersMap['cookie'] = `${existingCookie}better-auth.session_token=${token}`;
+      headersMap['cookie'] =
+        `${existingCookie}better-auth.session_token=${token}`;
     } else if (cookieHeader) {
       headersMap['cookie'] = cookieHeader;
     }

@@ -96,3 +96,8 @@ openspec
 
 # SQLite database files (auto-generated)
 *.db
+
+# Temporary and scratch files
+scratch/
+extracted.txt
+

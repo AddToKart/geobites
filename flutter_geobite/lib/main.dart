@@ -5,9 +5,8 @@ import 'theme/glass_theme.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'providers/theme_provider.dart';
-
 import 'providers/cart_provider.dart';
-
+import 'providers/notification_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/customer/customer_main_screen.dart';
 import 'screens/seller/seller_main_screen.dart';
@@ -23,6 +22,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkSession()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const GeoBitesApp(),
     ),

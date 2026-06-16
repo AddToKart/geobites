@@ -242,6 +242,43 @@ export class WalletService {
   }
 
   /**
+   * Initiates a vendor cash-in transaction.
+   * Generates a payment URL (simulated or PayMongo-based).
+   */
+  async initiateVendorCashIn(
+    vendorId: string,
+    amount: number,
+    paymentMethod: 'GCASH' | 'MAYA' | 'QRPH',
+  ) {
+    if (amount <= 0) {
+      throw new BadRequestException('Cash-in amount must be greater than zero');
+    }
+
+    const wallet = await this.getOrCreateVendorWallet(vendorId);
+
+    const transaction = this.transactionRepository.create({
+      walletId: wallet.id,
+      amount,
+      type: 'cash_in',
+      status: 'pending',
+      paymentMethod,
+    });
+    const savedTransaction = await this.transactionRepository.save(transaction);
+
+    const frontendUrl = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',')[0]
+      : 'http://localhost:5173';
+
+    const checkoutUrl = `${frontendUrl}/mock-payment?cashInId=${savedTransaction.id}&amount=${amount}&method=${paymentMethod}`;
+
+    return {
+      transactionId: savedTransaction.id,
+      checkoutUrl,
+      status: 'pending',
+    };
+  }
+
+  /**
    * Completes a pending cash-in transaction (adds money to wallet).
    */
   async completeCashIn(transactionId: string): Promise<WalletTransaction> {
@@ -475,7 +512,9 @@ export class WalletService {
   /**
    * Returns withdrawal history for a customer/rider.
    */
-  async getCustomerWithdrawalHistory(customerId: string): Promise<WithdrawalRequest[]> {
+  async getCustomerWithdrawalHistory(
+    customerId: string,
+  ): Promise<WithdrawalRequest[]> {
     return this.withdrawalRepository.find({
       where: { vendorId: customerId },
       order: { createdAt: 'DESC' },

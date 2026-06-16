@@ -1,6 +1,7 @@
 import 'user.dart';
 import 'vendor.dart';
 import 'rating.dart';
+import 'rider_rating.dart';
 import 'dart:convert';
 
 class OrderItem {
@@ -63,8 +64,10 @@ class Order {
   final User? rider;
   final List<OrderItem> items;
   final List<Rating> ratings;
+  final List<RiderRating> riderRatings;
   final String createdAt;
   final String updatedAt;
+  final String orderType; // 'DELIVERY' | 'PICKUP'
 
   Order({
     required this.id,
@@ -86,8 +89,10 @@ class Order {
     this.rider,
     required this.items,
     this.ratings = const [],
+    this.riderRatings = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.orderType = 'DELIVERY',
   });
 
   // Helper getter to check if the order has been rated
@@ -118,8 +123,12 @@ class Order {
       ratings: json['ratings'] != null
           ? (json['ratings'] as List).map((r) => Rating.fromJson(r)).toList()
           : [],
+      riderRatings: json['riderRatings'] != null
+          ? (json['riderRatings'] as List).map((r) => RiderRating.fromJson(r)).toList()
+          : [],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
+      orderType: json['orderType'] ?? 'DELIVERY',
     );
   }
 
@@ -194,6 +203,7 @@ class Order {
       'items': items.map((i) => i.toJson()).toList(),
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'orderType': orderType,
     };
   }
 }

@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
 import '../customer/map_selection_screen.dart';
+import 'seller_main_screen.dart';
 
 class SellerShopScreen extends StatefulWidget {
   const SellerShopScreen({Key? key}) : super(key: key);
@@ -98,12 +99,12 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       }
       GlassToast.success(context, 'Shop Profile Saved!');
       
-      if (wasNew && mounted) {
-        // Force reload of SellerMainScreen
-        Navigator.of(context).pushReplacementNamed('/seller');
-      } else if (!wasNew && mounted && Navigator.canPop(context)) {
-        // Return to SellerMoreScreen
-        Navigator.pop(context);
+      if (mounted) {
+        // Go back to the Seller Homepage (SellerMainScreen)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const SellerMainScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       GlassToast.error(context, 'Error saving: $e');

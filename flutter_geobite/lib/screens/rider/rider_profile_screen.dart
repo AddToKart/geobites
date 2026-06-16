@@ -3,14 +3,47 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../main.dart';
 import 'rider_settings_screen.dart';
 import '../../core/api_client.dart';
 import 'rider_vehicle_screen.dart';
 import 'rider_earnings_screen.dart';
 import '../customer/wallet_screen.dart';
 
-class RiderProfileScreen extends StatelessWidget {
+class RiderProfileScreen extends StatefulWidget {
   const RiderProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  State<RiderProfileScreen> createState() => _RiderProfileScreenState();
+}
+
+class _RiderProfileScreenState extends State<RiderProfileScreen> {
+  Map<String, dynamic>? _riderStats;
+  bool _isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _isLoadingStats = true);
+    try {
+      final response = await apiClient.dio.get('/riders/stats');
+      if (mounted) {
+        setState(() {
+          _riderStats = response.data;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading rider stats: $e');
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,11 +150,27 @@ class RiderProfileScreen extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatCard(context, 'Total Deliveries', '124', Icons.local_shipping_outlined, Colors.blue),
+                    child: _buildStatCard(
+                      context,
+                      'Total Deliveries',
+                      _isLoadingStats ? '...' : (_riderStats?['totalDeliveries']?.toString() ?? '0'),
+                      Icons.local_shipping_outlined,
+                      Colors.blue,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildStatCard(context, 'Rating', '4.9', Icons.star_border, Colors.orange),
+                    child: _buildStatCard(
+                      context,
+                      'Rating',
+                      _isLoadingStats 
+                          ? '...' 
+                          : (_riderStats?['averageRating'] == null || _riderStats?['averageRating'] == 0 
+                              ? 'N/A' 
+                              : (_riderStats?['averageRating'] as num?)!.toStringAsFixed(1)),
+                      Icons.star_border,
+                      Colors.orange,
+                    ),
                   ),
                 ],
               ),
@@ -190,7 +239,15 @@ class RiderProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                onPressed: () => auth.signOut(),
+                onPressed: () async {
+                  await auth.signOut();
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const AuthWrapper()),
+                      (route) => false,
+                    );
+                  }
+                },
               ),
               
               const SizedBox(height: 120), // Bottom padding for floating nav bar

@@ -26,4 +26,3 @@ export class TrackingController {
     return this.trackingService.getLocationByOrderId(orderId);
   }
 }
-
