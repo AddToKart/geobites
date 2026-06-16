@@ -66,14 +66,13 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
         return GlassMenuDialog(
           onSave: (name, description, price, imageUrl) async {
             try {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
               final newItem = MenuItem(
                 id: DateTime.now().millisecondsSinceEpoch.toString(),
                 name: name,
                 description: description,
                 price: price,
                 imageUrl: imageUrl,
-                vendorId: auth.user!.id,
+                vendorId: _vendor!.id,
                 isAvailable: true,
                 createdAt: DateTime.now().toIso8601String(),
                 updatedAt: DateTime.now().toIso8601String(),
