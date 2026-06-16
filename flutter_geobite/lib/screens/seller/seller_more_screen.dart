@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../models/vendor.dart';
 import '../../services/vendor_service.dart';
+import '../../services/order_service.dart';
 import 'seller_promotions_screen.dart';
 import 'seller_reviews_screen.dart';
 import 'seller_analytics_screen.dart';
@@ -20,6 +21,7 @@ class SellerMoreScreen extends StatefulWidget {
 
 class _SellerMoreScreenState extends State<SellerMoreScreen> {
   Vendor? _vendor;
+  int _totalOrders = 0;
   bool _isLoading = true;
 
   @override
@@ -33,9 +35,13 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final vendors = await vendorService.getVendors();
       final myVendor = vendors.firstWhere((v) => v.userId == auth.user?.id);
+      
+      final orders = await orderService.getOrders();
+      
       if (mounted) {
         setState(() {
           _vendor = myVendor;
+          _totalOrders = orders.length;
           _isLoading = false;
         });
       }
@@ -91,25 +97,13 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _vendor?.name ?? 'Geobites Store',
+                        _vendor?.name ?? 'Setup Store Profile',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         auth.user?.email ?? '',
                         style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'Top Rated Seller',
-                          style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                        ),
                       ),
                     ],
                   ),
@@ -133,7 +127,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                           children: [
                             const Icon(Icons.shopping_bag_outlined, color: Colors.blue),
                             const SizedBox(height: 12),
-                            const Text('124', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                            Text('$_totalOrders', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
                             Text('Total Orders', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
                           ],

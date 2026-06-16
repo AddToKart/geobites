@@ -5,6 +5,10 @@ import 'seller_kds_screen.dart';
 import 'seller_menu_screen.dart';
 import 'seller_orders_screen.dart';
 import 'seller_more_screen.dart';
+import 'seller_shop_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/vendor_service.dart';
+import 'package:provider/provider.dart';
 import '../../services/socket_service.dart';
 
 class SellerMainScreen extends StatefulWidget {
@@ -16,6 +20,8 @@ class SellerMainScreen extends StatefulWidget {
 
 class _SellerMainScreenState extends State<SellerMainScreen> {
   int _currentIndex = 0;
+  bool _isLoading = true;
+  bool _needsSetup = false;
 
   final List<Widget> _screens = [
     const SellerDashboardScreen(),
@@ -26,7 +32,34 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _checkVendorProfile();
+  }
+
+  Future<void> _checkVendorProfile() async {
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final vendors = await vendorService.getVendors();
+      final hasVendor = vendors.any((v) => v.userId == auth.user?.id);
+      if (mounted) {
+        setState(() {
+          _needsSetup = !hasVendor;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const GlassScaffold(body: Center(child: CircularProgressIndicator()));
+    if (_needsSetup) return const SellerShopScreen();
+
     return GlassScaffold(
       extendBody: true,
       body: Stack(

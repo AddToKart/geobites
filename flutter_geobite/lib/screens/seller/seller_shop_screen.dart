@@ -71,7 +71,7 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       if (_selectedCoverFile != null) {
         if (kIsWeb && _selectedCoverFile!.bytes != null) {
           finalImageUrl = await uploadService.uploadImageBytes(_selectedCoverFile!.bytes!, _selectedCoverFile!.name);
-        } else if (_selectedCoverFile!.path != null) {
+        } else if (!kIsWeb && _selectedCoverFile!.path != null) {
           finalImageUrl = await uploadService.uploadImage(_selectedCoverFile!.path!);
         }
       }
@@ -84,7 +84,8 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
         if (finalImageUrl != null) 'imageUrl': finalImageUrl,
       };
 
-      if (_vendor == null) {
+      bool wasNew = _vendor == null;
+      if (wasNew) {
         // Create
         final auth = Provider.of<AuthProvider>(context, listen: false);
         payload['userId'] = auth.user!.id;
@@ -95,6 +96,11 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
         await vendorService.updateVendor(_vendor!.id, payload);
       }
       GlassToast.success(context, 'Shop Profile Saved!');
+      
+      if (wasNew && mounted) {
+        // Force reload of SellerMainScreen
+        Navigator.of(context).pushReplacementNamed('/seller');
+      }
     } catch (e) {
       GlassToast.error(context, 'Error saving: $e');
     } finally {
@@ -122,11 +128,11 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
+    return GlassScaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text('Shop Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+        title: const Text('Shop Settings', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -136,49 +142,19 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Mock Image Upload for User
-                    Center(
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(context).colorScheme.surface,
-                            backgroundImage: const NetworkImage('https://i.pravatar.cc/150?img=11'),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: InkWell(
-                              onTap: () {
-                                GlassToast.info(context, 'Image upload simulation');
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                     const Text('Account Owner', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _userNameCtrl,
+                      readOnly: true,
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: 'Your Full Name',
                         labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
-                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                        fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.1),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.person)),
                       ),
                     ),
@@ -198,7 +174,9 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                           image: _selectedCoverFile != null
                               ? (kIsWeb && _selectedCoverFile!.bytes != null 
                                   ? DecorationImage(image: MemoryImage(_selectedCoverFile!.bytes!), fit: BoxFit.cover)
-                                  : DecorationImage(image: FileImage(File(_selectedCoverFile!.path!)), fit: BoxFit.cover))
+                                  : (!kIsWeb && _selectedCoverFile!.path != null 
+                                      ? DecorationImage(image: FileImage(File(_selectedCoverFile!.path!)), fit: BoxFit.cover)
+                                      : null))
                               : (_existingCoverUrl != null && _existingCoverUrl!.isNotEmpty
                                   ? DecorationImage(image: NetworkImage(_existingCoverUrl!), fit: BoxFit.cover)
                                   : null),

@@ -137,7 +137,9 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                         image: _selectedFile != null
                             ? (kIsWeb && _selectedFile!.bytes != null
                                 ? DecorationImage(image: MemoryImage(_selectedFile!.bytes!), fit: BoxFit.cover)
-                                : DecorationImage(image: FileImage(File(_selectedFile!.path!)), fit: BoxFit.cover))
+                                : (!kIsWeb && _selectedFile!.path != null
+                                    ? DecorationImage(image: FileImage(File(_selectedFile!.path!)), fit: BoxFit.cover)
+                                    : null))
                             : (_existingImageUrl != null && _existingImageUrl!.isNotEmpty
                                 ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.cover)
                                 : null),
@@ -179,7 +181,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                                 if (_selectedFile != null) {
                                   if (kIsWeb && _selectedFile!.bytes != null) {
                                     finalImageUrl = await uploadService.uploadImageBytes(_selectedFile!.bytes!, _selectedFile!.name);
-                                  } else if (_selectedFile!.path != null) {
+                                  } else if (!kIsWeb && _selectedFile!.path != null) {
                                     finalImageUrl = await uploadService.uploadImage(_selectedFile!.path!);
                                   }
                                 }
