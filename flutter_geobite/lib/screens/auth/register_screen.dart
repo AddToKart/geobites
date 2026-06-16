@@ -15,13 +15,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _phoneController = TextEditingController(text: '+63');
   String _role = 'customer';
   bool _agreedToTerms = false;
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
   Color _passwordStrengthColor = Colors.grey;
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   void _checkPasswordStrength(String value) {
     double strength = 0;
@@ -60,6 +62,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty || phone.isEmpty) {
       GlassToast.info(context, 'Please fill in all required fields');
+      return;
+    }
+
+    if (!phone.startsWith('+63')) {
+      GlassToast.error(context, 'Mobile number must start with +63');
+      return;
+    }
+
+    if (phone.length < 13) {
+      GlassToast.error(context, 'Mobile number must be a valid 10-digit number after +63 (e.g., +639171234567)');
       return;
     }
 
@@ -224,8 +236,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscurePassword,
                       onChanged: _checkPasswordStrength,
                     ),
                     if (_passwordController.text.isNotEmpty) ...[
@@ -268,8 +294,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: _obscureConfirmPassword,
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
