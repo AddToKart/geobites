@@ -10,6 +10,7 @@ import '../../services/upload_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
+import '../../widgets/shop_status_card.dart';
 import '../customer/map_selection_screen.dart';
 import 'seller_main_screen.dart';
 
@@ -215,10 +216,21 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: NeumorphicCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Shop status card — always visible at the top
+                  if (_vendor != null) ...[  
+                    ShopStatusCard(
+                      vendor: _vendor!,
+                      onStatusChanged: _loadData,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  NeumorphicCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                     const Text('Account Owner', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     const SizedBox(height: 16),
                     TextField(
@@ -458,6 +470,8 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                     const SizedBox(height: 80), // Padding for navbar
                   ],
                 ),
+              ),
+                ],
               ),
             ),
     );

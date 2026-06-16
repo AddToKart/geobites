@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/order.dart';
+import '../../models/vendor.dart';
 import '../../services/order_service.dart';
+import '../../services/vendor_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/animated_tap_card.dart';
 import '../../widgets/pagination_controls.dart';
 import '../../widgets/receipt_widget.dart';
 import '../../widgets/glass_toast.dart';
+import '../../widgets/shop_status_card.dart';
 import 'dart:async';
 import '../../services/socket_service.dart';
 import '../../providers/notification_provider.dart';
@@ -29,11 +32,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   static const int _itemsPerPage = 5;
   StreamSubscription? _orderSub;
   StreamSubscription? _newOrderSub;
+  Vendor? _myVendor;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
+    _loadMyVendor();
 
     _orderSub = SocketService().orderStatusStream.listen((data) {
       // Refresh if the status of any of our orders changes
@@ -58,7 +63,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   Future<void> _loadOrders() async {
     setState(() => _isLoading = true);
     try {
-      final orders = await orderService.getOrders(); // Backend should filter by vendorId based on session
+      final orders = await orderService.getOrders();
       setState(() {
         _orders = orders;
         _isLoading = false;
@@ -67,6 +72,18 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       print('Error loading seller orders: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loadMyVendor() async {
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final vendors = await vendorService.getVendors();
+      final mine = vendors.firstWhere(
+        (v) => v.userId == auth.user?.id,
+        orElse: () => throw Exception('no vendor'),
+      );
+      if (mounted) setState(() => _myVendor = mine);
+    } catch (_) {}
   }
 
   Future<void> _updateStatus(String orderId, String newStatus) async {
@@ -341,6 +358,16 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                     ),
+
+                    // Shop Status Card
+                    if (_myVendor != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: ShopStatusCard(
+                          vendor: _myVendor!,
+                          onStatusChanged: _loadMyVendor,
+                        ),
+                      ),
                     
                     // Analytics Summary
                     Padding(

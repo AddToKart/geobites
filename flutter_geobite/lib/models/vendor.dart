@@ -42,6 +42,7 @@ class Vendor {
   final int totalRatings;
   final String? imageUrl;
   final bool isActive;
+  final bool isTemporarilyClosed;
   final String? openTime;
   final String? closeTime;
   final List<OperatingHour>? operatingHours;
@@ -60,6 +61,7 @@ class Vendor {
     required this.totalRatings,
     this.imageUrl,
     required this.isActive,
+    this.isTemporarilyClosed = false,
     this.openTime,
     this.closeTime,
     this.operatingHours,
@@ -80,6 +82,7 @@ class Vendor {
       totalRatings: json['totalRatings'] ?? 0,
       imageUrl: json['imageUrl'],
       isActive: json['isActive'] ?? true,
+      isTemporarilyClosed: json['isTemporarilyClosed'] ?? false,
       openTime: json['openTime'],
       closeTime: json['closeTime'],
       operatingHours: json['operatingHours'] != null
@@ -105,6 +108,7 @@ class Vendor {
       'totalRatings': totalRatings,
       'imageUrl': imageUrl,
       'isActive': isActive,
+      'isTemporarilyClosed': isTemporarilyClosed,
       'openTime': openTime,
       'closeTime': closeTime,
       'operatingHours': operatingHours?.map((item) => item.toJson()).toList(),
