@@ -4,6 +4,7 @@ import { IsNull, DataSource } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { RiderRating } from '../entities/rider-rating.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
 import { RidersService } from './riders.service';
 
 describe('RidersService', () => {
@@ -26,6 +27,9 @@ describe('RidersService', () => {
   };
   const notificationsService = {
     create: jest.fn(),
+  };
+  const walletService = {
+    handleOrderDeliveryPayout: jest.fn(),
   };
   const dataSource = {
     options: {
@@ -53,6 +57,10 @@ describe('RidersService', () => {
         {
           provide: NotificationsService,
           useValue: notificationsService,
+        },
+        {
+          provide: WalletService,
+          useValue: walletService,
         },
         {
           provide: DataSource,

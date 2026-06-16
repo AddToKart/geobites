@@ -265,7 +265,7 @@ export class OrdersService {
           const vendorTxn = transactionRepo.create({
             walletId: vendorWallet.id,
             amount: totalAmount,
-            type: 'vendor_credit',
+            type: 'vendor_payout',
             status: 'success',
             referenceId: savedOrder.id,
             paymentMethod: 'GEOPAY',
@@ -429,7 +429,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    const nextStatus = updateStatusDto.status as Order['status'];
+    let nextStatus = updateStatusDto.status as Order['status'];
     const currentStatus = order.status;
 
     if (role === 'customer') {
@@ -479,26 +479,26 @@ export class OrdersService {
     }
 
     if (role === 'rider') {
-      const allowed = riderTransitions[currentStatus] ?? [];
-      if (!allowed.includes(nextStatus)) {
-        throw new BadRequestException('Invalid rider status transition');
-      }
-
-      if (order.riderId && order.riderId !== userId) {
-        throw new ForbiddenException(
-          'Order is already assigned to another rider',
-        );
-      }
-
-      if (!order.riderId && nextStatus !== 'ready_for_pickup') {
-        throw new ForbiddenException(
-          'Order must be accepted before updating status',
-        );
-      }
-
-      if (nextStatus === 'ready_for_pickup' && !order.riderId) {
-        // Rider is accepting the delivery - assign them to this order
+      if (!order.riderId) {
+        // Rider is accepting/claiming the order
+        const claimableStatuses = ['accepted', 'preparing', 'ready_for_pickup'];
+        if (!claimableStatuses.includes(currentStatus)) {
+          throw new BadRequestException('Order is not in a claimable state');
+        }
         order.riderId = userId;
+        // Keep status the same (do not force ready_for_pickup if order is still accepted/preparing)
+        nextStatus = currentStatus;
+      } else {
+        // Rider is updating the status of an order they already claimed
+        if (order.riderId !== userId) {
+          throw new ForbiddenException(
+            'Order is already assigned to another rider',
+          );
+        }
+        const allowed = riderTransitions[currentStatus] ?? [];
+        if (!allowed.includes(nextStatus)) {
+          throw new BadRequestException('Invalid rider status transition');
+        }
       }
     }
 

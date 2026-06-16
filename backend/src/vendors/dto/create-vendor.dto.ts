@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsNotEmpty,
   IsNumber,
@@ -44,4 +45,23 @@ export class CreateVendorDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  openTime?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  closeTime?: string;
+
+  @IsArray()
+  @IsOptional()
+  operatingHours?: Array<{
+    dayOfWeek: number;
+    openTime: string;
+    closeTime: string;
+    isClosed: boolean;
+  }>;
 }

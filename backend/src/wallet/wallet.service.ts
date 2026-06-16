@@ -523,6 +523,70 @@ export class WalletService {
   }
 
   /**
+   * Returns daily earnings history for a rider (grouped by date),
+   * plus total earnings for the current week.
+   */
+  async getRiderEarningsHistory(riderId: string): Promise<{
+    weeklyTotal: number;
+    dailyEarnings: { date: string; deliveries: number; amount: number }[];
+  }> {
+    const wallet = await this.getOrCreateWallet(riderId);
+
+    // Fetch all successful credit transactions for this rider
+    const transactions = await this.transactionRepository.find({
+      where: { walletId: wallet.id, status: 'success' },
+      order: { createdAt: 'DESC' },
+    });
+
+    // Only keep positive (earning) transactions
+    const earnings = transactions.filter((t) => Number(t.amount) > 0);
+
+    // Group by calendar date (YYYY-MM-DD)
+    const grouped = new Map<string, { deliveries: number; amount: number }>();
+    for (const txn of earnings) {
+      const dateKey = txn.createdAt.toISOString().split('T')[0];
+      const existing = grouped.get(dateKey) ?? { deliveries: 0, amount: 0 };
+      grouped.set(dateKey, {
+        deliveries: existing.deliveries + 1,
+        amount: existing.amount + Number(txn.amount),
+      });
+    }
+
+    // Build sorted daily list (most recent first)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dailyEarnings = Array.from(grouped.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([dateKey, data]) => {
+        const d = new Date(dateKey);
+        const diffDays = Math.round(
+          (today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        let label: string;
+        if (diffDays === 0) label = 'Today';
+        else if (diffDays === 1) label = 'Yesterday';
+        else {
+          label = d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+        }
+        return { date: label, deliveries: data.deliveries, amount: data.amount };
+      });
+
+    // Weekly total: sum of earnings from last 7 days
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    weekAgo.setHours(0, 0, 0, 0);
+    const weeklyTotal = earnings
+      .filter((t) => t.createdAt >= weekAgo)
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    return { weeklyTotal, dailyEarnings };
+  }
+
+  /**
    * Processes the payout splits on delivery completion:
    * Credits the rider with the delivery fee (for online payment orders).
    * Credits the vendor with the subtotal (for online payment orders).
@@ -644,7 +708,7 @@ export class WalletService {
           const vendorTxn = transactionRepo.create({
             walletId: vendorWallet.id,
             amount: vendorShare,
-            type: 'vendor_credit',
+            type: 'vendor_payout',
             status: 'success',
             referenceId: order.id,
             paymentMethod: order.paymentMethod,

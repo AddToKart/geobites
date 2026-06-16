@@ -1,3 +1,35 @@
+class OperatingHour {
+  final int dayOfWeek;
+  final String openTime;
+  final String closeTime;
+  final bool isClosed;
+
+  OperatingHour({
+    required this.dayOfWeek,
+    required this.openTime,
+    required this.closeTime,
+    required this.isClosed,
+  });
+
+  factory OperatingHour.fromJson(Map<String, dynamic> json) {
+    return OperatingHour(
+      dayOfWeek: json['dayOfWeek'] ?? 0,
+      openTime: json['openTime'] ?? '08:00',
+      closeTime: json['closeTime'] ?? '17:00',
+      isClosed: json['isClosed'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dayOfWeek': dayOfWeek,
+      'openTime': openTime,
+      'closeTime': closeTime,
+      'isClosed': isClosed,
+    };
+  }
+}
+
 class Vendor {
   final String id;
   final String userId;
@@ -10,6 +42,9 @@ class Vendor {
   final int totalRatings;
   final String? imageUrl;
   final bool isActive;
+  final String? openTime;
+  final String? closeTime;
+  final List<OperatingHour>? operatingHours;
   final String createdAt;
   final String updatedAt;
 
@@ -25,6 +60,9 @@ class Vendor {
     required this.totalRatings,
     this.imageUrl,
     required this.isActive,
+    this.openTime,
+    this.closeTime,
+    this.operatingHours,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -42,6 +80,13 @@ class Vendor {
       totalRatings: json['totalRatings'] ?? 0,
       imageUrl: json['imageUrl'],
       isActive: json['isActive'] ?? true,
+      openTime: json['openTime'],
+      closeTime: json['closeTime'],
+      operatingHours: json['operatingHours'] != null
+          ? (json['operatingHours'] as List)
+              .map((item) => OperatingHour.fromJson(item))
+              .toList()
+          : null,
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
     );
@@ -60,6 +105,9 @@ class Vendor {
       'totalRatings': totalRatings,
       'imageUrl': imageUrl,
       'isActive': isActive,
+      'openTime': openTime,
+      'closeTime': closeTime,
+      'operatingHours': operatingHours?.map((item) => item.toJson()).toList(),
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

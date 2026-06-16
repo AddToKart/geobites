@@ -121,6 +121,15 @@ class WalletService {
       throw Exception('Failed to load withdrawals: $e');
     }
   }
+  /// Get rider earnings grouped by date, plus weekly total
+  Future<Map<String, dynamic>> getRiderEarnings() async {
+    try {
+      final response = await apiClient.dio.get('/wallet/rider/earnings');
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load rider earnings: $e');
+    }
+  }
 }
 
 final walletService = WalletService();

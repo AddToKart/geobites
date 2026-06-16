@@ -32,6 +32,61 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
 
   LatLng _shopLocation = const LatLng(14.8214, 120.9565); // Default to Santa Maria
 
+  // Weekly operating schedule state: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  final Map<int, Map<String, dynamic>> _schedule = {
+    1: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': false}, // Monday
+    2: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': false}, // Tuesday
+    3: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': false}, // Wednesday
+    4: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': false}, // Thursday
+    5: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': false}, // Friday
+    6: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': true},  // Saturday
+    0: {'openTime': '08:00', 'closeTime': '17:00', 'isClosed': true},  // Sunday
+  };
+
+  String _formatTimeOfState(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+      final timeOfDay = TimeOfDay(hour: hour, minute: minute);
+      
+      final hourOfPeriod = timeOfDay.hourOfPeriod == 0 ? 12 : timeOfDay.hourOfPeriod;
+      final period = timeOfDay.period == DayPeriod.am ? 'AM' : 'PM';
+      final minuteStr = timeOfDay.minute.toString().padLeft(2, '0');
+      return '$hourOfPeriod:$minuteStr $period';
+    } catch (e) {
+      return timeStr;
+    }
+  }
+
+  Future<void> _selectTime(int day, bool isOpenTime) async {
+    final currentVal = _schedule[day]![isOpenTime ? 'openTime' : 'closeTime'] as String;
+    final parts = currentVal.split(':');
+    final initialTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppColors.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final formatted = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+      setState(() {
+        _schedule[day]![isOpenTime ? 'openTime' : 'closeTime'] = formatted;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +108,15 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       if (_vendor != null) {
         _existingCoverUrl = myVendor.imageUrl;
         _shopLocation = LatLng(myVendor.latitude, myVendor.longitude);
+        if (myVendor.operatingHours != null && myVendor.operatingHours!.isNotEmpty) {
+          for (var oh in myVendor.operatingHours!) {
+            _schedule[oh.dayOfWeek] = {
+              'openTime': oh.openTime,
+              'closeTime': oh.closeTime,
+              'isClosed': oh.isClosed,
+            };
+          }
+        }
       }
     } catch (e) {
       print('Vendor profile not set up: $e');
@@ -86,6 +150,14 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
         'latitude': _shopLocation.latitude,
         'longitude': _shopLocation.longitude,
         if (finalImageUrl != null) 'imageUrl': finalImageUrl,
+        'openTime': _schedule[1]?['openTime'] ?? '08:00',
+        'closeTime': _schedule[1]?['closeTime'] ?? '17:00',
+        'operatingHours': _schedule.entries.map((e) => {
+          'dayOfWeek': e.key,
+          'openTime': e.value['openTime'],
+          'closeTime': e.value['closeTime'],
+          'isClosed': e.value['isClosed'],
+        }).toList(),
       };
 
       bool wasNew = _vendor == null;
@@ -270,6 +342,107 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text('Store Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 16),
+                    ...[1, 2, 3, 4, 5, 6, 0].map((day) {
+                      final dayData = _schedule[day]!;
+                      final isClosed = dayData['isClosed'] as bool;
+                      final openTime = dayData['openTime'] as String;
+                      final closeTime = dayData['closeTime'] as String;
+                      final dayName = day == 1 ? 'Monday'
+                                    : day == 2 ? 'Tuesday'
+                                    : day == 3 ? 'Wednesday'
+                                    : day == 4 ? 'Thursday'
+                                    : day == 5 ? 'Friday'
+                                    : day == 6 ? 'Saturday'
+                                    : 'Sunday';
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).brightness == Brightness.dark 
+                              ? Colors.white.withValues(alpha: 0.02) 
+                              : Colors.black.withValues(alpha: 0.02),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                dayName,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                              ),
+                            ),
+                            Switch(
+                              value: !isClosed,
+                              activeThumbColor: AppColors.primary,
+                              onChanged: (val) {
+                                setState(() {
+                                  _schedule[day]!['isClosed'] = !val;
+                                });
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 5,
+                              child: isClosed
+                                  ? const Center(
+                                      child: Text(
+                                        'Closed',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextButton(
+                                            onPressed: () => _selectTime(day, true),
+                                            style: TextButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
+                                            ),
+                                            child: Text(
+                                              _formatTimeOfState(openTime),
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 4.0),
+                                          child: Text('to', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                        ),
+                                        Expanded(
+                                          child: TextButton(
+                                            onPressed: () => _selectTime(day, false),
+                                            style: TextButton.styleFrom(
+                                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
+                                            ),
+                                            child: Text(
+                                              _formatTimeOfState(closeTime),
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 24),
                     FilledButton(
                       onPressed: _isSaving ? null : _saveProfile,

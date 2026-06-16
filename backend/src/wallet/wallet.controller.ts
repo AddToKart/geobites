@@ -154,4 +154,10 @@ export class WalletController {
   async getCustomerWithdrawals(@CurrentUser('id') customerId: string) {
     return this.walletService.getCustomerWithdrawalHistory(customerId);
   }
+
+  @Get('rider/earnings')
+  @Roles('rider')
+  async getRiderEarnings(@CurrentUser('id') riderId: string) {
+    return this.walletService.getRiderEarningsHistory(riderId);
+  }
 }
