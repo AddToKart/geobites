@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/glass_theme.dart';
 import 'rider_dashboard_screen.dart';
 import 'rider_profile_screen.dart';
+import '../customer/wallet_screen.dart';
 
 class RiderMainScreen extends StatefulWidget {
   const RiderMainScreen({Key? key}) : super(key: key);
@@ -15,6 +16,7 @@ class _RiderMainScreenState extends State<RiderMainScreen> {
 
   final List<Widget> _screens = [
     const RiderDashboardScreen(),
+    const WalletScreen(),
     const RiderProfileScreen(),
   ];
 
@@ -73,6 +75,7 @@ class _RiderMainScreenState extends State<RiderMainScreen> {
                         type: BottomNavigationBarType.fixed,
                         items: const [
                           BottomNavigationBarItem(icon: Icon(Icons.two_wheeler_outlined), activeIcon: Icon(Icons.two_wheeler), label: 'Deliveries'),
+                          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), activeIcon: Icon(Icons.account_balance_wallet), label: 'GeoPay'),
                           BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
                         ],
                       ),
