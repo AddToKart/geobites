@@ -6,10 +6,24 @@ const api: AxiosInstance = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        config.headers.Authorization = `Bearer ${urlToken}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401 && window.location.pathname !== '/login') {
+    if (error.response?.status === 401 && window.location.pathname !== '/login' && window.location.pathname !== '/mock-payment') {
       window.location.href = '/login';
     }
 

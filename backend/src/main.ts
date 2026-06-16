@@ -32,7 +32,7 @@ function parseCorsOrigins(): string[] {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  return parsedOrigins.length > 0 ? parsedOrigins : defaultOrigins;
+  return [...new Set([...parsedOrigins, ...defaultOrigins])];
 }
 
 async function bootstrap() {
