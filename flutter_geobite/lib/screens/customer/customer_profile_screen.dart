@@ -469,16 +469,17 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () async {
-            final newLocation = await Navigator.push<LatLng>(
+            final result = await Navigator.push<MapSelectionResult>(
               context,
               MaterialPageRoute(
                 builder: (_) => MapSelectionScreen(initialLocation: _defaultLocation),
               ),
             );
-            if (newLocation != null) {
+            if (result != null) {
               setState(() {
-                _defaultLocation = newLocation;
-                _mapController?.flyTo(newLocation, zoom: 15);
+                _defaultLocation = result.location;
+                _addressCtrl.text = result.address;
+                _mapController?.flyTo(result.location, zoom: 15);
               });
             }
           },

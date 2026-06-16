@@ -234,14 +234,17 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                     const SizedBox(height: 16),
                     GestureDetector(
                       onTap: () async {
-                        final newLocation = await Navigator.push<LatLng>(
+                        final result = await Navigator.push<MapSelectionResult>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => MapSelectionScreen(initialLocation: _shopLocation),
                           ),
                         );
-                        if (newLocation != null) {
-                          setState(() => _shopLocation = newLocation);
+                        if (result != null) {
+                          setState(() {
+                            _shopLocation = result.location;
+                            _addressCtrl.text = result.address;
+                          });
                           if (mounted) GlassToast.success(context, 'Location pinned successfully!');
                         }
                       },

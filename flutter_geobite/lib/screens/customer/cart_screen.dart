@@ -266,16 +266,17 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: () async {
-                            final newLocation = await Navigator.push<LatLng>(
+                            final result = await Navigator.push<MapSelectionResult>(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => MapSelectionScreen(initialLocation: _deliveryLocation),
                               ),
                             );
-                            if (newLocation != null) {
+                            if (result != null) {
                               setState(() {
-                                _deliveryLocation = newLocation;
-                                _mapController?.flyTo(newLocation, zoom: 15);
+                                _deliveryLocation = result.location;
+                                _addressController.text = result.address;
+                                _mapController?.flyTo(result.location, zoom: 15);
                               });
                             }
                           },
