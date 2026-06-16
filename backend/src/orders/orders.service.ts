@@ -269,7 +269,14 @@ export class OrdersService {
         }
         qb.where('order.vendorId = :vendorId', { vendorId: sellerVendor.id });
       } else if (role === 'rider') {
-        qb.where('order.riderId = :userId', { userId });
+        qb.where(
+          'order.riderId = :userId OR (order.riderId IS NULL AND order.status = :availableStatus AND order.orderType = :orderType)',
+          {
+            userId,
+            availableStatus: 'ready_for_pickup',
+            orderType: 'DELIVERY',
+          },
+        );
       } else {
         throw new BadRequestException(`Invalid role: ${role}`);
       }
