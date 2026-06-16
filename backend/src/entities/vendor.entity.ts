@@ -18,7 +18,7 @@ import { Rating } from './rating.entity';
 @Index(['latitude', 'longitude'])
 @Index(['rating'])
 export class Vendor {
-  @PrimaryColumn({ type: 'varchar', length: 255 })
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ type: 'varchar', length: 255 })

@@ -63,7 +63,10 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
   Future<void> _saveProfile() async {
     final name = _nameCtrl.text.trim();
     final address = _addressCtrl.text.trim();
-    if (name.isEmpty || address.isEmpty) return;
+    if (name.isEmpty || address.isEmpty) {
+      GlassToast.error(context, 'Shop Name and Address are required!');
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
@@ -79,16 +82,14 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       final payload = {
         'name': name,
         'address': address,
-        'lat': _shopLocation.latitude,
-        'lng': _shopLocation.longitude,
+        'latitude': _shopLocation.latitude,
+        'longitude': _shopLocation.longitude,
         if (finalImageUrl != null) 'imageUrl': finalImageUrl,
       };
 
       bool wasNew = _vendor == null;
       if (wasNew) {
         // Create
-        final auth = Provider.of<AuthProvider>(context, listen: false);
-        payload['userId'] = auth.user!.id;
         final newVendor = await vendorService.createVendor(payload);
         setState(() => _vendor = newVendor);
       } else {
@@ -100,6 +101,9 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       if (wasNew && mounted) {
         // Force reload of SellerMainScreen
         Navigator.of(context).pushReplacementNamed('/seller');
+      } else if (!wasNew && mounted && Navigator.canPop(context)) {
+        // Return to SellerMoreScreen
+        Navigator.pop(context);
       }
     } catch (e) {
       GlassToast.error(context, 'Error saving: $e');
