@@ -17,14 +17,20 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const order_entity_1 = require("../entities/order.entity");
+const rider_rating_entity_1 = require("../entities/rider-rating.entity");
 const notifications_service_1 = require("../notifications/notifications.service");
+const wallet_service_1 = require("../wallet/wallet.service");
 let RidersService = class RidersService {
     orderRepository;
+    riderRatingRepository;
     notificationsService;
+    walletService;
     dataSource;
-    constructor(orderRepository, notificationsService, dataSource) {
+    constructor(orderRepository, riderRatingRepository, notificationsService, walletService, dataSource) {
         this.orderRepository = orderRepository;
+        this.riderRatingRepository = riderRatingRepository;
         this.notificationsService = notificationsService;
+        this.walletService = walletService;
         this.dataSource = dataSource;
     }
     async getRiderStats(riderId) {
@@ -33,10 +39,20 @@ let RidersService = class RidersService {
         });
         const completed = allDeliveries.filter((o) => o.status === 'delivered');
         const totalEarnings = completed.reduce((sum, o) => sum + Number(o.deliveryFee ?? 0), 0);
+        const rawSummary = await this.riderRatingRepository
+            .createQueryBuilder('riderRating')
+            .select('COUNT(riderRating.id)', 'totalRatings')
+            .addSelect('AVG(riderRating.score)', 'averageScore')
+            .where('riderRating.riderId = :riderId', { riderId })
+            .getRawOne();
+        const totalRatings = Number(rawSummary?.totalRatings ?? 0);
+        const average = Number(rawSummary?.averageScore ?? 0);
         return {
             totalDeliveries: allDeliveries.length,
             completedDeliveries: completed.length,
             totalEarnings,
+            averageRating: totalRatings === 0 ? 0.0 : Number(average.toFixed(2)),
+            totalRatings,
         };
     }
     async findDeliveries(riderId, query) {
@@ -115,6 +131,9 @@ let RidersService = class RidersService {
         const allowed = transitions[order.status] ?? [];
         if (!allowed.includes(updateStatusDto.status)) {
             throw new common_1.BadRequestException('Invalid status transition');
+        }
+        if (updateStatusDto.status === 'delivered') {
+            order.paymentStatus = 'paid';
         }
         order.status = updateStatusDto.status;
         const updatedOrder = await this.orderRepository.save(order);
@@ -240,8 +259,11 @@ exports.RidersService = RidersService;
 exports.RidersService = RidersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
+    __param(1, (0, typeorm_1.InjectRepository)(rider_rating_entity_1.RiderRating)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         notifications_service_1.NotificationsService,
+        wallet_service_1.WalletService,
         typeorm_2.DataSource])
 ], RidersService);
 //# sourceMappingURL=riders.service.js.map
