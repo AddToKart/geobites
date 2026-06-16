@@ -38,7 +38,7 @@ export class RiderRating {
   @CreateDateColumn()
   createdAt!: Date;
 
-  @ManyToOne(() => Order, (order) => order.riderRatings, {
+  @ManyToOne(() => Order, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'orderId' })
