@@ -1,6 +1,7 @@
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import type { MenuItem } from "@/types";
 import { formatCurrency } from "@/utils/helpers";
+import { uploadUrl } from "@/utils/upload";
 import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 
 export function VendorMenuSections({
@@ -60,7 +61,7 @@ export function VendorMenuSections({
                       {item.imageUrl ? (
                         <>
                           <img
-                            src={item.imageUrl}
+                            src={uploadUrl(item.imageUrl)}
                             alt={item.name}
                             loading="lazy"
                             decoding="async"

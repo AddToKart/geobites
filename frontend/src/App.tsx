@@ -28,6 +28,7 @@ import {
   loadSellerAnalyticsPage,
   loadSellerPayoutsPage,
   loadSellerKDSPage,
+  loadSellerPOSPage,
   loadSellerPromotionsPage,
   loadSellerVouchersPage,
   loadSellerRatingsPage,
@@ -38,6 +39,10 @@ import {
   loadFavoritesPage,
   loadSearchResultsPage,
   loadPaymentReceiptPage,
+  loadAboutPage,
+  loadContactPage,
+  loadTermsPage,
+  loadPrivacyPage,
   loadPaymentGcashPage,
   loadPaymentMayaPage,
   loadPaymentQrphPage,
@@ -45,6 +50,10 @@ import {
 } from '@/routes/loaders';
 
 const LandingPage = lazy(loadLandingPage);
+const AboutPage = lazy(loadAboutPage);
+const ContactPage = lazy(loadContactPage);
+const TermsPage = lazy(loadTermsPage);
+const PrivacyPage = lazy(loadPrivacyPage);
 const LoginPage = lazy(loadLoginPage);
 const RegisterPage = lazy(loadRegisterPage);
 const NotificationsPage = lazy(loadNotificationsPage);
@@ -71,6 +80,7 @@ const SellerDashboard = lazy(loadSellerDashboardPage);
 const SellerAnalytics = lazy(loadSellerAnalyticsPage);
 const SellerPayouts = lazy(loadSellerPayoutsPage);
 const SellerKDS = lazy(loadSellerKDSPage);
+const SellerPOS = lazy(loadSellerPOSPage);
 const SellerPromotions = lazy(loadSellerPromotionsPage);
 const SellerVouchers = lazy(loadSellerVouchersPage);
 const SellerRatings = lazy(loadSellerRatingsPage);
@@ -137,9 +147,12 @@ function AppRoutes() {
           <Routes location={location}>
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/landing" element={<RouteGroup><LandingPage /></RouteGroup>} />
+            <Route path="/about" element={<RouteGroup><AboutPage /></RouteGroup>} />
+            <Route path="/contact" element={<RouteGroup><ContactPage /></RouteGroup>} />
+            <Route path="/terms" element={<RouteGroup><TermsPage /></RouteGroup>} />
+            <Route path="/privacy" element={<RouteGroup><PrivacyPage /></RouteGroup>} />
             <Route path="/login" element={<RouteGroup><LoginPage /></RouteGroup>} />
             <Route path="/register" element={<RouteGroup><RegisterPage /></RouteGroup>} />
-            <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
 
             <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
               <Route path="/browse" element={<RouteGroup><BrowseVendorsPagePremium /></RouteGroup>} />
@@ -147,8 +160,12 @@ function AppRoutes() {
               <Route path="/cart" element={<RouteGroup><CartPage /></RouteGroup>} />
               <Route path="/orders" element={<RouteGroup><OrderHistoryPage /></RouteGroup>} />
               <Route path="/orders/:id" element={<RouteGroup><OrderTrackingPage /></RouteGroup>} />
+              <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
               <Route path="/favorites" element={<RouteGroup><FavoritesPage /></RouteGroup>} />
               <Route path="/search" element={<RouteGroup><SearchResultsPage /></RouteGroup>} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={['customer', 'seller']} />}>
               <Route path="/receipt/:orderId" element={<RouteGroup><PaymentReceiptPage /></RouteGroup>} />
             </Route>
 
@@ -167,6 +184,7 @@ function AppRoutes() {
               <Route path="/seller/analytics" element={<RouteGroup><SellerAnalytics /></RouteGroup>} />
               <Route path="/seller/payouts" element={<RouteGroup><SellerPayouts /></RouteGroup>} />
               <Route path="/seller/kds" element={<RouteGroup><SellerKDS /></RouteGroup>} />
+              <Route path="/seller/pos" element={<RouteGroup><SellerPOS /></RouteGroup>} />
               <Route path="/seller/promotions" element={<RouteGroup><SellerPromotions /></RouteGroup>} />
               <Route path="/seller/vouchers" element={<RouteGroup><SellerVouchers /></RouteGroup>} />
               <Route path="/seller/ratings" element={<RouteGroup><SellerRatings /></RouteGroup>} />

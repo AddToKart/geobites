@@ -56,6 +56,7 @@ export async function getSession(): Promise<SessionPayload | null> {
 export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
+  image?: string;
   street?: string;
   barangay?: string;
   landmark?: string;
@@ -63,7 +64,6 @@ export interface UpdateProfilePayload {
   deliveryLng?: string | number;
   storeName?: string;
   businessPermit?: string;
-  image?: string;
 }
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<User> {

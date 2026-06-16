@@ -15,6 +15,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  image?: string;
   role: UserRole;
   phone?: string;
   address?: string;
@@ -27,7 +28,6 @@ export interface User {
   landmark?: string;
   deliveryLat?: string | number;
   deliveryLng?: string | number;
-  image?: string;
 }
 
 export interface OperatingHours {
@@ -49,6 +49,7 @@ export interface Vendor {
   totalRatings: number;
   imageUrl?: string;
   isActive: boolean;
+  isTemporarilyClosed?: boolean;
   operatingHours?: OperatingHours[];
   businessPermit?: string;
   businessPermitExpiry?: string;

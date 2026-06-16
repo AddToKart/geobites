@@ -1,10 +1,12 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
-import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
+import { getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
+import { useAuth } from '@/hooks/useAuth';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
+import { getAddresses } from '@/services/addressService';
 import { searchMenuItems, DishSearchResult } from '@/services/menuService';
 import { Order, Vendor, MenuItem } from '@/types';
 import { toast } from 'sonner';
@@ -43,24 +45,41 @@ const CATEGORIES = [
   'All',
   'Silog',
   'Ihaw-Ihaw',
-  'Pancit & Noodles',
-  'Desserts & Sweet',
-  'Burgers & Fast Food',
-  'Coffee & Drinks',
-  'Street Food',
+  'Snacks',
+  'Drinks',
 ];
 
 export function BrowseVendorsPagePremium() {
   const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
   const { addItem, vendorId: cartVendorId, clearCart } = useCart();
   const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
-  const [sortBy] = useState<BrowseSort>('distance');
+  const [sortBy] = useState<BrowseSort>('name');
   const [coords, setCoords] = useState(santaMariaBulacanCenter);
+  const [initialCoordsLoaded, setInitialCoordsLoaded] = useState(false);
+
+  // Load user's default saved address pin as initial coordinates
+  useEffect(() => {
+    if (initialCoordsLoaded || authLoading) return;
+    if (!user) {
+      setInitialCoordsLoaded(true);
+      return;
+    }
+    getAddresses()
+      .then((addresses) => {
+        const defaultAddr = addresses.find((a) => a.isDefault) ?? addresses[0];
+        if (defaultAddr?.deliveryLat != null && defaultAddr?.deliveryLng != null) {
+          setCoords({ lat: defaultAddr.deliveryLat, lng: defaultAddr.deliveryLng });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInitialCoordsLoaded(true));
+  }, [user, initialCoordsLoaded, authLoading]);
   const [viewMode, setViewMode] = useState<BrowseViewMode>('grid');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
   const [searchingDishes, setSearchingDishes] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -70,16 +89,9 @@ export function BrowseVendorsPagePremium() {
   const allVendorsRef = useRef<BrowseVendor[]>([]);
 
   const allVendors = useMemo(() => {
-    const merged = [
-      ...demoVendors.map((vendor) => ({
-        ...vendor,
-        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
-      })),
-      ...liveVendors
-        .map((vendor) => toBrowseVendor(vendor, coords))
-        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
-        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
-    ];
+    const merged = liveVendors
+      .map((vendor) => toBrowseVendor(vendor, coords))
+      .filter((vendor): vendor is BrowseVendor => Boolean(vendor));
     allVendorsRef.current = merged;
     return merged;
   }, [coords, liveVendors]);
@@ -102,23 +114,16 @@ export function BrowseVendorsPagePremium() {
     }
   }, [search]);
 
-  useEffect(() => {
-    const loadBrowseData = async () => {
-      setIsLoading(true);
-
-      try {
-        const response = await getVendors({ page: 1, limit: 200 });
-        setLiveVendors(response.data);
-      } catch {
-        setLiveVendors([]);
-        toast.error('Live shops could not be loaded. Showing Santa Maria demos instead.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadBrowseData();
-  }, []);
+  useVisiblePolling(async () => {
+    try {
+      const response = await getVendors({ page: 1, limit: 100 });
+      setLiveVendors(response.data);
+      setIsLoading(false);
+    } catch {
+      setLiveVendors([]);
+      toast.error('Live shops could not be loaded.');
+    }
+  }, 30000);
 
   useVisiblePolling(async () => {
     try {
@@ -196,8 +201,20 @@ export function BrowseVendorsPagePremium() {
 
 
   const browseVendors = useMemo(() => {
+    const trimmedSearch = search.trim();
     const filtered = allVendors.filter((vendor) => {
-      // Category selection filter only — search drives the dropdown, not this grid.
+      // Text search filter: match against name, description, and specialties
+      if (trimmedSearch.length >= 2) {
+        const queryLower = trimmedSearch.toLowerCase();
+        const vendorText = [
+          vendor.name,
+          vendor.description,
+          ...(vendor.specialties || []),
+        ].join(' ').toLowerCase();
+        if (!vendorText.includes(queryLower)) return false;
+      }
+
+      // Category selection filter
       if (selectedCategory === 'All') return true;
 
       const categoryLower = selectedCategory.toLowerCase();
@@ -232,7 +249,7 @@ export function BrowseVendorsPagePremium() {
 
       return secondVendor.rating - firstVendor.rating;
     });
-  }, [allVendors, sortBy, selectedCategory]);
+  }, [allVendors, sortBy, selectedCategory, search]);
 
   const selectedVendor = useMemo(
     () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
@@ -332,7 +349,6 @@ export function BrowseVendorsPagePremium() {
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
-          allVendors={allVendors}
           viewMode="map"
           coords={coords}
           selectedVendor={selectedVendor}
@@ -385,27 +401,29 @@ export function BrowseVendorsPagePremium() {
         </div>
 
         {/* Sticky Categories Bar */}
-        <div className="sticky top-16 md:top-0 bg-background/95 backdrop-blur-md z-30 py-4 -mx-6 px-6 border-b border-border/50">
-          <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
-            {CATEGORIES.map((category) => {
-              const isActive = selectedCategory === category;
-              return (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`shrink-0 border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground border-primary font-extrabold'
-                      : 'border-border bg-transparent text-foreground hover:bg-secondary/40'
-                  }`}
-                >
-                  {category}
-                </button>
-              );
-            })}
-          </Reveal>
+        <div className="sticky top-16 md:top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 -mx-6 lg:-mx-12 px-6 lg:px-12">
+          <div className="py-4">
+            <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
+              {CATEGORIES.map((category) => {
+                const isActive = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`shrink-0 border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground border-primary font-extrabold'
+                        : 'border-border bg-transparent text-foreground hover:bg-secondary/40'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </Reveal>
+          </div>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-16 mb-4">
           <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 sm:mb-0">
             Explore local kitchens
@@ -428,7 +446,6 @@ export function BrowseVendorsPagePremium() {
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
-          allVendors={allVendors}
           viewMode={viewMode}
           coords={coords}
           selectedVendor={selectedVendor}

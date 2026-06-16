@@ -31,6 +31,7 @@ export function NotificationsPage() {
   const markAsRead = async (id: string) => {
     await markNotificationAsRead(id);
     await loadNotifications();
+    window.dispatchEvent(new CustomEvent('notification-status-changed'));
   };
 
   const filteredNotifications = useMemo(() => {
@@ -57,6 +58,7 @@ export function NotificationsPage() {
   const markVisibleAsRead = async () => {
     await Promise.all(visibleUnread.map((notification) => markNotificationAsRead(notification.id)));
     await loadNotifications();
+    window.dispatchEvent(new CustomEvent('notification-status-changed'));
   };
 
   return (
@@ -66,7 +68,7 @@ export function NotificationsPage() {
           <div className="border-b-2 border-foreground pb-6 mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Updates</p>
-              <h1 className="text-6xl font-medium tracking-tighter">Alerts.</h1>
+              <h1 className="text-6xl font-medium tracking-tighter">Notifications.</h1>
               <p className="text-xl text-muted-foreground mt-4 max-w-xl">
                 Stay updated on orders, deliveries, and account activity.
               </p>
@@ -218,7 +220,7 @@ export function NotificationsPage() {
           <div className="space-y-8 xl:sticky xl:top-12 xl:self-start">
             <Reveal>
               <div className="border border-border p-8 bg-background">
-                <h2 className="text-2xl font-medium tracking-tighter mb-8 border-b border-border pb-4">Triage</h2>
+                <h2 className="text-2xl font-medium tracking-tighter mb-8 border-b border-border pb-4">Activity</h2>
                 <div className="space-y-6">
                   {Object.entries(notificationTypeLabels).map(([type, label]) => (
                     <div key={type} className="flex justify-between items-center pb-4 border-b border-border/50 last:border-0 last:pb-0">
@@ -232,14 +234,6 @@ export function NotificationsPage() {
               </div>
             </Reveal>
 
-            <Reveal delay={0.1}>
-              <div className="border border-border p-8 bg-secondary/10">
-                <h2 className="text-2xl font-medium tracking-tighter mb-4">Settings</h2>
-                <p className="text-lg text-muted-foreground">
-                  Notification preferences and frequency management are coming soon.
-                </p>
-              </div>
-            </Reveal>
           </div>
         </section>
       </div>

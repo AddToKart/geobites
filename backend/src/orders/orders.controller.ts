@@ -24,7 +24,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  @Roles('customer')
+  @Roles('customer', 'seller')
   create(
     @Body() createOrderDto: CreateOrderDto,
     @CurrentUser('id') userId: string,

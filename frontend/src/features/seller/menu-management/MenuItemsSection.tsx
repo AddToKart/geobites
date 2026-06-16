@@ -1,9 +1,10 @@
-import { type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import { Clock, Package, PencilLine, Trash2, AlertTriangle } from 'lucide-react';
+import { type Dispatch, type FormEvent, type SetStateAction, useRef } from 'react';
+import { Clock, Package, PencilLine, Trash2, AlertTriangle, Camera, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { MenuItem } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
+import { toast } from 'sonner';
 import type { NewMenuItemFormState } from './types';
 
 export function MenuItemsSection({
@@ -25,6 +26,22 @@ export function MenuItemsSection({
   onRemoveItem: (itemId: string) => void;
   onUpdateStock?: (itemId: string, quantity: number) => void;
 }) {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    if (newItem.imagePreview) URL.revokeObjectURL(newItem.imagePreview);
+    setNewItem((current) => ({ ...current, imageFile: file, imagePreview: URL.createObjectURL(file) }));
+  };
+
+  const handleRemoveImage = () => {
+    if (newItem.imagePreview) URL.revokeObjectURL(newItem.imagePreview);
+    setNewItem((current) => ({ ...current, imageFile: null, imagePreview: null }));
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
   return (
     <div className="space-y-12">
       {/* Editorial Header Section */}
@@ -96,6 +113,35 @@ export function MenuItemsSection({
           }
           className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
         />
+        <div className="flex items-center gap-4">
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          {newItem.imagePreview ? (
+            <div className="relative size-14 shrink-0 border border-border overflow-hidden">
+              <img src={newItem.imagePreview} alt="" className="size-full object-cover" />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute -top-1.5 -right-1.5 size-5 bg-foreground text-background flex items-center justify-center"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => imageInputRef.current?.click()}
+            className="h-10 px-4 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-opacity shrink-0"
+          >
+            <Camera className="size-3.5" />
+            {newItem.imagePreview ? 'Change image' : 'Add image'}
+          </button>
+        </div>
         <div className="md:col-span-3">
           <Button
             type="submit"

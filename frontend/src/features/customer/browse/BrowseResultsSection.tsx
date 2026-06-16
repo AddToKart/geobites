@@ -1,9 +1,8 @@
-import { Suspense, lazy, memo, useCallback, useMemo, useState } from "react";
+import { Suspense, lazy, memo, useCallback, useState } from "react";
 import { Search } from "lucide-react";
 import { AnimatePresence, m } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { VendorCardPremium } from "@/components/custom/VendorCardPremium";
 import { BrowseListItem } from "./BrowseListItem";
 import {
@@ -25,31 +24,6 @@ const BrowseVendorMapPanel = lazy(() =>
 );
 
 const ITEMS_PER_PAGE = 12;
-
-const timeSlotKeywords: Record<string, string[]> = {
-  breakfast: ['breakfast', 'morning', 'coffee', 'silog', 'tapsi', 'pancake', 'tocino', 'longganisa', 'pandesal', 'almusal'],
-  lunch: ['lunch', 'grill', 'ihaw', 'bbq', 'pancit', 'burger', 'fried', 'merienda', 'rice meals', 'silog'],
-  merienda: ['merienda', 'desserts', 'pancit', 'lumpia', 'halo', 'sweets', 'snacks', 'coffee', 'cold drinks'],
-  dinner: ['dinner', 'grill', 'sisig', 'inasal', 'lechon', 'stews', 'sizzling', 'platters', 'adobo', 'sinigang', 'bulalo', 'kare'],
-  'late-night': ['pulutan', 'sisig', 'ihaw', 'bbq', 'comfort', 'silog', 'noodles', 'bowls'],
-};
-
-function getTimeSlot(hour: number): string {
-  if (hour >= 5 && hour < 10) return 'breakfast';
-  if (hour >= 10 && hour < 14) return 'lunch';
-  if (hour >= 14 && hour < 17) return 'merienda';
-  if (hour >= 17 && hour < 22) return 'dinner';
-  return 'late-night';
-}
-
-function scoreVendorForSlot(vendor: BrowseVendor, slot: string): number {
-  const keywords = timeSlotKeywords[slot] ?? [];
-  let score = 0;
-  if (keywords.some((kw) => vendor.spotlight?.toLowerCase().includes(kw))) score += 5;
-  score += (vendor.specialties?.filter((s) => keywords.some((kw) => s.toLowerCase().includes(kw))).length ?? 0) * 3;
-  if (keywords.some((kw) => vendor.name?.toLowerCase().includes(kw))) score += 2;
-  return score;
-}
 
 function PaginationControls({
   currentPage,
@@ -152,7 +126,6 @@ function useDelayedNavigation(goTo: (page: number) => void, goNext: () => void, 
 export const BrowseResultsSection = memo(function BrowseResultsSection({
   isLoading,
   browseVendors,
-  allVendors,
   viewMode,
   coords,
   selectedVendor,
@@ -161,35 +134,18 @@ export const BrowseResultsSection = memo(function BrowseResultsSection({
 }: {
   isLoading: boolean;
   browseVendors: BrowseVendor[];
-  allVendors: BrowseVendor[];
   viewMode: BrowseViewMode;
   coords: { lat: number; lng: number };
   selectedVendor: BrowseVendor | null;
   onSelectVendor: (vendorId: string | null) => void;
   onLocate: (coords: { lat: number; lng: number }) => void;
 }) {
-  const featuredVendors = useMemo(() => {
-    if (allVendors.length === 0) return [];
-    const slot = getTimeSlot(new Date().getHours());
-    const scored = allVendors.map((v) => ({
-      vendor: v,
-      score: scoreVendorForSlot(v, slot),
-    }));
-    scored.sort((a, b) => b.score - a.score || b.vendor.rating - a.vendor.rating);
-    return scored.slice(0, Math.min(3, allVendors.length)).map((s) => s.vendor);
-  }, [allVendors]);
-
-  const featuredIds = useMemo(() => new Set(featuredVendors.map((v) => v.id)), [featuredVendors]);
-  const restVendors = useMemo(
-    () => browseVendors.filter((v) => !featuredIds.has(v.id)),
-    [browseVendors, featuredIds],
-  );
   const listPagination = usePagination(
     viewMode === "list" ? browseVendors : [],
     ITEMS_PER_PAGE,
   );
   const gridPagination = usePagination(
-    viewMode === "grid" ? restVendors : [],
+    viewMode === "grid" ? browseVendors : [],
     ITEMS_PER_PAGE,
   );
 
@@ -331,52 +287,10 @@ export const BrowseResultsSection = memo(function BrowseResultsSection({
 
   return (
     <section className="space-y-16 mt-16">
-      <div className="border-t border-border pt-16">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-8">
-          Featured Spots
-        </h2>
-        <Stagger
-          className="grid gap-x-12 gap-y-16 md:grid-cols-3"
-          delayChildren={0.02}
-          stagger={0.06}
-        >
-          {featuredVendors.map((vendor) => (
-            <StaggerItem
-              key={`${vendor.id}-feature`}
-              className="group flex flex-col justify-between h-full cursor-pointer"
-              onClick={() => onSelectVendor(vendor.id)}
-            >
-              <div className="relative z-10 border-l-2 border-primary pl-6">
-                <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
-                  {vendor.spotlight || "Nearby"}
-                </p>
-                <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 group-hover:text-primary transition-colors">
-                  {vendor.name}
-                </h2>
-                <p className="text-muted-foreground line-clamp-3 leading-relaxed">
-                  {vendor.description ||
-                    "Discover our most popular picks from this top-rated local vendor."}
-                </p>
-                <div className="mt-8 flex flex-wrap gap-2">
-                  {(vendor.specialties || []).slice(0, 3).map((specialty) => (
-                    <span
-                      key={specialty}
-                      className="border border-border px-3 py-1 text-xs font-bold uppercase tracking-widest text-muted-foreground transition-colors group-hover:border-primary group-hover:text-primary"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </div>
-
-      {restVendors.length > 0 && (
+      {browseVendors.length > 0 && (
         <div className="border-t border-border pt-16">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-8">
-            All Restaurants
+            Restaurants
           </h2>
           <div className="grid gap-x-0 gap-y-0 md:grid-cols-2 xl:grid-cols-3 border-t border-border">
             <AnimatePresence mode="popLayout" initial={false}>
@@ -417,7 +331,7 @@ export const BrowseResultsSection = memo(function BrowseResultsSection({
               isLastPage={isLastPage || isPending}
               startIndex={startIndex}
               endIndex={endIndex}
-              totalItems={restVendors.length}
+              totalItems={browseVendors.length}
             />
           )}
         </div>

@@ -25,7 +25,7 @@ export function PaymentGeoPayPage() {
       await initiatePayment(orderId);
       setStep("success");
       toast.success("Paid successfully using GeoPay Wallet!");
-      setTimeout(() => navigate(`/orders/${orderId}`), 2000);
+      setTimeout(() => navigate(`/receipt/${orderId}`), 2000);
     } catch (caughtError) {
       toast.error(
         caughtError instanceof Error ? caughtError.message : "GeoPay Wallet payment failed"

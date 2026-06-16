@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock3, MapPin, ShoppingBag } from 'lucide-react';
+import { Clock3, MapPin, ShoppingBag, Trash2 } from 'lucide-react';
 import { MapStyleSelect } from '@/components/maps/MapStyleSelect';
 import { mapStyles, type MapStyleKey } from '@/components/maps/map-styles';
 import {
@@ -12,7 +12,7 @@ import {
   useMap,
 } from '@/components/ui/map';
 import type { DemoVendor } from '@/data/demoVendors';
-import type { Vendor } from '@/types';
+import type { CartItem, Vendor } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
 
 function VendorMapCamera({
@@ -51,19 +51,25 @@ function VendorMapCamera({
 }
 
 export function VendorSidebar({
+  items,
   cartCount,
   cartTotal,
   vendor,
   vendorMeta,
   style,
   onStyleChange,
+  onRemoveItem,
+  onUpdateQuantity,
 }: {
+  items: CartItem[];
   cartCount: number;
   cartTotal: number;
   vendor: Vendor;
   vendorMeta: DemoVendor | null;
   style: MapStyleKey;
   onStyleChange: (value: MapStyleKey) => void;
+  onRemoveItem?: (menuItemId: string) => void;
+  onUpdateQuantity?: (menuItemId: string, quantity: number) => void;
 }) {
   const selectedStyle = mapStyles[style];
   const is3D = style === 'openstreetmap3d';
@@ -72,22 +78,61 @@ export function VendorSidebar({
     <div className="space-y-8 xl:sticky xl:top-8 xl:self-start">
       <div className="border border-border p-8 bg-background">
         <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Your Cart</p>
-        <h2 className="text-4xl font-medium tracking-tighter text-foreground mb-8">
-          {cartCount} item(s)
-        </h2>
-        
-        <div className="border-t border-border pt-6 space-y-4 mb-8">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Subtotal</span>
-            <span className="text-2xl font-medium tracking-tighter text-foreground">
-              {formatCurrency(cartTotal)}
-            </span>
+
+        {items.length === 0 ? (
+          <p className="text-lg text-muted-foreground">Your cart is empty</p>
+        ) : (
+          <div className="space-y-4 mb-8">
+            {items.map((item) => (
+              <div key={item.menuItem.id} className="flex items-start justify-between gap-4 pb-4 border-b border-border/50 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground truncate">
+                    {item.menuItem.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {item.quantity} &times; {formatCurrency(item.menuItem.price)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center border border-border">
+                    <button
+                      onClick={() => onUpdateQuantity?.(item.menuItem.id, item.quantity - 1)}
+                      className="px-2 py-1 text-xs font-bold hover:bg-secondary/40 transition-colors cursor-pointer"
+                    >
+                      &minus;
+                    </button>
+                    <span className="px-3 py-1 text-xs font-bold tabular-nums border-x border-border">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => onUpdateQuantity?.(item.menuItem.id, item.quantity + 1)}
+                      className="px-2 py-1 text-xs font-bold hover:bg-secondary/40 transition-colors cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="text-sm font-medium tabular-nums min-w-[5ch] text-right">
+                    {formatCurrency(item.menuItem.price * item.quantity)}
+                  </span>
+                  <button
+                    onClick={() => onRemoveItem?.(item.menuItem.id)}
+                    className="text-muted-foreground hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                {cartCount} item{cartCount !== 1 ? 's' : ''}
+              </span>
+              <span className="text-xl font-medium tracking-tighter text-foreground">
+                {formatCurrency(cartTotal)}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Vendor</span>
-            <span className="text-sm font-bold text-foreground text-right max-w-[150px] truncate">{vendor.name}</span>
-          </div>
-        </div>
+        )}
 
         {cartCount > 0 ? (
           <Link to="/cart" className="flex items-center justify-center gap-2 w-full border border-border bg-foreground text-background py-4 px-6 font-bold uppercase tracking-widest hover:opacity-90 transition-colors">

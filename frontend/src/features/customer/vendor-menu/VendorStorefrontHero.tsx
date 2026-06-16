@@ -24,7 +24,12 @@ export function VendorStorefrontHero({
       <div className="flex flex-col md:flex-row gap-12 justify-between items-start mb-16">
         <div className="flex-1 max-w-3xl">
           <div className="flex flex-wrap items-center gap-4 mb-6">
-            {vendor.isActive ? (
+            {vendor.isTemporarilyClosed ? (
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-500 flex items-center gap-1.5 border border-amber-500 px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Temporarily Closed
+              </span>
+            ) : vendor.isActive ? (
               <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5 border border-primary px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 Taking Orders
@@ -82,20 +87,7 @@ export function VendorStorefrontHero({
       </div>
 
       {/* Hero Visual */}
-      <div className="w-full h-[40vh] min-h-[300px] border border-border relative overflow-hidden group bg-secondary/10">
-        {vendor.imageUrl ? (
-          <img
-            src={vendor.imageUrl}
-            alt={vendor.name}
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center transition-transform duration-700 group-hover:scale-105 bg-secondary/20">
-            <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">No image available</span>
-          </div>
-        )}
+      <div className="w-full h-[40vh] min-h-[300px] border border-border relative overflow-hidden bg-secondary/20">
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent"></div>
 
         <div className="absolute top-6 right-6 border border-primary text-primary bg-background px-4 py-2 flex items-center gap-2">

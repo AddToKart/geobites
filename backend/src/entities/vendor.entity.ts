@@ -103,6 +103,9 @@ export class Vendor {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  isTemporarilyClosed!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 

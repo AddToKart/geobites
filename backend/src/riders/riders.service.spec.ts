@@ -1,10 +1,8 @@
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
-import { IsNull, DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 import { Order } from '../entities/order.entity';
-import { RiderRating } from '../entities/rider-rating.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import { WalletService } from '../wallet/wallet.service';
 import { RidersService } from './riders.service';
 
 describe('RidersService', () => {
@@ -16,28 +14,17 @@ describe('RidersService', () => {
     save: jest.fn(),
     update: jest.fn(),
   };
-  const riderRatingRepository = {
-    createQueryBuilder: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    addSelect: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    getRawOne: jest
-      .fn()
-      .mockResolvedValue({ totalRatings: '0', averageScore: null }),
-  };
   const notificationsService = {
     create: jest.fn(),
   };
-  const walletService = {
-    handleOrderDeliveryPayout: jest.fn(),
-  };
   const dataSource = {
-    options: {
-      type: 'postgres',
-    },
-    query: jest
-      .fn()
-      .mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
+    options: { type: 'better-sqlite3' },
+    query: jest.fn().mockResolvedValue([]),
+    transaction: jest.fn(async (callback: (manager: unknown) => unknown) =>
+      callback({
+        getRepository: () => ({}),
+      }),
+    ),
   };
 
   beforeEach(async () => {
@@ -51,16 +38,8 @@ describe('RidersService', () => {
           useValue: orderRepository,
         },
         {
-          provide: getRepositoryToken(RiderRating),
-          useValue: riderRatingRepository,
-        },
-        {
           provide: NotificationsService,
           useValue: notificationsService,
-        },
-        {
-          provide: WalletService,
-          useValue: walletService,
         },
         {
           provide: DataSource,

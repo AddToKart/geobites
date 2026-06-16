@@ -1,6 +1,7 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/services/api';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
 import { createVendor, deleteVendor, getVendors, updateVendor } from '@/services/vendorService';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
@@ -29,12 +30,15 @@ const defaultVendorForm: VendorFormState = {
   latitude: santaMariaBulacanCenter.lat.toFixed(6),
   longitude: santaMariaBulacanCenter.lng.toFixed(6),
   isActive: true,
+  isTemporarilyClosed: false,
   businessPermit: '',
   businessPermitExpiry: '',
   foodSafetyCert: '',
   foodSafetyCertExpiry: '',
   commissionRate: '0.25',
   operatingHours: defaultOperatingHours,
+  imageFile: null,
+  imagePreview: null,
 };
 
 export function MenuManagementPage() {
@@ -49,14 +53,26 @@ export function MenuManagementPage() {
     price: '',
     prepTimeMinutes: '',
     stockQuantity: '',
+    imageFile: null,
+    imagePreview: null,
   });
+  const itemImageInputRef = useRef<HTMLInputElement>(null);
   const [vendorForm, setVendorForm] = useState<VendorFormState>(defaultVendorForm);
   const [error, setError] = useState<string | null>(null);
+  const shopImagePreviewRef = useRef<string | null>(null);
+  shopImagePreviewRef.current = vendorForm.imagePreview;
+
+  useEffect(() => {
+    return () => {
+      if (shopImagePreviewRef.current) URL.revokeObjectURL(shopImagePreviewRef.current);
+    };
+  }, []);
   const [isSavingVendor, setIsSavingVendor] = useState(false);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'profile' | 'menu'>('profile');
 
   const syncVendorForm = useCallback((currentVendor: Vendor | null) => {
+    if (shopImagePreviewRef.current) URL.revokeObjectURL(shopImagePreviewRef.current);
     if (!currentVendor) {
       setVendorForm(defaultVendorForm);
       return;
@@ -74,15 +90,18 @@ export function MenuManagementPage() {
       description: currentVendor.description || '',
       address: currentVendor.address,
       imageUrl: currentVendor.imageUrl || '',
-      latitude: Number(currentVendor.latitude).toFixed(6),
-      longitude: Number(currentVendor.longitude).toFixed(6),
+      latitude: Number(currentVendor.latitude ?? 0).toFixed(6),
+      longitude: Number(currentVendor.longitude ?? 0).toFixed(6),
       isActive: currentVendor.isActive,
+      isTemporarilyClosed: currentVendor.isTemporarilyClosed ?? false,
       businessPermit: currentVendor.businessPermit || '',
       businessPermitExpiry: currentVendor.businessPermitExpiry || '',
       foodSafetyCert: currentVendor.foodSafetyCert || '',
       foodSafetyCertExpiry: currentVendor.foodSafetyCertExpiry || '',
       commissionRate: String(currentVendor.commissionRate ?? 0.25),
       operatingHours,
+      imageFile: null,
+      imagePreview: null,
     });
   }, []);
 
@@ -187,14 +206,25 @@ export function MenuManagementPage() {
     setIsSavingVendor(true);
 
     try {
+      let imageUrl: string | undefined;
+      if (vendorForm.imageFile) {
+        const formData = new FormData();
+        formData.append('file', vendorForm.imageFile);
+        const res = await api.post<{ url: string }>('/upload/profile', formData);
+        imageUrl = res.data.url;
+      } else {
+        imageUrl = vendorForm.imageUrl.trim() || undefined;
+      }
+
       const payload = {
         name: vendorForm.name.trim() || 'My Santa Maria Shop',
         description: vendorForm.description.trim() || undefined,
         address: vendorForm.address.trim() || 'Santa Maria, Bulacan',
-        imageUrl: vendorForm.imageUrl.trim() || undefined,
+        imageUrl,
         latitude: vendorCoordinates.lat,
         longitude: vendorCoordinates.lng,
         isActive: vendorForm.isActive,
+        isTemporarilyClosed: vendorForm.isTemporarilyClosed,
         operatingHours: vendorForm.operatingHours.map((oh) => ({
           dayOfWeek: oh.dayOfWeek,
           openTime: oh.openTime,
@@ -232,9 +262,13 @@ export function MenuManagementPage() {
     if (!vendor) return;
     setIsClosing(true);
     try {
-      await deleteVendor(vendor.id);
+      const updated = await updateVendor(vendor.id, {
+        isActive: false,
+        isTemporarilyClosed: false,
+      });
+      setVendor(updated);
+      syncVendorForm(updated);
       toast.success("Shop closed successfully");
-      navigate("/seller");
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "Failed to close shop";
       toast.error(message);
@@ -251,6 +285,13 @@ export function MenuManagementPage() {
 
     try {
       const targetVendor = await ensureVendor();
+      let imageUrl: string | undefined;
+      if (newItem.imageFile) {
+        const formData = new FormData();
+        formData.append('file', newItem.imageFile);
+        const res = await api.post<{ url: string }>('/upload/menu', formData);
+        imageUrl = res.data.url;
+      }
       await createMenuItem({
         vendorId: targetVendor.id,
         name: newItem.name,
@@ -258,10 +299,12 @@ export function MenuManagementPage() {
         category: newItem.category,
         price: Number(newItem.price),
         isAvailable: true,
+        imageUrl,
         prepTimeMinutes: newItem.prepTimeMinutes ? Number(newItem.prepTimeMinutes) : undefined,
         stockQuantity: newItem.stockQuantity ? Number(newItem.stockQuantity) : undefined,
       });
-      setNewItem({ name: '', description: '', category: '', price: '', prepTimeMinutes: '', stockQuantity: '' });
+      if (newItem.imagePreview) URL.revokeObjectURL(newItem.imagePreview);
+      setNewItem({ name: '', description: '', category: '', price: '', prepTimeMinutes: '', stockQuantity: '', imageFile: null, imagePreview: null });
       toast.success('Menu item added');
       await loadData();
     } catch (caughtError) {
@@ -301,8 +344,8 @@ export function MenuManagementPage() {
 
   const removeItem = async (itemId: string) => {
     try {
-      await deleteMenuItem(itemId);
-      toast.success('Menu item removed');
+      const result = await deleteMenuItem(itemId);
+      toast.success(result && 'removed' in result && !result.removed ? 'Item marked as unavailable (has order history)' : 'Menu item removed');
       await loadData();
     } catch (caughtError) {
       const message =
@@ -327,10 +370,10 @@ export function MenuManagementPage() {
         </div>
 
         {/* Workspace Navigation Tabs */}
-        <div className="flex border-b border-border mb-12 overflow-x-auto" role="tablist" aria-label="Catalog Workspace">
+        <div className="flex border-b border-border mb-12 overflow-x-auto" role="tablist" aria-label="Shop Settings Workspace">
           {[
             { id: 'profile' as const, label: 'Shop Profile' },
-            { id: 'menu' as const, label: 'Menu Catalog' },
+            { id: 'menu' as const, label: 'Menu' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -370,12 +413,12 @@ export function MenuManagementPage() {
           </section>
         )}
 
-        {activeWorkspaceTab === 'profile' && vendor && (
+        {activeWorkspaceTab === 'profile' && vendor && vendor.isActive && (
           <div className="border-t border-red-500/30 pt-12 mt-12">
             <div className="max-w-xl">
               <h3 className="text-lg font-bold tracking-tight text-red-500 mb-2">Danger Zone</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Closing your shop will permanently delete your vendor profile, menu items, and promotions. This action cannot be undone.
+                Closing your shop will hide it from customers. Your menu and data will be preserved so you can reopen anytime.
               </p>
               <button
                 onClick={() => setShowCloseConfirm(true)}
@@ -392,7 +435,7 @@ export function MenuManagementPage() {
             <div className="w-full max-w-md bg-background border border-border p-8 mx-4">
               <h3 className="text-2xl font-bold tracking-tight text-red-500 mb-4">Close shop?</h3>
               <p className="text-muted-foreground mb-8">
-                This will permanently delete your vendor profile, all menu items, and promotions. Customers will no longer find your shop.
+                Your shop will be hidden from customers. All menu items and data are preserved so you can reopen anytime.
               </p>
               <div className="flex gap-4">
                 <button

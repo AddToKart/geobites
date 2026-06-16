@@ -83,10 +83,6 @@ export class CreateOrderDto {
   @IsOptional()
   voucherCode?: string;
 
-  @IsEnum(['DELIVERY', 'PICKUP'])
-  @IsOptional()
-  orderType?: 'DELIVERY' | 'PICKUP';
-
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

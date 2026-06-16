@@ -6,28 +6,14 @@ import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
-import { Wallet } from '../entities/wallet.entity';
-import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
 import { VouchersService } from '../vouchers/vouchers.service';
 import { OrdersService } from './orders.service';
-import { EventsGateway } from '../events/events.gateway';
 
 describe('OrdersService', () => {
   let service: OrdersService;
-
-  const eventsGateway = {
-    emitNewOrder: jest.fn(),
-    emitOrderStatusUpdated: jest.fn(),
-    emitNotification: jest.fn(),
-    server: {
-      to: jest.fn().mockReturnValue({
-        emit: jest.fn(),
-      }),
-    },
-  };
 
   const orderRepository = {
     findOne: jest.fn(),
@@ -66,22 +52,9 @@ describe('OrdersService', () => {
     create: jest.fn((data) => data),
     save: jest.fn(),
   };
-  const transactionWalletRepository = {
-    findOne: jest.fn(),
-    create: jest.fn((data) => data),
-    save: jest.fn((data) => data),
-  };
-  const transactionWalletTransactionRepository = {
-    create: jest.fn((data) => data),
-    save: jest.fn((data) => data),
-  };
   const dataSource = {
-    options: {
-      type: 'postgres',
-    },
-    query: jest
-      .fn()
-      .mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
+    options: { type: 'better-sqlite3' },
+    query: jest.fn().mockResolvedValue([]),
     transaction: jest.fn(async (callback: (manager: unknown) => unknown) =>
       callback({
         getRepository: (entity: unknown) => {
@@ -96,12 +69,6 @@ describe('OrdersService', () => {
           }
           if (entity === OrderItem) {
             return transactionOrderItemRepository;
-          }
-          if (entity === Wallet) {
-            return transactionWalletRepository;
-          }
-          if (entity === WalletTransaction) {
-            return transactionWalletTransactionRepository;
           }
 
           throw new Error('Unexpected repository request');
@@ -151,10 +118,6 @@ describe('OrdersService', () => {
         {
           provide: DataSource,
           useValue: dataSource,
-        },
-        {
-          provide: EventsGateway,
-          useValue: eventsGateway,
         },
       ],
     }).compile();

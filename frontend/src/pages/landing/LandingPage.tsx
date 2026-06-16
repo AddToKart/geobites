@@ -203,6 +203,45 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* About Us */}
+        <section className="border-t border-border bg-background px-6 py-24 lg:px-12 lg:py-48">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid gap-16 lg:grid-cols-2 lg:gap-24 items-center">
+              <div>
+                <p className="mb-6 text-sm font-bold uppercase tracking-widest text-primary">About Us</p>
+                <h2 className="text-5xl font-medium tracking-tighter sm:text-7xl lg:text-8xl leading-[0.9] mb-8">
+                  Built for Santa Maria.
+                </h2>
+                <p className="text-xl text-muted-foreground leading-relaxed md:text-2xl mb-8">
+                  Geobites is a fairer food delivery platform — zero commission for restaurants, 
+                  fair pay for riders, and real dine-in prices for you. We operate only in 
+                  Santa Maria because local deserves better.
+                </p>
+                <Link
+                  to="/about"
+                  className="inline-flex items-center gap-2 text-lg font-bold text-primary hover:text-primary/80 transition-colors group"
+                >
+                  Learn more about our story
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                </Link>
+              </div>
+              <div className="grid gap-6">
+                {[
+                  { val: "0%", label: "Commission" },
+                  { val: "100%", label: "Tips to Riders" },
+                  { val: "₱0", label: "Markups" },
+                  { val: "24/7", label: "Local Support" },
+                ].map((stat, i) => (
+                  <div key={i} className="border-l-4 border-primary pl-6 py-2">
+                    <p className="text-4xl font-medium tracking-tighter text-foreground">{stat.val}</p>
+                    <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="border-t border-border">
           <div className="flex flex-col lg:flex-row items-stretch min-h-[50vh]">

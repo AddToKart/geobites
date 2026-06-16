@@ -10,7 +10,6 @@ import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
 import { Promotion } from './entities/promotion.entity';
 import { Rating } from './entities/rating.entity';
-import { RiderRating } from './entities/rider-rating.entity';
 import { Vendor } from './entities/vendor.entity';
 import { RiderLocation } from './entities/rider-location.entity';
 import { Wallet } from './entities/wallet.entity';
@@ -28,7 +27,6 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { OrdersModule } from './orders/orders.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { RatingsModule } from './ratings/ratings.module';
-import { RiderRatingsModule } from './rider-ratings/rider-ratings.module';
 import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { FavoritesModule } from './favorites/favorites.module';
@@ -37,7 +35,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { WalletModule } from './wallet/wallet.module';
 import { GeopayModule } from './geopay/geopay.module';
 import { VouchersModule } from './vouchers/vouchers.module';
-import { EventsModule } from './events/events.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -56,7 +54,6 @@ import { EventsModule } from './events/events.module';
       OrderItem,
       Promotion,
       Rating,
-      RiderRating,
       Notification,
       RiderLocation,
       Wallet,
@@ -75,7 +72,6 @@ import { EventsModule } from './events/events.module';
     PromotionsModule,
     RidersModule,
     RatingsModule,
-    RiderRatingsModule,
     FavoritesModule,
     NotificationsModule,
     TrackingModule,
@@ -84,7 +80,7 @@ import { EventsModule } from './events/events.module';
     GeopayModule,
     VouchersModule,
     AddressesModule,
-    EventsModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

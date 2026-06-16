@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import {
   ForbiddenException,
   Injectable,
@@ -24,6 +24,8 @@ export class VendorsService {
     const skip = (page - 1) * limit;
 
     const qb = this.vendorRepository.createQueryBuilder('vendor');
+
+    qb.where("vendor.id NOT LIKE 'demo-%'");
 
     if (query.search) {
       qb.where(

@@ -1,6 +1,8 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
+import { getNotifications } from "@/services/notificationService";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
@@ -12,6 +14,7 @@ import {
   Megaphone,
   Menu,
   MessageSquare,
+  ShoppingCart,
   ShoppingBag,
   TrendingUp,
   Truck,
@@ -23,7 +26,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Toaster } from "@/components/ui/sonner";
+import { uploadUrl } from "@/utils/upload";
 import { preloadRoute } from "@/routes/loaders";
 
 interface NavItem {
@@ -48,7 +53,12 @@ const SELLER_NAV: NavItem[] = [
     icon: <ChefHat className="w-5 h-5" />,
   },
   {
-    label: "Catalog",
+    label: "POS",
+    href: "/seller/pos",
+    icon: <ShoppingCart className="w-5 h-5" />,
+  },
+  {
+    label: "Shop Settings",
     href: "/seller/menu",
     icon: <UtensilsCrossed className="w-5 h-5" />,
   },
@@ -117,6 +127,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const refreshUnreadCount = React.useCallback(async () => {
+    try {
+      const result = await getNotifications({ unreadOnly: true, limit: 1 });
+      setUnreadCount(result.total);
+    } catch {
+      setUnreadCount(0);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const handler = () => void refreshUnreadCount();
+    window.addEventListener('notification-status-changed', handler);
+    return () => window.removeEventListener('notification-status-changed', handler);
+  }, [refreshUnreadCount]);
+
+  useVisiblePolling(refreshUnreadCount, 30000);
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -149,7 +178,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onLogout={handleLogout}
             userName={user.name}
             userRole={user.role}
+            userImage={user.image}
             isCollapsed={isCollapsed}
+            unreadCount={unreadCount}
           />
         </div>
         {/* Floating Sidebar Toggle Button */}
@@ -203,6 +234,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onItemClick={() => setOpen(false)}
                   userName={user.name}
                   userRole={user.role}
+                  userImage={user.image}
+                  unreadCount={unreadCount}
                 />
               </SheetContent>
             </Sheet>
@@ -263,14 +296,18 @@ function NavContent({
   onItemClick,
   userName,
   userRole,
+  userImage,
   isCollapsed = false,
+  unreadCount = 0,
 }: {
   items: NavItem[];
   onLogout: () => void;
   onItemClick?: () => void;
   userName: string;
   userRole: string;
+  userImage?: string;
   isCollapsed?: boolean;
+  unreadCount?: number;
 }) {
   return (
     <div className="flex h-full flex-col bg-background">
@@ -292,21 +329,29 @@ function NavContent({
           )}
         </div>
         {!isCollapsed ? (
-          <div className="bg-secondary/20 p-4 border border-border">
-            <p className="text-sm font-medium tracking-tight text-foreground truncate">
-              {userName}
-            </p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
-              {userRole} Account
-            </p>
+          <div className="bg-secondary/20 p-4 border border-border flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src={uploadUrl(userImage)} alt={userName} />
+              <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                {(userName || 'U').charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="text-sm font-medium tracking-tight text-foreground truncate">
+                {userName}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-0.5">
+                {userRole} Account
+              </p>
+            </div>
           </div>
         ) : (
-          <div 
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/30 border border-border text-sm font-bold uppercase text-primary shrink-0"
-            title={`${userName} (${userRole} Account)`}
-          >
-            {userName.charAt(0) || "U"}
-          </div>
+          <Avatar size="sm" title={`${userName} (${userRole} Account)`}>
+            <AvatarImage src={uploadUrl(userImage)} alt={userName} />
+            <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+              {(userName || 'U').charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
         )}
       </div>
 
@@ -349,7 +394,7 @@ function NavContent({
         <PrefetchNavLink
           to="/notifications"
           onClick={onItemClick}
-          title={isCollapsed ? "Alerts" : undefined}
+          title={isCollapsed ? "Notifications" : undefined}
           className={({ isActive }) =>
             cn(
               "flex items-center transition-colors w-full",
@@ -361,9 +406,16 @@ function NavContent({
           }
         >
           {isCollapsed ? (
-            <Bell className="w-5 h-5" />
+            <div className="relative">
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-500 border border-background" />}
+            </div>
           ) : (
-            <span className="flex items-center gap-3"><Bell className="w-4 h-4" /> Alerts</span>
+            <span className="flex items-center gap-3 relative">
+              <Bell className="w-4 h-4" />
+              Notifications
+              {unreadCount > 0 && <span className="absolute top-0 left-3.5 h-2 w-2 rounded-full bg-orange-500" />}
+            </span>
           )}
         </PrefetchNavLink>
         

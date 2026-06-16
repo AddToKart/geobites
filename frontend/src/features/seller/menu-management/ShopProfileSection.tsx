@@ -1,9 +1,10 @@
 import { type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import { CheckCircle2, Save, Clock, ShieldCheck, Percent } from 'lucide-react';
+import { Camera, CheckCircle2, Save, Clock, ShieldCheck, Percent, X } from 'lucide-react';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { uploadUrl } from '@/utils/upload';
 import { OperatingHoursEditor } from './OperatingHoursEditor';
 import type { VendorFormState } from './types';
 
@@ -33,17 +34,32 @@ export function ShopProfileSection({
             This is the seller-side setup for how your shop appears in browse, list, and map views.
           </p>
         </div>
-        <Button
-          type="button"
-          variant={vendorForm.isActive ? 'default' : 'outline'}
-          className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
-          onClick={() =>
-            setVendorForm((current) => ({ ...current, isActive: !current.isActive }))
-          }
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          {vendorForm.isActive ? 'Shop is open' : 'Mark as open'}
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          {vendorForm.isActive ? (
+            <Button
+              type="button"
+              variant="default"
+              className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
+              onClick={() =>
+                setVendorForm((current) => ({ ...current, isActive: true, isTemporarilyClosed: false }))
+              }
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Shop is open
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
+              onClick={() =>
+                setVendorForm((current) => ({ ...current, isActive: true, isTemporarilyClosed: false }))
+              }
+            >
+              Reopen shop
+            </Button>
+          )}
+        </div>
       </div>
 
       <form className="grid gap-8 md:grid-cols-2" onSubmit={onSubmit}>
@@ -62,18 +78,70 @@ export function ShopProfileSection({
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Hero image URL
+            Hero image
           </label>
-          <Input
-            placeholder="https://..."
-            value={vendorForm.imageUrl}
-            onChange={(event) =>
-              setVendorForm((current) => ({ ...current, imageUrl: event.target.value }))
-            }
-            className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-          />
+          <div className="flex items-start gap-4">
+            <div className="h-28 w-48 shrink-0 bg-secondary/15 flex items-center justify-center border border-border overflow-hidden">
+              {vendorForm.imagePreview ? (
+                <img src={vendorForm.imagePreview} alt="Shop preview" className="h-full w-full object-cover" />
+              ) : vendorForm.imageUrl ? (
+                <img src={uploadUrl(vendorForm.imageUrl)} alt="Shop" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-4xl">🏪</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (!file.type.match(/^image\/(png|jpe?g|webp)$/)) {
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    return;
+                  }
+                  setVendorForm((current) => ({
+                    ...current,
+                    imageFile: file,
+                    imagePreview: URL.createObjectURL(file),
+                    imageUrl: '',
+                  }));
+                }}
+                className="hidden"
+                id="shop-hero-upload"
+              />
+              <label
+                htmlFor="shop-hero-upload"
+                className="h-10 px-5 bg-foreground text-background hover:opacity-90 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-opacity cursor-pointer"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                {(vendorForm.imagePreview || vendorForm.imageUrl) ? 'Change photo' : 'Upload photo'}
+              </label>
+              {(vendorForm.imagePreview || vendorForm.imageUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (vendorForm.imagePreview) URL.revokeObjectURL(vendorForm.imagePreview);
+                    setVendorForm((current) => ({
+                      ...current,
+                      imageFile: null,
+                      imagePreview: null,
+                      imageUrl: '',
+                    }));
+                  }}
+                  className="h-10 px-5 border border-border hover:bg-secondary/20 font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2 md:col-span-2">

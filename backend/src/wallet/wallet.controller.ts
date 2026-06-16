@@ -63,7 +63,7 @@ export class WalletController {
   }
 
   @Post('cash-in/:id/simulate-success')
-  @Roles('customer', 'rider', 'seller')
+  @Roles('customer', 'rider')
   @HttpCode(HttpStatus.OK)
   async simulateSuccess(@Param('id') id: string) {
     return this.walletService.completeCashIn(id);
@@ -83,22 +83,6 @@ export class WalletController {
     const vendorId = await this.findVendorId(userId);
     if (!vendorId) return { needsSetup: true };
     return this.walletService.getVendorTransactionHistory(vendorId);
-  }
-
-  @Post('vendor/cash-in')
-  @Roles('seller')
-  async initiateVendorCashIn(
-    @CurrentUser('id') userId: string,
-    @Body('amount') amount: number,
-    @Body('paymentMethod') paymentMethod: 'GCASH' | 'MAYA' | 'QRPH',
-  ) {
-    const vendorId = await this.findVendorId(userId);
-    if (!vendorId) return { needsSetup: true };
-    return this.walletService.initiateVendorCashIn(
-      vendorId,
-      amount,
-      paymentMethod,
-    );
   }
 
   @Post('vendor/withdraw')
@@ -153,11 +137,5 @@ export class WalletController {
   @Roles('customer', 'rider')
   async getCustomerWithdrawals(@CurrentUser('id') customerId: string) {
     return this.walletService.getCustomerWithdrawalHistory(customerId);
-  }
-
-  @Get('rider/earnings')
-  @Roles('rider')
-  async getRiderEarnings(@CurrentUser('id') riderId: string) {
-    return this.walletService.getRiderEarningsHistory(riderId);
   }
 }

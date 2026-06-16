@@ -12,19 +12,15 @@ import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
-import { Wallet } from '../entities/wallet.entity';
-import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
 import { VouchersService } from '../vouchers/vouchers.service';
-import { EventsGateway } from '../events/events.gateway';
 import {
   haversineKm,
   calculateDeliveryFee,
 } from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { CreateOrderItemDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
@@ -57,7 +53,6 @@ export class OrdersService {
     private readonly walletService: WalletService,
     private readonly geopayService: GeopayService,
     private readonly vouchersService: VouchersService,
-    private readonly eventsGateway: EventsGateway,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -87,7 +82,7 @@ export class OrdersService {
           throw new NotFoundException('Vendor not found');
         }
 
-        if (!vendor.isActive) {
+        if (!vendor.isActive || vendor.isTemporarilyClosed) {
           throw new BadRequestException(
             'Vendor is not accepting orders right now',
           );
@@ -133,7 +128,6 @@ export class OrdersService {
 
         let deliveryFee = 0;
         if (
-          createOrderDto.orderType !== 'PICKUP' &&
           createOrderDto.deliveryLat !== undefined &&
           createOrderDto.deliveryLng !== undefined
         ) {
@@ -187,7 +181,6 @@ export class OrdersService {
           status: 'pending',
           totalAmount,
           deliveryFee,
-          orderType: createOrderDto.orderType || 'DELIVERY',
           street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,
@@ -216,66 +209,6 @@ export class OrdersService {
 
         await orderItemRepository.save(snapshots);
 
-        if (createOrderDto.paymentMethod === 'GEOPAY') {
-          const walletRepo = manager.getRepository(Wallet);
-          const transactionRepo = manager.getRepository(WalletTransaction);
-
-          let wallet = await walletRepo.findOne({
-            where: { customerId },
-          });
-
-          if (!wallet) {
-            wallet = walletRepo.create({ customerId, balance: 0.0 });
-            wallet = await walletRepo.save(wallet);
-          }
-
-          if (Number(wallet.balance) < Number(totalAmount)) {
-            throw new BadRequestException(
-              `Insufficient GeoPay wallet balance (Total: ₱${totalAmount.toFixed(2)}, Wallet: ₱${Number(wallet.balance).toFixed(2)})`,
-            );
-          }
-
-          wallet.balance = Number(wallet.balance) - Number(totalAmount);
-          await walletRepo.save(wallet);
-
-          const txn = transactionRepo.create({
-            walletId: wallet.id,
-            amount: -totalAmount,
-            type: 'payment',
-            status: 'success',
-            referenceId: savedOrder.id,
-            paymentMethod: 'GEOPAY',
-          });
-          await transactionRepo.save(txn);
-
-          // Credit vendor wallet
-          let vendorWallet = await walletRepo.findOne({
-            where: { vendorId: vendor.id },
-          });
-          if (!vendorWallet) {
-            vendorWallet = walletRepo.create({
-              vendorId: vendor.id,
-              balance: 0.0,
-            });
-          }
-          vendorWallet.balance =
-            Number(vendorWallet.balance) + Number(totalAmount);
-          await walletRepo.save(vendorWallet);
-
-          const vendorTxn = transactionRepo.create({
-            walletId: vendorWallet.id,
-            amount: totalAmount,
-            type: 'vendor_payout',
-            status: 'success',
-            referenceId: savedOrder.id,
-            paymentMethod: 'GEOPAY',
-          });
-          await transactionRepo.save(vendorTxn);
-
-          savedOrder.paymentStatus = 'paid';
-          await orderRepository.save(savedOrder);
-        }
-
         return {
           savedOrderId: savedOrder.id,
           sellerUserId: vendor.userId,
@@ -283,7 +216,7 @@ export class OrdersService {
       },
     );
 
-    // Notify seller about new order — REST notification + Socket.IO
+    // Notify seller about new order
     await this.notificationsService.create({
       userId: sellerUserId,
       title: 'New Order',
@@ -292,16 +225,7 @@ export class OrdersService {
       referenceId: savedOrderId,
     });
 
-    const newOrder = await this.findOneForUser(
-      savedOrderId,
-      customerId,
-      'customer',
-    );
-
-    // Push real-time new_order event to the seller
-    this.eventsGateway.emitNewOrder(sellerUserId, newOrder);
-
-    return newOrder;
+    return this.findOneForUser(savedOrderId, customerId, 'customer');
   }
 
   async findAllForUser(userId: string, role: UserRole, query: QueryOrdersDto) {
@@ -314,8 +238,6 @@ export class OrdersService {
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.vendor', 'vendor')
         .leftJoinAndSelect('order.items', 'items')
-        .leftJoinAndSelect('order.ratings', 'ratings')
-        .leftJoinAndSelect('order.riderRatings', 'riderRatings')
         .orderBy('order.createdAt', 'DESC')
         .skip(skip)
         .take(limit);
@@ -331,14 +253,7 @@ export class OrdersService {
         }
         qb.where('order.vendorId = :vendorId', { vendorId: sellerVendor.id });
       } else if (role === 'rider') {
-        qb.where(
-          'order.riderId = :userId OR (order.riderId IS NULL AND order.status = :availableStatus AND order.orderType = :orderType)',
-          {
-            userId,
-            availableStatus: 'ready_for_pickup',
-            orderType: 'DELIVERY',
-          },
-        );
+        qb.where('order.riderId = :userId', { userId });
       } else {
         throw new BadRequestException(`Invalid role: ${role}`);
       }
@@ -379,8 +294,6 @@ export class OrdersService {
       relations: {
         items: true,
         vendor: true,
-        ratings: true,
-        riderRatings: true,
       },
     });
 
@@ -429,7 +342,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
-    let nextStatus = updateStatusDto.status as Order['status'];
+    const nextStatus = updateStatusDto.status as Order['status'];
     const currentStatus = order.status;
 
     if (role === 'customer') {
@@ -459,13 +372,7 @@ export class OrdersService {
         );
       }
 
-      const allowed = [...(sellerTransitions[currentStatus] ?? [])];
-      if (
-        order.orderType === 'PICKUP' &&
-        currentStatus === 'ready_for_pickup'
-      ) {
-        allowed.push('delivered');
-      }
+      const allowed = sellerTransitions[currentStatus] ?? [];
       if (!allowed.includes(nextStatus)) {
         throw new BadRequestException('Invalid seller status transition');
       }
@@ -479,61 +386,31 @@ export class OrdersService {
     }
 
     if (role === 'rider') {
-      if (!order.riderId) {
-        // Rider is accepting/claiming the order
-        const claimableStatuses = ['accepted', 'preparing', 'ready_for_pickup'];
-        if (!claimableStatuses.includes(currentStatus)) {
-          throw new BadRequestException('Order is not in a claimable state');
-        }
-        order.riderId = userId;
-        // Keep status the same (do not force ready_for_pickup if order is still accepted/preparing)
-        nextStatus = currentStatus;
-      } else {
-        // Rider is updating the status of an order they already claimed
-        if (order.riderId !== userId) {
-          throw new ForbiddenException(
-            'Order is already assigned to another rider',
-          );
-        }
-        const allowed = riderTransitions[currentStatus] ?? [];
-        if (!allowed.includes(nextStatus)) {
-          throw new BadRequestException('Invalid rider status transition');
-        }
+      const allowed = riderTransitions[currentStatus] ?? [];
+      if (!allowed.includes(nextStatus)) {
+        throw new BadRequestException('Invalid rider status transition');
       }
-    }
 
-    if (nextStatus === 'delivered') {
-      order.paymentStatus = 'paid';
-    }
-    order.status = nextStatus;
-    const updatedOrder = await this.orderRepository.save(order);
-
-    if (nextStatus === 'delivered') {
-      try {
-        await this.walletService.handleOrderDeliveryPayout(updatedOrder.id);
-      } catch (payoutError) {
-        this.logger.error(
-          `Failed to process delivery payout for order ${updatedOrder.id}:`,
-          payoutError,
+      if (order.riderId && order.riderId !== userId) {
+        throw new ForbiddenException(
+          'Order is already assigned to another rider',
         );
       }
+
+      if (!order.riderId && nextStatus !== 'ready_for_pickup') {
+        throw new ForbiddenException(
+          'Order must be accepted before updating status',
+        );
+      }
+
+      if (nextStatus === 'ready_for_pickup' && !order.riderId) {
+        // Rider is accepting the delivery - assign them to this order
+        order.riderId = userId;
+      }
     }
 
-    // Emit real-time order_status_updated to the order room and user rooms
-    const statusPayload = {
-      orderId: updatedOrder.id,
-      status: nextStatus,
-      updatedAt: new Date().toISOString(),
-    };
-    // Broadcast to the order-specific room and to the customer's room
-    this.eventsGateway.emitOrderStatusUpdated(
-      `order_${updatedOrder.id}`,
-      statusPayload,
-    );
-    this.eventsGateway.emitOrderStatusUpdated(
-      `customer_${updatedOrder.customerId}`,
-      statusPayload,
-    );
+    order.status = nextStatus;
+    const updatedOrder = await this.orderRepository.save(order);
 
     // If cancelled by customer and paid via GeoPay, refund the customer wallet
     if (
@@ -559,26 +436,20 @@ export class OrdersService {
         );
       }
     }
-    // Notify seller and rider when customer cancels
-    if (nextStatus === 'cancelled' && role === 'customer') {
-      if (order.vendor?.userId) {
-        await this.notificationsService.create({
-          userId: order.vendor.userId,
-          title: 'Order Cancelled',
-          message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
-          type: 'order_update',
-          referenceId: order.id,
-        });
-      }
-      if (order.riderId) {
-        await this.notificationsService.create({
-          userId: order.riderId,
-          title: 'Delivery Cancelled',
-          message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
-          type: 'order_update',
-          referenceId: order.id,
-        });
-      }
+
+    // Notify seller when customer cancels
+    if (
+      nextStatus === 'cancelled' &&
+      role === 'customer' &&
+      order.vendor?.userId
+    ) {
+      await this.notificationsService.create({
+        userId: order.vendor.userId,
+        title: 'Order Cancelled',
+        message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
+        type: 'order_update',
+        referenceId: order.id,
+      });
     }
 
     // Create notifications based on status change
@@ -590,17 +461,6 @@ export class OrdersService {
         type: 'order_update',
         referenceId: order.id,
       });
-
-      // Broadcast to all online riders that a new delivery task is available
-      if (order.orderType !== 'PICKUP') {
-        this.eventsGateway.server.to('riders').emit('notification', {
-          id: `delivery_${order.id}`,
-          title: 'New Delivery Task Available',
-          message: `A new delivery is available from ${order.vendor?.name || 'a local shop'}`,
-          type: 'delivery_request',
-          referenceId: order.id,
-        });
-      }
     } else if (nextStatus === 'rejected') {
       await this.notificationsService.create({
         userId: order.customerId,

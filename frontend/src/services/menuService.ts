@@ -1,5 +1,5 @@
 import api from './api';
-import { getDemoVendorMenu, isDemoVendorId, demoVendors, getDemoVendorById } from '../data/demoVendors';
+import { getDemoVendorMenu, isDemoVendorId } from '../data/demoVendors';
 import { MenuItem, Vendor } from '../types';
 
 export interface DishSearchResult {
@@ -26,33 +26,6 @@ export async function searchMenuItems(
   query: string,
   filters?: { category?: string; priceMin?: number; priceMax?: number },
 ): Promise<DishSearchResult[]> {
-  // Demo vendor search (client-side)
-  const demoResults: DishSearchResult[] = [];
-  if (demoVendors.length > 0) {
-    const normalizedQuery = query.toLowerCase();
-    for (const vendor of demoVendors) {
-      const menu = getDemoVendorMenu(vendor.id);
-      const matching = menu.filter(
-        (item) =>
-          item.isAvailable !== false &&
-          (item.name.toLowerCase().includes(normalizedQuery) ||
-            (item.description?.toLowerCase() || '').includes(normalizedQuery)),
-      );
-      if (matching.length > 0) {
-        demoResults.push({
-          vendor: {
-            id: vendor.id,
-            name: vendor.name,
-            imageUrl: vendor.imageUrl,
-            rating: vendor.rating,
-            totalRatings: vendor.totalRatings,
-          },
-          items: matching,
-        });
-      }
-    }
-  }
-
   try {
     const params = new URLSearchParams({ q: query });
     if (filters?.category) params.set('category', filters.category);
@@ -60,9 +33,9 @@ export async function searchMenuItems(
     if (filters?.priceMax !== undefined) params.set('priceMax', String(filters.priceMax));
 
     const response = await api.get<DishSearchResult[]>(`/menu/search?${params}`);
-    return [...demoResults, ...response.data];
+    return response.data;
   } catch {
-    return demoResults;
+    return [];
   }
 }
 
@@ -79,7 +52,7 @@ export async function updateMenuItem(
   return response.data;
 }
 
-export async function deleteMenuItem(id: string): Promise<{ success: boolean }> {
-  const response = await api.delete<{ success: boolean }>(`/menu/${id}`);
+export async function deleteMenuItem(id: string): Promise<{ success: boolean; removed?: boolean }> {
+  const response = await api.delete<{ success: boolean; removed?: boolean }>(`/menu/${id}`);
   return response.data;
 }

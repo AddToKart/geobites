@@ -48,22 +48,23 @@ export class UpdateVendorDto {
   @IsOptional()
   isActive?: boolean;
 
-  @IsString()
+  @IsBoolean()
   @IsOptional()
-  @MaxLength(255)
-  openTime?: string;
+  isTemporarilyClosed?: boolean;
 
-  @IsString()
   @IsOptional()
-  @MaxLength(255)
-  closeTime?: string;
-
   @IsArray()
-  @IsOptional()
   operatingHours?: Array<{
     dayOfWeek: number;
     openTime: string;
     closeTime: string;
     isClosed: boolean;
   }>;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(99.99)
+  commissionRate?: number;
 }

@@ -6,6 +6,7 @@ import {
   IsPositive,
   IsString,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export class UpdateMenuItemDto {
@@ -37,4 +38,16 @@ export class UpdateMenuItemDto {
   @IsBoolean()
   @IsOptional()
   isAvailable?: boolean;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  prepTimeMinutes?: number;
+
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  stockQuantity?: number;
 }

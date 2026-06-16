@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import {
   ForbiddenException,
   Injectable,
@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MenuItem } from '../entities/menu-item.entity';
-import { Vendor } from '../entities/vendor.entity';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { MenuItem } from '../entities/menu-item.entity';
+import { Vendor } from '../entities/vendor.entity';
 
 @Injectable()
 export class MenuService {
@@ -86,8 +86,9 @@ export class MenuService {
           items: [],
         };
       }
-      const { vendor: _v, ...itemData } = item;
-      grouped[vid].items.push(itemData as any);
+      const { vendor, ...itemData } = item;
+      void vendor;
+      grouped[vid].items.push(itemData as MenuItem);
     }
 
     return Object.values(grouped);
@@ -157,10 +158,18 @@ export class MenuService {
       throw new ForbiddenException('You can only manage your own menu');
     }
 
-    await this.menuRepository.remove(menuItem);
+    let removed = true;
+    try {
+      await this.menuRepository.remove(menuItem);
+    } catch {
+      menuItem.isAvailable = false;
+      await this.menuRepository.save(menuItem);
+      removed = false;
+    }
 
     return {
       success: true,
+      removed,
     };
   }
 }

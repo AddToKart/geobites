@@ -41,6 +41,33 @@ export const BrowseOverviewSection = memo(function BrowseOverviewSection({
         </Reveal>
       )}
 
+      {activeOrder ? (
+        <Reveal delay={0.15} className={`bg-card text-foreground p-6 flex flex-col md:flex-row items-center justify-between border-l-4 border-primary ${isMapMode ? '' : 'mt-4'}`}>
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-12 bg-background flex items-center justify-center shrink-0 border border-border">
+               <div className="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Active Order</p>
+              <h2 className="text-xl font-medium capitalize mt-1 tracking-tight">
+                {activeOrder.vendor?.name || 'Order'} — {activeOrder.status.replaceAll('_', ' ')}
+              </h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
+                {activeOrder.items?.slice(0, 3).map((item) => (
+                  <span key={item.id}>{item.quantity}x {item.name}</span>
+                ))}
+                {(activeOrder.items?.length ?? 0) > 3 && (
+                  <span className="text-xs font-bold uppercase tracking-widest">+{activeOrder.items!.length - 3} more</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <Link to={`/orders/${activeOrder.id}`} className="mt-4 md:mt-0 font-bold uppercase tracking-widest text-primary hover:opacity-80 transition-colors flex items-center gap-2 whitespace-nowrap">
+            Track Delivery
+          </Link>
+        </Reveal>
+      ) : null}
+
       <Reveal delay={0.05} className="flex flex-col md:flex-row items-center gap-4 mt-4">
         <div className={`relative flex-1 w-full ${isMapMode ? 'bg-background/90 backdrop-blur-md' : ''}`} style={isMapMode ? { willChange: 'transform' } : undefined}>
           <Search className="absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground" />
@@ -57,28 +84,6 @@ export const BrowseOverviewSection = memo(function BrowseOverviewSection({
             <SlidersHorizontal className="h-6 w-6" />
           </Button>
         )}
-      </Reveal>
-
-
-
-      {activeOrder ? (
-        <Reveal delay={0.15} className={`bg-foreground text-background p-6 flex flex-col md:flex-row items-center justify-between border-l-4 border-primary ${isMapMode ? 'mt-0' : 'mt-8'}`}>
-          <div className="flex items-center gap-6">
-            <div className="w-12 h-12 bg-background flex items-center justify-center shrink-0 border border-border">
-               <div className="w-3 h-3 rounded-full bg-primary animate-pulse"></div>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest opacity-70">Active Order</p>
-              <h2 className="text-2xl font-medium capitalize mt-1 tracking-tight">
-                {activeOrder.status.replaceAll('_', ' ')}
-              </h2>
-            </div>
-          </div>
-          <Link to={`/orders/${activeOrder.id}`} className="mt-4 md:mt-0 font-bold uppercase tracking-widest text-primary hover:text-primary-foreground transition-colors flex items-center gap-2">
-            Track Delivery
-          </Link>
-        </Reveal>
-      ) : null}
-    </div>
+      </Reveal>    </div>
   );
 });

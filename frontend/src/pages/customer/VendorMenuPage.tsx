@@ -26,7 +26,7 @@ import { CustomerReviews } from "@/features/customer/vendor-menu/CustomerReviews
 
 export function VendorMenuPage() {
   const { id } = useParams<{ id: string }>();
-  const { items, addItem, updateQuantity } = useCart();
+  const { items, addItem, removeItem, updateQuantity } = useCart();
 
   const { data: vendor, isLoading: vendorLoading, error: vendorError } = useVendor(id!);
   const { data: menuItems = [], isLoading: menuLoading } = useVendorMenu(id!);
@@ -244,12 +244,15 @@ export function VendorMenuPage() {
 
           <div className="border-t border-border xl:border-none pt-12 xl:pt-0">
             <VendorSidebar
+              items={items}
               cartCount={cartCount}
               cartTotal={cartTotal}
               vendor={vendor}
               vendorMeta={vendorMeta}
               style={style}
               onStyleChange={setStyle}
+              onRemoveItem={removeItem}
+              onUpdateQuantity={updateQuantity}
             />
           </div>
         </section>

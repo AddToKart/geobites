@@ -38,7 +38,7 @@ export function PaymentQrphPage() {
       await api.post(`/payments/${orderId}/simulate-success`);
       setStep("success");
       toast.success("Payment authorized successfully");
-      setTimeout(() => navigate(`/orders/${orderId}`), 2000);
+      setTimeout(() => navigate(`/receipt/${orderId}`), 2000);
     } catch (caughtError) {
       toast.error(
         caughtError instanceof Error ? caughtError.message : "Failed to authorize payment"

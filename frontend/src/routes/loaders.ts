@@ -90,6 +90,30 @@ export const loadSearchResultsPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadAboutPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/AboutPage').then((module) => ({
+    default: module.AboutPage,
+  })),
+);
+
+export const loadContactPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/ContactPage').then((module) => ({
+    default: module.ContactPage,
+  })),
+);
+
+export const loadTermsPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/TermsPage').then((module) => ({
+    default: module.TermsPage,
+  })),
+);
+
+export const loadPrivacyPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/PrivacyPage').then((module) => ({
+    default: module.PrivacyPage,
+  })),
+);
+
 export const loadPaymentReceiptPage = memoizeRouteLoader(() =>
   import('@/pages/customer/PaymentReceiptPage').then((module) => ({
     default: module.PaymentReceiptPage,
@@ -168,6 +192,12 @@ export const loadSellerKDSPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadSellerPOSPage = memoizeRouteLoader(() =>
+  import('@/pages/seller/SellerPOS').then((module) => ({
+    default: module.SellerPOS,
+  })),
+);
+
 export const loadSellerPromotionsPage = memoizeRouteLoader(() =>
   import('@/pages/seller/SellerPromotions').then((module) => ({
     default: module.SellerPromotions,
@@ -211,6 +241,7 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/seller/analytics': loadSellerAnalyticsPage,
   '/seller/payouts': loadSellerPayoutsPage,
   '/seller/kds': loadSellerKDSPage,
+  '/seller/pos': loadSellerPOSPage,
   '/seller/promotions': loadSellerPromotionsPage,
   '/seller/vouchers': loadSellerVouchersPage,
   '/seller/ratings': loadSellerRatingsPage,
@@ -219,6 +250,10 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/wallet': loadWalletPage,
   '/favorites': loadFavoritesPage,
   '/search': loadSearchResultsPage,
+  '/about': loadAboutPage,
+  '/contact': loadContactPage,
+  '/terms': loadTermsPage,
+  '/privacy': loadPrivacyPage,
   '/receipt/:orderId': loadPaymentReceiptPage,
   '/payment/gcash': loadPaymentGcashPage,
   '/payment/maya': loadPaymentMayaPage,
@@ -288,7 +323,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
   const commonLoaders = [loadNotificationsPage, loadSettingsPage];
 
   if (!role) {
-    return [loadLandingPage, loadLoginPage, loadRegisterPage];
+    return [loadLandingPage, loadAboutPage, loadContactPage, loadTermsPage, loadPrivacyPage, loadLoginPage, loadRegisterPage];
   }
 
   switch (role) {
@@ -301,6 +336,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
         loadSellerPayoutsPage,
         loadSellerWalletPage,
         loadSellerKDSPage,
+        loadSellerPOSPage,
         loadSellerPromotionsPage,
         loadSellerVouchersPage,
         loadSellerRatingsPage,

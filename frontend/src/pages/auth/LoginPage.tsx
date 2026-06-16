@@ -22,6 +22,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { user, signIn, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -41,12 +42,16 @@ export function LoginPage() {
   }
 
   const onSubmit = async (data: LoginForm) => {
+    setServerError(null);
     try {
       await signIn(data.email, data.password);
       toast.success("Welcome back");
       navigate("/");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to sign in");
+      const message = error instanceof Error ? error.message : "Failed to sign in";
+      const displayMessage = message.includes("401") ? "Incorrect password" : message;
+      setServerError(displayMessage);
+      toast.error(displayMessage);
     }
   };
 
@@ -125,6 +130,12 @@ export function LoginPage() {
               </div>
               {errors.password && <p id="password-error" className="text-sm font-semibold text-red-500 mt-2">{errors.password.message}</p>}
             </div>
+
+            {serverError && (
+              <div className="bg-red-500/10 border border-red-500 rounded-2xl px-5 py-4">
+                <p className="text-sm font-semibold text-red-500">{serverError}</p>
+              </div>
+            )}
 
             <Button
               className="group w-full h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 text-lg font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-none"

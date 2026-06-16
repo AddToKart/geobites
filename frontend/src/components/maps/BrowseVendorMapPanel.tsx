@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from '@/components/maps/map-styles';
 import { getVendorMenu } from '@/services/menuService';
 import { formatCurrency } from '@/utils/helpers';
+import { uploadUrl } from '@/utils/upload';
 import type { MenuItem } from '@/types';
 import {
   Map,
@@ -155,20 +156,16 @@ function BrowseVendorSidePanel({
         <X className="h-4 w-4" />
       </button>
 
-      <div className="h-32 w-full border-b border-border bg-secondary/10 relative overflow-hidden flex-shrink-0">
-        {vendor.imageUrl ? (
-          <img
-            src={vendor.imageUrl}
-            alt={vendor.name}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl">
+      <div
+        className="h-32 w-full border-b border-border relative overflow-hidden flex-shrink-0"
+        style={vendor.imageUrl ? { backgroundImage: `url(${uploadUrl(vendor.imageUrl)})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+      >
+        {!vendor.imageUrl && (
+          <div className="flex h-full w-full items-center justify-center text-5xl bg-secondary/10">
             🍲
           </div>
         )}
+        {vendor.imageUrl && <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />}
         {vendor.spotlight && (
           <span className="absolute bottom-3 left-3 bg-primary text-primary-foreground px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
             {vendor.spotlight}
@@ -201,7 +198,7 @@ function BrowseVendorSidePanel({
         </p>
 
         <Link
-          to={`/vendors/${vendor.id}`}
+          to={`/vendor/${vendor.id}`}
           className="w-full h-12 bg-primary hover:bg-primary-dark text-primary-foreground font-bold uppercase tracking-widest text-[11px] flex items-center justify-center gap-2 transition-colors rounded-none"
         >
           View Full Menu & Order
@@ -243,7 +240,7 @@ function BrowseVendorSidePanel({
                 <div key={item.id} className="flex gap-4 items-start pb-4 border-b border-border/50 last:border-none last:pb-0">
                   {item.imageUrl ? (
                     <img
-                      src={item.imageUrl}
+                      src={uploadUrl(item.imageUrl)}
                       alt={item.name}
                       loading="lazy"
                       decoding="async"

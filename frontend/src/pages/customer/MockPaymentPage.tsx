@@ -15,7 +15,6 @@ export function MockPaymentPage() {
   const amount = Number(searchParams.get("amount") || "0");
   const rawMethod = searchParams.get("method") || "GCASH";
   const method = (rawMethod.toUpperCase() as "GCASH" | "MAYA" | "QRPH");
-  const token = searchParams.get("token") || "";
  
   const [step, setStep] = useState<"phone" | "otp" | "confirm" | "success">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -73,16 +72,15 @@ export function MockPaymentPage() {
   const handleConfirmPayment = async () => {
     setIsSubmitting(true);
     try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       if (cashInId) {
-        await api.post(`/wallet/cash-in/${cashInId}/simulate-success`, {}, { headers });
+        await api.post(`/wallet/cash-in/${cashInId}/simulate-success`);
         setStep("success");
         toast.success("Wallet cash-in authorized successfully");
         setTimeout(() => {
           navigate(`/wallet`);
         }, 2000);
       } else {
-        await api.post(`/payments/${orderId}/simulate-success`, {}, { headers });
+        await api.post(`/payments/${orderId}/simulate-success`);
         setStep("success");
         toast.success("Payment authorized successfully");
         setTimeout(() => {
