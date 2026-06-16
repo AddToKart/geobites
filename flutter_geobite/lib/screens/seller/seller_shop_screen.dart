@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../../models/vendor.dart';
@@ -9,7 +10,7 @@ import '../../services/upload_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
-import '../../widgets/location_picker_dialog.dart';
+import '../customer/map_selection_screen.dart';
 
 class SellerShopScreen extends StatefulWidget {
   const SellerShopScreen({Key? key}) : super(key: key);
@@ -250,12 +251,11 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                     const SizedBox(height: 16),
                     GestureDetector(
                       onTap: () async {
-                        final newLocation = await showGeneralDialog<LatLng>(
-                          context: context,
-                          barrierDismissible: false,
-                          pageBuilder: (context, animation, secondaryAnimation) {
-                            return LocationPickerDialog(initialLocation: _shopLocation);
-                          },
+                        final newLocation = await Navigator.push<LatLng>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MapSelectionScreen(initialLocation: _shopLocation),
+                          ),
                         );
                         if (newLocation != null) {
                           setState(() => _shopLocation = newLocation);

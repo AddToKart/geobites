@@ -34,7 +34,6 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                 ? MapcnStyle.midnight 
                 : MapcnStyle.normal,
             accentColor: AppColors.primary,
-            interactive: true,
             onPositionChanged: (position) {
               if (position.center != null) {
                 setState(() {
