@@ -9,6 +9,7 @@ import '../services/upload_service.dart';
 import '../widgets/glass_toast.dart';
 
 import '../models/menu_item.dart';
+import '../core/api_client.dart';
 
 class GlassMenuDialog extends StatefulWidget {
   final Function(String name, String description, double price, String? imageUrl) onSave;
@@ -141,7 +142,11 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                                     ? DecorationImage(image: FileImage(File(_selectedFile!.path!)), fit: BoxFit.cover)
                                     : null))
                             : (_existingImageUrl != null && _existingImageUrl!.isNotEmpty
-                                ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.cover)
+                                ? DecorationImage(
+                                    image: NetworkImage(_existingImageUrl!.startsWith('http')
+                                        ? _existingImageUrl!
+                                        : "${ApiClient.socketUrl}$_existingImageUrl"),
+                                    fit: BoxFit.cover)
                                 : null),
                       ),
                       child: _selectedFile == null && (_existingImageUrl == null || _existingImageUrl!.isEmpty)

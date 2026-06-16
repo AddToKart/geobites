@@ -8,6 +8,7 @@ import '../../models/vendor.dart';
 import '../../services/vendor_service.dart';
 import '../../services/order_service.dart';
 import 'seller_promotions_screen.dart';
+import '../../core/api_client.dart';
 import 'seller_reviews_screen.dart';
 import 'seller_analytics_screen.dart';
 import 'seller_shop_screen.dart';
@@ -92,7 +93,11 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                        backgroundImage: _vendor?.imageUrl != null ? NetworkImage(_vendor!.imageUrl!) : null,
+                        backgroundImage: _vendor?.imageUrl != null
+                            ? NetworkImage(_vendor!.imageUrl!.startsWith('http')
+                                ? _vendor!.imageUrl!
+                                : "${ApiClient.socketUrl}${_vendor!.imageUrl}")
+                            : null,
                         child: _vendor?.imageUrl == null
                             ? const Icon(Icons.storefront, size: 40, color: AppColors.primary)
                             : null,

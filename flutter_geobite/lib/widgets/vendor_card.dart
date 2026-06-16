@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/vendor.dart';
 import '../../theme/glass_theme.dart';
 import 'animated_tap_card.dart';
+import '../core/api_client.dart';
 
 class VendorCard extends StatelessWidget {
   final Vendor vendor;
@@ -29,7 +30,9 @@ class VendorCard extends StatelessWidget {
                   image: DecorationImage(
                     image: NetworkImage(
                       (vendor.imageUrl != null && vendor.imageUrl!.isNotEmpty)
-                          ? vendor.imageUrl!
+                          ? (vendor.imageUrl!.startsWith('http')
+                              ? vendor.imageUrl!
+                              : "${ApiClient.socketUrl}${vendor.imageUrl}")
                           : 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop', // Beautiful default food image
                     ),
                     fit: BoxFit.cover,

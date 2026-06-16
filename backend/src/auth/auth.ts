@@ -11,6 +11,11 @@ function parseTrustedOrigins(): string[] {
     'http://localhost:19006',
     'http://192.168.100.116:5173',
     'http://192.168.100.116:3000',
+    'http://10.0.2.2:3000',
+    'http://10.0.2.2:8081',
+    'http://10.0.2.2:19006',
+    'http://10.0.2.2:5173',
+    'http://10.0.2.2',
   ];
   const configuredOrigins = process.env.CORS_ORIGIN;
   if (!configuredOrigins) {

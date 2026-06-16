@@ -10,6 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
 import 'seller_receipt_screen.dart';
+import '../../core/api_client.dart';
 
 class SellerPosScreen extends StatefulWidget {
   const SellerPosScreen({Key? key}) : super(key: key);
@@ -269,7 +270,9 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                                                             borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                                                             child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
                                                                 ? Image.network(
-                                                                    item.imageUrl!,
+                                                                    item.imageUrl!.startsWith('http')
+                                                                        ? item.imageUrl!
+                                                                        : "${ApiClient.socketUrl}${item.imageUrl}",
                                                                     fit: BoxFit.cover,
                                                                     errorBuilder: (context, error, stackTrace) => Container(
                                                                       color: Colors.grey.withValues(alpha: 0.2),

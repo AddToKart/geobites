@@ -13,6 +13,7 @@ import '../../widgets/glass_toast.dart';
 import '../../widgets/shop_status_card.dart';
 import '../customer/map_selection_screen.dart';
 import 'seller_main_screen.dart';
+import '../../core/api_client.dart';
 
 class SellerShopScreen extends StatefulWidget {
   const SellerShopScreen({Key? key}) : super(key: key);
@@ -267,7 +268,11 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                                       ? DecorationImage(image: FileImage(File(_selectedCoverFile!.path!)), fit: BoxFit.cover)
                                       : null))
                               : (_existingCoverUrl != null && _existingCoverUrl!.isNotEmpty
-                                  ? DecorationImage(image: NetworkImage(_existingCoverUrl!), fit: BoxFit.cover)
+                                  ? DecorationImage(
+                                      image: NetworkImage(_existingCoverUrl!.startsWith('http')
+                                          ? _existingCoverUrl!
+                                          : "${ApiClient.socketUrl}$_existingCoverUrl"),
+                                      fit: BoxFit.cover)
                                   : null),
                         ),
                         child: _selectedCoverFile == null && (_existingCoverUrl == null || _existingCoverUrl!.isEmpty)

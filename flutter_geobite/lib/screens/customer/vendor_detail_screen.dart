@@ -10,6 +10,7 @@ import '../../widgets/animated_tap_card.dart';
 import '../../widgets/pagination_controls.dart';
 import 'cart_screen.dart';
 import 'vendor_reviews_screen.dart';
+import '../../core/api_client.dart';
 
 class VendorDetailScreen extends StatefulWidget {
   final Vendor vendor;
@@ -65,7 +66,9 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                   image: DecorationImage(
                     image: NetworkImage(
                       (widget.vendor.imageUrl != null && widget.vendor.imageUrl!.isNotEmpty)
-                          ? widget.vendor.imageUrl!
+                          ? (widget.vendor.imageUrl!.startsWith('http')
+                              ? widget.vendor.imageUrl!
+                              : "${ApiClient.socketUrl}${widget.vendor.imageUrl}")
                           : 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop',
                     ),
                     fit: BoxFit.cover,

@@ -9,6 +9,7 @@ import '../../theme/glass_theme.dart';
 import '../../widgets/pagination_controls.dart';
 import '../../widgets/glass_menu_dialog.dart';
 import '../../widgets/glass_toast.dart';
+import '../../core/api_client.dart';
 
 class SellerMenuScreen extends StatefulWidget {
   const SellerMenuScreen({Key? key}) : super(key: key);
@@ -161,7 +162,9 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
                                           child: ClipRRect(
                                             borderRadius: BorderRadius.circular(8),
                                             child: Image.network(
-                                              item.imageUrl!,
+                                              item.imageUrl!.startsWith('http')
+                                                  ? item.imageUrl!
+                                                  : "${ApiClient.socketUrl}${item.imageUrl}",
                                               fit: BoxFit.cover,
                                               errorBuilder: (context, error, stackTrace) => Container(
                                                 color: Colors.grey.withValues(alpha: 0.2),
