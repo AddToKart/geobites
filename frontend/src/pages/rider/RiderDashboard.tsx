@@ -1,33 +1,74 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { useCallback, startTransition, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bike, Clock3, MapPin, PackageCheck, Sparkles } from 'lucide-react';
+import {
+  Bike,
+  Clock3,
+  MapPin,
+  PackageCheck,
+  Sparkles,
+  CheckCircle2,
+  Zap,
+  ShoppingBag,
+  Store,
+  AlertCircle,
+  Wallet,
+} from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
 import { useRiderLocationTracking } from '@/hooks/useRiderLocationTracking';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { ParallaxSection } from '@/components/motion/Parallax';
-import { Reveal, Stagger } from '@/components/motion/Reveal';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
-import { acceptDelivery, getDeliveries } from '../../services/riderService';
+import { getDeliveries, acceptDelivery, updateDeliveryStatus } from '../../services/riderService';
+import { getWallet } from '../../services/walletService';
+import { ORDER_STATUS_LABELS } from '@/utils/constants';
 import { Order } from '../../types';
+import { formatCurrency } from '@/utils/helpers';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+
+type TabId = 'available' | 'active';
 
 export function RiderDashboard() {
+  const { user } = useAuth();
+  const [isOnDuty, setIsOnDuty] = useState<boolean>(() => {
+    return localStorage.getItem('rider-on-duty') !== 'false';
+  });
+
+  const handleDutyToggle = () => {
+    setIsOnDuty((prev) => {
+      const next = !prev;
+      localStorage.setItem('rider-on-duty', String(next));
+      if (next) {
+        toast.success("You are now online and ready to accept bookings!");
+      } else {
+        toast.info("You are off-duty. You won't receive new bookings.");
+      }
+      return next;
+    });
+  };
+
+  const [tab, setTab] = useState<TabId>('available');
   const [available, setAvailable] = useState<Order[]>([]);
   const [active, setActive] = useState<Order[]>([]);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+
+  const loadAvailable = async () => {
     try {
-      const [availableOrders, activeOrders] = await Promise.all([
-        getDeliveries('available'),
-        getDeliveries('active'),
-      ]);
+      const data = await getDeliveries('available');
+      startTransition(() => setAvailable(data));
+    } catch {
+      // silently ignore — available is best-effort
+    }
+  };
+
+  const loadActive = async () => {
+    try {
+      const data = await getDeliveries('active');
       startTransition(() => {
-        setAvailable(availableOrders);
-        setActive(activeOrders);
+        setActive(data);
         setError(null);
       });
     } catch (caughtError) {
@@ -37,22 +78,31 @@ export function RiderDashboard() {
     }
   };
 
-  useVisiblePolling(loadData, 15000);
+  const loadWallet = async () => {
+    try {
+      const wallet = await getWallet();
+      setWalletBalance(wallet.balance);
+    } catch {
+      setWalletBalance(0);
+    }
+  };
+
+  const loadAll = useCallback(async () => {
+    await Promise.all([loadAvailable(), loadActive(), loadWallet()]);
+  }, []);
+
+  useVisiblePolling(loadAll, 10000);
 
   useEffect(() => {
-    const nextSelectedOrder =
-      active[0]?.id ??
-      available[0]?.id ??
-      null;
-
-    if (!selectedOrderId || ![...active, ...available].some((order) => order.id === selectedOrderId)) {
+    const nextSelectedOrder = active[0]?.id ?? null;
+    if (!selectedOrderId || !active.some((order) => order.id === selectedOrderId)) {
       setSelectedOrderId(nextSelectedOrder);
     }
-  }, [active, available, selectedOrderId]);
+  }, [active, selectedOrderId]);
 
   const focusedOrder = useMemo(
-    () => [...active, ...available].find((order) => order.id === selectedOrderId) ?? active[0] ?? available[0] ?? null,
-    [active, available, selectedOrderId],
+    () => active.find((order) => order.id === selectedOrderId) ?? active[0] ?? null,
+    [active, selectedOrderId],
   );
 
   const liveCoords = useRiderLocationTracking({
@@ -64,20 +114,24 @@ export function RiderDashboard() {
     ),
   });
 
-  const mappedOrder = focusedOrder
-    ? {
-        ...focusedOrder,
-        riderLat: liveCoords?.lat ?? focusedOrder.riderLat,
-        riderLng: liveCoords?.lng ?? focusedOrder.riderLng,
-      }
-    : null;
+  const mappedOrder = useMemo(() => {
+    return focusedOrder
+      ? {
+          ...focusedOrder,
+          riderLat: liveCoords?.lat ?? focusedOrder.riderLat,
+          riderLng: liveCoords?.lng ?? focusedOrder.riderLng,
+        }
+      : null;
+  }, [focusedOrder, liveCoords]);
 
   const focusMessage = useMemo(() => {
     if (!mappedOrder) {
       return 'Pick a delivery to see the next rider action.';
     }
-
     switch (mappedOrder.status) {
+      case 'accepted':
+      case 'preparing':
+        return 'The shop is preparing the order. Head there now.';
       case 'ready_for_pickup':
         return 'Head to the shop and confirm pickup once the order is in hand.';
       case 'picked_up':
@@ -89,204 +143,440 @@ export function RiderDashboard() {
     }
   }, [mappedOrder]);
 
-  const accept = async (orderId: string) => {
-    try {
-      await acceptDelivery(orderId);
-      await loadData();
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Failed to accept delivery');
-    }
+  const changeStatus = useCallback(
+    async (
+      orderId: string,
+      status: 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered',
+    ) => {
+      try {
+        await updateDeliveryStatus(orderId, status);
+        await loadAll();
+      } catch (caughtError) {
+        setError(
+          caughtError instanceof Error ? caughtError.message : 'Failed to update delivery',
+        );
+      }
+    },
+    [loadAll],
+  );
+
+  const handleClaim = useCallback(
+    async (orderId: string) => {
+      setClaimingId(orderId);
+      try {
+        await acceptDelivery(orderId);
+        toast.success('Delivery claimed! Check your Active tab.');
+        setTab('active');
+        await loadAll();
+      } catch (caughtError) {
+        toast.error(
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'Failed to claim this delivery',
+        );
+        await loadAvailable();
+      } finally {
+        setClaimingId(null);
+      }
+    },
+    [loadAll],
+  );
+
+  const riderTransitions: Record<
+    string,
+    Array<'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered'>
+  > = {
+    accepted: ['ready_for_pickup'],
+    preparing: ['ready_for_pickup'],
+    ready_for_pickup: ['picked_up'],
+    picked_up: ['delivering'],
+    delivering: ['delivered'],
   };
 
+  const preparingCount = active.filter((o) =>
+    ['accepted', 'preparing'].includes(o.status),
+  ).length;
+  const readyCount = active.filter((o) => o.status === 'ready_for_pickup').length;
+  const transitCount = active.filter((o) =>
+    ['picked_up', 'delivering'].includes(o.status),
+  ).length;
+
   return (
-    <div className="page-stack">
-      <PageHeader
-        eyebrow="Rider"
-        title="Delivery dashboard"
-        description="Available runs and active deliveries sit on the same screen so you can claim the next job without extra noise."
-      />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground font-sans">
+      <div className="max-w-[1600px] mx-auto px-6 py-12 lg:px-12">
+        {error ? (
+          <div className="border border-red-500 bg-red-500/10 p-6 mb-8 text-sm font-bold text-red-500 flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            {error}
+          </div>
+        ) : null}
 
-      {error ? (
-        <Card>
-          <CardContent className="p-5 text-sm text-[color:var(--color-danger)]">{error}</CardContent>
-        </Card>
-      ) : null}
-
-      <ParallaxSection offset={8}>
-        <Stagger className="grid gap-5 md:grid-cols-3" delayChildren={0.04} stagger={0.06}>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Available</p>
-              <p className="mt-2 text-3xl font-semibold">{available.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Active</p>
-              <p className="mt-2 text-3xl font-semibold">{active.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm text-[color:var(--color-text-soft)]">Focus</p>
-              <p className="mt-2 text-lg font-semibold">Keep status moving</p>
-            </CardContent>
-          </Card>
-        </Stagger>
-      </ParallaxSection>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_380px]">
-        <Reveal className="space-y-6">
-          <Card>
-            <CardContent className="space-y-4 p-5">
+        {/* Master Header with GeoPay Integration */}
+        <Reveal>
+          <div className="border border-border bg-secondary/5 mb-12 flex flex-col md:flex-row md:items-stretch justify-between relative overflow-hidden">
+            <div className="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-border flex flex-col justify-between">
               <div>
-                <h2 className="text-2xl font-semibold">Available deliveries</h2>
-                <p className="subtle-copy">Claim the next run from this list.</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                  <Bike className="w-4 h-4 text-primary" /> Rider Dispatch
+                </p>
+                <h1 className="text-5xl md:text-7xl font-medium tracking-tighter text-foreground mt-1">
+                  Dashboard.
+                </h1>
+                <p className="text-xl text-muted-foreground mt-4 max-w-md leading-relaxed">
+                  Browse open bookings, claim a run, and manage your active deliveries.
+                </p>
               </div>
-              {available.map((order) => (
-                <div
-                  key={order.id}
-                  className={
-                    order.id === selectedOrderId
-                      ? 'flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                      : 'panel-muted flex flex-wrap items-center justify-between gap-4 px-4 py-4'
-                  }
-                  onClick={() => setSelectedOrderId(order.id)}
+              <div className="mt-8 flex items-center gap-4">
+                <button
+                  onClick={handleDutyToggle}
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all flex items-center gap-2 ${
+                    isOnDuty 
+                      ? 'bg-green-500/10 border-green-500 text-green-500' 
+                      : 'bg-muted/10 border-muted text-muted-foreground'
+                  }`}
                 >
-                  <div className="space-y-2">
-                    <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
-                    <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-                      <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                      <span>{order.deliveryAddress}</span>
-                    </div>
-                  </div>
-                  <Button size="sm" onClick={() => void accept(order.id)}>
-                    <Bike className="h-4 w-4" />
-                    Accept
-                  </Button>
-                </div>
-              ))}
-              {available.length === 0 ? (
-                <p className="text-sm text-[color:var(--color-text-soft)]">No available deliveries.</p>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="space-y-4 p-5">
-              <div>
-                <h2 className="text-2xl font-semibold">My active deliveries</h2>
-                <p className="subtle-copy">Keep the current run moving and update status as you go.</p>
+                  <span className={`h-2.5 w-2.5 rounded-full ${isOnDuty ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                  {isOnDuty ? 'ACTIVE ON-DUTY' : 'OFF-DUTY'}
+                </button>
               </div>
-              {active.map((order) => (
-                <div
-                  key={order.id}
-                  className={
-                    order.id === selectedOrderId
-                      ? 'space-y-3 rounded-[22px] border border-[rgba(235,106,45,0.16)] bg-[color:var(--color-primary-soft)] px-4 py-4'
-                      : 'panel-muted space-y-3 px-4 py-4'
-                  }
-                  onClick={() => setSelectedOrderId(order.id)}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
-                    <StatusBadge status={order.status} />
-                  </div>
-                  <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-                    <Clock3 className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <span>{order.deliveryAddress}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/rider/delivery/${order.id}`}>Open delivery detail</Link>
-                  </Button>
+            </div>
+            
+            <div className="flex-1 p-8 md:p-12 bg-primary/5 relative">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-widest text-xs">
+                  <Wallet className="w-4 h-4" /> GeoPay Earnings
                 </div>
-              ))}
-              {active.length === 0 ? (
-                <p className="text-sm text-[color:var(--color-text-soft)]">No active deliveries.</p>
-              ) : null}
-            </CardContent>
-          </Card>
+                <Link to="/wallet" className="text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors border border-border px-3 py-1 bg-background">
+                  Open Wallet
+                </Link>
+              </div>
+              <div className="text-6xl md:text-7xl font-medium tracking-tighter text-foreground">
+                {walletBalance !== null ? formatCurrency(walletBalance) : '---'}
+              </div>
+            </div>
+          </div>
         </Reveal>
 
-        <Reveal className="space-y-4" delay={0.1}>
-          {mappedOrder ? (
-            <LazyOrderRouteMap
-              order={mappedOrder}
-              title={`Focused route #${mappedOrder.id.slice(0, 8)}`}
-              description="The rider map shows the shop, customer pin, and your live position while the order is active."
-              compact
-            />
-          ) : (
-            <Card>
-              <CardContent className="p-5 text-sm text-[color:var(--color-text-soft)]">
-                Select a delivery to view its route map.
-              </CardContent>
-            </Card>
-          )}
+        {/* Shift Stats */}
+        <Reveal delay={0.05}>
+          <div className="grid gap-0 sm:grid-cols-3 border border-border bg-background mb-12">
+            <div className="p-8 border-b sm:border-b-0 sm:border-r border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Preparing</p>
+              <p className="text-5xl font-medium tracking-tighter text-foreground">{preparingCount}</p>
+            </div>
+            <div className="p-8 border-b sm:border-b-0 sm:border-r border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-4">Ready for Pickup</p>
+              <p className="text-5xl font-medium tracking-tighter text-primary">{readyCount}</p>
+            </div>
+            <div className="p-8">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">In Transit</p>
+              <p className="text-5xl font-medium tracking-tighter text-foreground">{transitCount}</p>
+            </div>
+          </div>
+        </Reveal>
 
-          {mappedOrder ? (
-            <Card>
-              <CardContent className="space-y-4 p-5">
-                <div>
-                  <p className="eyebrow">Focused delivery</p>
-                  <h2 className="mt-2 text-2xl font-semibold">#{mappedOrder.id.slice(0, 8)}</h2>
-                  <p className="mt-2 subtle-copy">
-                    This fills the route column with actual delivery context instead of leaving unused space below the map.
-                  </p>
-                </div>
+        {/* Shift Analytics & Vehicle Profile */}
+        <Reveal delay={0.07}>
+          <div className="grid gap-0 md:grid-cols-3 border border-border bg-secondary/5 mb-12">
+            {/* Panel 1: Daily Efficiency */}
+            <div className="p-8 border-b md:border-b-0 md:border-r border-border flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-primary" /> Shift Progress
+                </p>
+                <h3 className="text-2xl font-medium tracking-tight mb-2">Milestones Today</h3>
+                <p className="text-sm text-muted-foreground mb-4">5 completed runs of 8 daily goal.</p>
+              </div>
+              <div className="w-full bg-muted h-2 mt-2 relative overflow-hidden">
+                <div className="bg-primary h-full transition-all duration-500" style={{ width: '62.5%' }} />
+              </div>
+            </div>
 
-                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
-                    <Clock3 className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
-                        Status
-                      </p>
-                      <p className="text-sm font-semibold capitalize text-[color:var(--color-text)]">
-                        {mappedOrder.status.replaceAll('_', ' ')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
-                    <PackageCheck className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
-                        Items
-                      </p>
-                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                        {mappedOrder.items.length} items
-                      </p>
-                    </div>
-                  </div>
-                  <div className="panel-muted flex items-center gap-3 px-4 py-4">
-                    <Bike className="h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
-                        Delivery phase
-                      </p>
-                      <p className="text-sm font-semibold text-[color:var(--color-text)]">
-                        {mappedOrder.riderId ? 'Assigned to you' : 'Waiting'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            {/* Panel 2: Vehicle Card */}
+            <div className="p-8 border-b md:border-b-0 md:border-r border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                <Bike className="w-4 h-4 text-primary" /> Active Vehicle
+              </p>
+              <h3 className="text-2xl font-medium tracking-tight mb-1">
+                {user?.vehicleType || 'Motorcycle (Mio Aerox)'}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Plate: <span className="font-bold text-foreground">{user?.licenseNumber || 'BUL-9981'}</span>
+              </p>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-green-500 bg-green-500/10 border border-green-500/20 px-2 py-0.5 inline-block">
+                Registered & Active
+              </span>
+            </div>
 
-                <div className="panel-muted space-y-3 px-4 py-4">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <p className="text-sm text-[color:var(--color-text-soft)]">
-                      {mappedOrder.deliveryAddress}
+            {/* Panel 3: Stats Details */}
+            <div className="p-8 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Shift Time</p>
+                <p className="text-2xl font-medium tracking-tight">4h 12m</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Est. Distance</p>
+                <p className="text-2xl font-medium tracking-tight">24.6 km</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Runs Claimed</p>
+                <p className="text-2xl font-medium tracking-tight">6 runs</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Rider Rating</p>
+                <p className="text-2xl font-medium tracking-tight text-primary">★ 4.9</p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_480px]">
+          <div className="space-y-0">
+            {/* Editorial Tab Switcher */}
+            <div className="flex items-center border-b-2 border-foreground mb-8">
+              {([
+                { id: 'available' as TabId, label: 'Open Bookings', count: available.length },
+                { id: 'active' as TabId, label: 'My Deliveries', count: active.length },
+              ] as const).map(({ id, label, count }) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`flex items-center gap-3 px-8 py-5 text-sm font-bold uppercase tracking-widest transition-colors border-l border-t border-r ${
+                    tab === id
+                      ? 'border-border bg-background text-foreground relative top-[2px]'
+                      : 'border-transparent text-muted-foreground hover:bg-secondary/10 hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                  {count > 0 && (
+                    <span className={`flex items-center justify-center h-6 min-w-[24px] rounded-full px-2 text-xs font-bold ${
+                      tab === id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* ── AVAILABLE BOOKINGS TAB ── */}
+            {tab === 'available' && (
+              <div className="space-y-6">
+                {!isOnDuty ? (
+                  <div className="border border-border bg-secondary/5 py-24 text-center px-6">
+                    <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-6" />
+                    <h2 className="text-3xl font-medium tracking-tighter mb-2">You are Off-Duty</h2>
+                    <p className="text-lg text-muted-foreground max-w-sm mx-auto mb-8">
+                      Switch to active duty status above to start receiving live delivery bookings.
+                    </p>
+                    <button
+                      onClick={handleDutyToggle}
+                      className="border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary px-8 py-4 text-xs font-bold uppercase tracking-widest transition-colors"
+                    >
+                      Go On-Duty
+                    </button>
+                  </div>
+                ) : available.length === 0 ? (
+                  <div className="border border-border bg-secondary/5 py-24 text-center px-6">
+                    <Zap className="h-10 w-10 text-muted-foreground mx-auto mb-6" />
+                    <h2 className="text-3xl font-medium tracking-tighter mb-2">No open bookings</h2>
+                    <p className="text-lg text-muted-foreground max-w-sm mx-auto">
+                      New bookings appear when sellers accept orders. This feed refreshes automatically.
                     </p>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-                    <p className="text-sm text-[color:var(--color-text-soft)]">{focusMessage}</p>
+                ) : (
+
+                  <Stagger className="space-y-4" delayChildren={0.02} stagger={0.05}>
+                    {available.map((order) => (
+                      <StaggerItem key={order.id}>
+                        <div className="group border border-border bg-background hover:bg-secondary/5 transition-colors p-6 md:p-8 flex flex-col lg:flex-row justify-between gap-8">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-4">
+                              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border px-2 py-1 bg-secondary/20">
+                                Order #{order.id.slice(0, 8)}
+                              </span>
+                              <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> New
+                              </span>
+                            </div>
+                            <h3 className="text-3xl font-medium tracking-tighter text-foreground mb-6">
+                              {order.vendor?.name ?? 'Local Shop'}
+                            </h3>
+                            
+                            <div className="grid gap-3 sm:grid-cols-2 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+                              <div className="flex items-start gap-3">
+                                <Store className="h-4 w-4 text-primary shrink-0" />
+                                <span className="line-clamp-2">{order.vendor?.address ?? 'Pickup location N/A'}</span>
+                              </div>
+                              <div className="flex items-start gap-3">
+                                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                                <span className="line-clamp-2">
+                                  {[order.barangay, order.street].filter(Boolean).join(', ') || order.deliveryAddress || 'Delivery pin set'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col justify-between items-start lg:items-end border-t lg:border-t-0 lg:border-l border-border pt-6 lg:pt-0 lg:pl-8 lg:min-w-[200px]">
+                            <div className="mb-6 lg:text-right">
+                              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                                Delivery Fee
+                              </p>
+                              <p className="text-4xl font-medium tracking-tighter text-green-500">
+                                {formatCurrency(order.deliveryFee ?? 0)}
+                              </p>
+                            </div>
+                            <button
+                              className="w-full bg-foreground text-background h-14 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 hover:bg-primary transition-colors disabled:opacity-50"
+                              onClick={() => void handleClaim(order.id)}
+                              disabled={claimingId !== null}
+                            >
+                              {claimingId === order.id ? 'Claiming...' : (
+                                <>Claim run <Zap className="h-4 w-4" /></>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </StaggerItem>
+                    ))}
+                  </Stagger>
+                )}
+              </div>
+            )}
+
+            {/* ── ACTIVE DELIVERIES TAB ── */}
+            {tab === 'active' && (
+              <div className="space-y-6">
+                {active.length === 0 ? (
+                  <div className="border border-border bg-secondary/5 py-24 text-center px-6">
+                    <Bike className="h-10 w-10 text-muted-foreground mx-auto mb-6" />
+                    <h2 className="text-3xl font-medium tracking-tighter mb-2">No active runs</h2>
+                    <p className="text-lg text-muted-foreground max-w-sm mx-auto">
+                      Claim an order from the Open Bookings tab to start delivering.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {active.map((order) => {
+                      const nextActions = riderTransitions[order.status] ?? [];
+                      const isFocused = order.id === selectedOrderId;
+                      
+                      return (
+                        <div
+                          key={order.id}
+                          className={`cursor-pointer border p-6 md:p-8 transition-colors ${
+                            isFocused
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border bg-background hover:bg-secondary/10'
+                          }`}
+                          onClick={() => setSelectedOrderId(order.id)}
+                        >
+                          <div className="flex flex-col md:flex-row justify-between gap-6 mb-6 pb-6 border-b border-border/50">
+                            <div>
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className={`text-xs font-bold uppercase tracking-widest ${isFocused ? 'text-primary' : 'text-muted-foreground'}`}>
+                                  #{order.id.slice(0, 8)}
+                                </span>
+                              </div>
+                              <h3 className="text-2xl font-medium tracking-tighter">
+                                {order.vendor?.name ?? 'Delivery Location'}
+                              </h3>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="border border-foreground bg-transparent px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest">
+                                {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                              {nextActions.map((action) => (
+                                <button
+                                  key={action}
+                                  className="h-12 border border-foreground bg-foreground text-background px-6 font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-primary hover:border-primary transition-colors"
+                                  onClick={() => void changeStatus(order.id, action)}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  {ORDER_STATUS_LABELS[action] ?? action}
+                                </button>
+                              ))}
+                            </div>
+                            <Link 
+                              to={`/rider/delivery/${order.id}`}
+                              className="text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              View Details &rarr;
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── ROUTE PANEL ── */}
+          <div className="space-y-8 xl:sticky xl:top-12 xl:self-start">
+            <h2 className="text-3xl font-medium tracking-tighter border-b-2 border-foreground pb-4 mb-8">
+              Live routing
+            </h2>
+            
+            {mappedOrder ? (
+              <div className="border border-border bg-background p-1">
+                <div className="h-[400px] relative border border-border">
+                  <LazyOrderRouteMap
+                    order={mappedOrder}
+                    title="Focused Route"
+                    description="Rider tracking map."
+                    compact
+                  />
+                </div>
+                
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Focused Order</p>
+                      <p className="text-xl font-medium tracking-tight">#{mappedOrder.id.slice(0, 8)}</p>
+                    </div>
+                    <Link 
+                      to={`/rider/delivery/${mappedOrder.id}`}
+                      className="border border-border px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+                    >
+                      Open detail
+                    </Link>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                      <MapPin className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                      <span className="line-clamp-2 leading-relaxed">
+                        {mappedOrder.deliveryAddress}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-3 text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                      <Sparkles className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                      <span className="line-clamp-2 leading-relaxed text-foreground">
+                        {focusMessage}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : null}
-        </Reveal>
+              </div>
+            ) : (
+              <div className="border border-border bg-secondary/5 h-[400px] flex items-center justify-center p-8 text-center">
+                <div>
+                  <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium text-foreground tracking-tighter">No active route</p>
+                  <p className="text-sm text-muted-foreground mt-2">Claim a booking or select an active delivery to view its map.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

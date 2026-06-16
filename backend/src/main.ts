@@ -1,6 +1,9 @@
+// Trigger compilation reload after schema type change
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+import * as path from 'path';
+import express from 'express';
 import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -40,6 +43,21 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(cookieParser());
+  app.use((req: any, res: any, next: any) => {
+    if (req.headers.cookie) {
+      req.headers.cookie = req.headers.cookie
+        .split(';')
+        .map((c: string) => c.trim())
+        .filter((c: string) => {
+          const name = c.split('=')[0].trim();
+          return (
+            !name.endsWith('session_data') && !name.endsWith('account_data')
+          );
+        })
+        .join('; ');
+    }
+    next();
+  });
   app.enableCors({
     origin: parseCorsOrigins(),
     credentials: true,
@@ -53,6 +71,8 @@ async function bootstrap() {
     }),
   );
 
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
   app.use('/api/auth', toNodeHandler(auth));
 
   const port = Number(process.env.PORT ?? 3000);
@@ -60,24 +80,18 @@ async function bootstrap() {
   console.log(`Backend server running on http://localhost:${port}/api`);
   console.log(`Local network access: http://192.168.100.116:${port}/api`);
 
-  // Seed demo data
-  const { DataSource } = await import('typeorm');
-  const { seedDemoData } = await import('./database/seed-demo.js');
-  const dataSource = app.get(DataSource);
-  await seedDemoData(dataSource);
-
   // Graceful shutdown
-  process.on('SIGTERM', async () => {
+  process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully...');
-    server.close(async () => {
+    server.close(() => {
       console.log('Server closed');
       process.exit(0);
     });
   });
 
-  process.on('SIGINT', async () => {
+  process.on('SIGINT', () => {
     console.log('SIGINT received, shutting down gracefully...');
-    server.close(async () => {
+    server.close(() => {
       console.log('Server closed');
       process.exit(0);
     });

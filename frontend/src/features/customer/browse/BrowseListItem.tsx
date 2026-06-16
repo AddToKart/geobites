@@ -1,8 +1,8 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MapPin, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { uploadUrl } from '@/utils/upload';
 import type { BrowseVendor } from './types';
 
 function formatDistanceLabel(distanceKm: number | null) {
@@ -15,7 +15,7 @@ function formatDistanceLabel(distanceKm: number | null) {
     : `${distanceKm.toFixed(1)} km away`;
 }
 
-export function BrowseListItem({
+export const BrowseListItem = memo(function BrowseListItem({
   vendor,
   distanceKm,
   isSelected,
@@ -30,49 +30,58 @@ export function BrowseListItem({
     <Link to={`/vendor/${vendor.id}`} className="block" onMouseEnter={onSelect} onFocus={onSelect}>
       <article
         className={cn(
-          'defer-card grid overflow-hidden rounded-[28px] border border-[color:var(--color-shell-border)] bg-[color:var(--color-shell-bg)] shadow-[var(--shadow-card)] transform-gpu transition-transform duration-150 hover:-translate-y-0.5 xl:grid-cols-[260px_minmax(0,1fr)_220px]',
-          isSelected && 'border-[color:var(--color-primary)] shadow-[0_22px_46px_rgba(235,106,45,0.18)]',
+          'group flex flex-col xl:flex-row border-b border-border transition-colors hover:bg-secondary/10',
+          isSelected && 'bg-secondary/5',
         )}
+        style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px', contain: 'layout style paint' }}
       >
-        <div className="relative min-h-[220px] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.38),transparent_36%),linear-gradient(135deg,#ef7c42,#f6b372)] p-6 text-white">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={vendor.isActive ? 'success' : 'warning'}>
+        <div
+          className="relative min-h-[200px] xl:w-[320px] bg-secondary flex-shrink-0 p-8 border-b xl:border-b-0 xl:border-r border-border"
+          style={vendor.imageUrl ? { backgroundImage: `url(${uploadUrl(vendor.imageUrl)})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+        >
+          {!vendor.imageUrl && <div className="absolute inset-0 bg-secondary/20" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          <div className="relative z-10">
+            <div className="flex flex-wrap gap-2 mb-6">
+            <span className={cn(
+              "text-xs font-bold uppercase tracking-widest",
+              vendor.isActive ? "text-primary" : "text-muted-foreground"
+            )}>
               {vendor.isActive ? 'Open now' : 'Closed'}
-            </Badge>
-            <Badge>{vendor.spotlight || 'Nearby'}</Badge>
+            </span>
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-auto">
+              {vendor.spotlight || 'Nearby'}
+            </span>
           </div>
-          <div className="mt-10 max-w-[14rem]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/75">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
               {vendor.neighborhood || 'Santa Maria'}
             </p>
-            <h2 className="mt-3 text-2xl font-semibold leading-tight">{vendor.name}</h2>
-            <p className="mt-3 text-sm leading-6 text-white/85">
-              {vendor.description || 'Local food and reliable delivery around Santa Maria, Bulacan.'}
-            </p>
+            <h2 className="text-3xl font-medium tracking-tighter group-hover:text-primary transition-colors">
+              {vendor.name}
+            </h2>
+          </div>
           </div>
         </div>
 
-        <div className="space-y-5 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-[color:var(--color-text)]">{vendor.name}</p>
-              <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
+        <div className="flex-1 p-8 flex flex-col justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="max-w-xl">
+              <p className="text-lg leading-relaxed text-muted-foreground">
                 {vendor.description || 'Prepared fast and pinned close to Santa Maria for easier ordering.'}
               </p>
+              <div className="flex items-start gap-2 text-sm text-muted-foreground mt-4 font-semibold uppercase tracking-widest">
+                <MapPin className="h-4 w-4" />
+                <span>{vendor.address}</span>
+              </div>
             </div>
-            <ArrowRight className="mt-1 h-5 w-5 text-[color:var(--color-text-light)]" />
           </div>
 
-          <div className="flex items-start gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <MapPin className="mt-0.5 h-4 w-4 text-[color:var(--color-primary-dark)]" />
-            <span>{vendor.address}</span>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mt-8">
             {(vendor.specialties || []).slice(0, 3).map((specialty) => (
               <span
                 key={specialty}
-                className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs font-medium text-[color:var(--color-text-soft)]"
+                className="border border-border px-3 py-1 text-xs font-bold uppercase tracking-widest text-muted-foreground"
               >
                 {specialty}
               </span>
@@ -80,37 +89,35 @@ export function BrowseListItem({
           </div>
         </div>
 
-        <div className="flex flex-col justify-between gap-4 border-t border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-6 xl:border-l xl:border-t-0">
-          <div className="grid gap-3">
-            <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">Rating</span>
-              <span className="flex items-center gap-1 text-sm font-semibold text-[color:var(--color-text)]">
-                <Star className="h-4 w-4 fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />
+        <div className="flex flex-col justify-between border-t border-border p-8 xl:w-[280px] xl:border-l xl:border-t-0 flex-shrink-0">
+          <div className="grid gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Rating</span>
+              <span className="flex items-center gap-1 text-sm font-bold text-foreground">
+                <Star className="h-4 w-4 fill-primary text-primary" />
                 {vendor.rating.toFixed(1)}
               </span>
             </div>
-            <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">Distance</span>
-              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Distance</span>
+              <span className="text-sm font-bold text-foreground">
                 {formatDistanceLabel(distanceKm)}
               </span>
             </div>
-            <div className="panel-muted flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-[color:var(--color-text-soft)]">ETA</span>
-              <span className="text-sm font-semibold text-[color:var(--color-text)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Arrives in</span>
+              <span className="text-sm font-bold text-foreground">
                 {vendor.etaMinutes || '20-35 min'}
               </span>
             </div>
           </div>
 
-          <Button asChild className="w-full">
-            <span>
-              Open menu
-              <ArrowRight className="h-4 w-4" />
-            </span>
-          </Button>
+          <div className="mt-8 flex items-center justify-between group-hover:text-primary transition-colors">
+            <span className="text-sm font-bold uppercase tracking-widest">Open menu</span>
+            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" strokeWidth={2.5} />
+          </div>
         </div>
       </article>
     </Link>
   );
-}
+});

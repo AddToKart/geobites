@@ -15,7 +15,7 @@ export async function acceptDelivery(orderId: string): Promise<Order> {
 
 export async function updateDeliveryStatus(
   orderId: string,
-  status: 'picked_up' | 'delivering' | 'delivered',
+  status: 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered',
 ): Promise<Order> {
   const response = await api.patch<Order>(`/riders/deliveries/${orderId}/status`, {
     status,
@@ -26,10 +26,11 @@ export async function updateDeliveryStatus(
 export async function updateDeliveryLocation(
   orderId: string,
   payload: { riderLat: number; riderLng: number },
-): Promise<Order> {
-  const response = await api.patch<Order>(
-    `/riders/deliveries/${orderId}/location`,
-    payload,
-  );
+): Promise<unknown> {
+  const response = await api.put<unknown>('/tracking/location', {
+    lat: payload.riderLat,
+    lng: payload.riderLng,
+    orderId,
+  });
   return response.data;
 }

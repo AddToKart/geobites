@@ -29,6 +29,16 @@ let MenuController = class MenuController {
     findVendorMenu(vendorId) {
         return this.menuService.findVendorMenu(vendorId);
     }
+    searchMenu(query, category, priceMin, priceMax) {
+        if (!query || query.trim().length === 0) {
+            return [];
+        }
+        return this.menuService.searchAcrossVendors(query.trim(), {
+            category,
+            priceMin: priceMin ? Number(priceMin) : undefined,
+            priceMax: priceMax ? Number(priceMax) : undefined,
+        });
+    }
     create(createMenuItemDto, sellerId) {
         return this.menuService.create(createMenuItemDto, sellerId);
     }
@@ -47,6 +57,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], MenuController.prototype, "findVendorMenu", null);
+__decorate([
+    (0, common_1.Get)('menu/search'),
+    __param(0, (0, common_1.Query)('q')),
+    __param(1, (0, common_1.Query)('category')),
+    __param(2, (0, common_1.Query)('priceMin')),
+    __param(3, (0, common_1.Query)('priceMax')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], MenuController.prototype, "searchMenu", null);
 __decorate([
     (0, common_1.Post)('menu'),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard),

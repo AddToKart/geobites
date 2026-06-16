@@ -5,13 +5,14 @@ import {
   Index,
   OneToMany,
   PrimaryColumn,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { decimalNumberTransformer } from '../database/decimal-number.transformer';
 import { MenuItem } from './menu-item.entity';
 import { Order } from './order.entity';
+import { Promotion } from './promotion.entity';
 import { Rating } from './rating.entity';
+import { Favorite } from './favorite.entity';
 
 @Entity('vendors')
 @Index(['userId'], { unique: true })
@@ -64,6 +65,41 @@ export class Vendor {
   @Column({ type: 'varchar', length: 500, nullable: true })
   imageUrl?: string;
 
+  @Column({ type: 'text', nullable: true })
+  businessPermit?: string;
+
+  @Column({ type: 'text', nullable: true })
+  businessPermitExpiry?: string;
+
+  @Column({ type: 'text', nullable: true })
+  foodSafetyCert?: string;
+
+  @Column({ type: 'text', nullable: true })
+  foodSafetyCertExpiry?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  openTime?: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  closeTime?: string;
+
+  @Column({ type: 'simple-json', nullable: true })
+  operatingHours?: Array<{
+    dayOfWeek: number;
+    openTime: string;
+    closeTime: string;
+    isClosed: boolean;
+  }>;
+
+  @Column({
+    type: 'decimal',
+    precision: 4,
+    scale: 2,
+    default: 0.25,
+    transformer: decimalNumberTransformer,
+  })
+  commissionRate!: number;
+
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
@@ -81,4 +117,10 @@ export class Vendor {
 
   @OneToMany(() => Rating, (rating) => rating.vendor)
   ratings!: Rating[];
+
+  @OneToMany(() => Promotion, (promotion) => promotion.vendor)
+  promotions!: Promotion[];
+
+  @OneToMany(() => Favorite, (favorite) => favorite.vendor)
+  favorites!: Favorite[];
 }

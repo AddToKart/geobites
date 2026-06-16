@@ -45,11 +45,17 @@ let OrdersController = class OrdersController {
     updateStatus(id, updateStatusDto, userId, role) {
         return this.ordersService.updateStatus(id, updateStatusDto, userId, role);
     }
+    getAvailableRiders() {
+        return this.ordersService.getAvailableRiders();
+    }
+    assignRider(id, riderId, sellerId) {
+        return this.ordersService.assignRider(id, riderId, sellerId);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('customer'),
+    (0, roles_decorator_1.Roles)('customer', 'seller'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
     __metadata("design:type", Function),
@@ -86,6 +92,23 @@ __decorate([
     __metadata("design:paramtypes", [String, update_order_status_dto_1.UpdateOrderStatusDto, String, String]),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "updateStatus", null);
+__decorate([
+    (0, common_1.Get)('riders/available'),
+    (0, roles_decorator_1.Roles)('seller'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "getAvailableRiders", null);
+__decorate([
+    (0, common_1.Post)(':id/assign-rider'),
+    (0, roles_decorator_1.Roles)('seller'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('riderId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "assignRider", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard),

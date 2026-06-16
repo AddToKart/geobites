@@ -1,85 +1,75 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Clock3, MapPin, Star, Truck } from 'lucide-react';
-import { Vendor } from '@/types';
+import type { Vendor } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { uploadUrl } from '@/utils/upload';
 
 interface VendorCardProps {
   vendor: Vendor;
 }
 
-export function VendorCardPremium({ vendor }: VendorCardProps) {
+export const VendorCardPremium = memo(function VendorCardPremium({ vendor }: VendorCardProps) {
   const avgRating = vendor.rating || 0;
   const isPopular = vendor.totalRatings >= 25;
 
   return (
     <Link to={`/vendor/${vendor.id}`} className="group block h-full">
-      <article className="defer-card flex h-full flex-col overflow-hidden rounded-[28px] bg-white shadow-[var(--shadow-card)] transform-gpu transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-panel)] dark:bg-gray-900 border border-slate-100 dark:border-gray-800">
-        <div className="relative h-56 overflow-hidden bg-slate-100 dark:bg-gray-800">
-          {vendor.imageUrl ? (
-            <img
-              src={vendor.imageUrl}
-              alt={vendor.name}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-end bg-gradient-to-tr from-orange-500 to-orange-300 p-6">
-              <div className="max-w-[14rem] text-white">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-white/80">
-                  Local Favorite
-                </p>
-                <p className="mt-2 text-3xl font-bold tracking-tight">{vendor.name}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
-
-          <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-            {vendor.isActive ? <Badge className="bg-emerald-500 text-white rounded-full px-3 py-1 font-semibold border-none">Open</Badge> : <Badge className="bg-slate-800/80 text-white backdrop-blur-md rounded-full px-3 py-1 font-semibold border-none">Closed</Badge>}
-            {isPopular ? <Badge className="bg-orange-500 text-white rounded-full px-3 py-1 font-semibold border-none">Popular</Badge> : null}
+      <article className="flex h-full flex-col border-b border-border pb-8 transition-colors hover:bg-secondary/10 p-6 md:p-8" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 300px', contain: 'layout style paint' }}>
+        {vendor.imageUrl && (
+          <div className="h-40 w-full mb-4 border border-border overflow-hidden relative" style={{ backgroundImage: `url(${uploadUrl(vendor.imageUrl)})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        )}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-2">
+            {vendor.isActive ? (
+              <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Open
+              </span>
+            ) : (
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                Closed
+              </span>
+            )}
+            {isPopular && (
+              <span className="text-xs font-bold uppercase tracking-widest text-foreground ml-4">
+                Popular
+              </span>
+            )}
           </div>
-
-          <div className="absolute bottom-5 left-5 flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-md px-3.5 py-1.5 text-[13px] font-bold text-slate-900 shadow-sm dark:bg-gray-900/95 dark:text-white">
-            <Star className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+          <div className="flex items-center gap-1.5 text-sm font-bold">
+            <Star className="h-4 w-4 fill-primary text-primary" />
             <span>{avgRating.toFixed(1)}</span>
-            <span className="text-slate-500 font-medium">({vendor.totalRatings})</span>
+            <span className="text-muted-foreground">({vendor.totalRatings})</span>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-5 p-6">
-          <div className="space-y-2">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-orange-500 dark:text-white">
-                  {vendor.name}
-                </h3>
-                <p className="mt-1 text-sm font-medium text-slate-500 line-clamp-2">
-                  {vendor.description || 'Fresh meals, reliable prep times, and an easy repeat order flow.'}
-                </p>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                <ArrowRight className="h-4 w-4" />
-              </div>
-            </div>
+        <div>
+          <h3 className="text-4xl font-medium tracking-tighter text-foreground group-hover:text-primary transition-colors">
+            {vendor.name}
+          </h3>
+          <p className="mt-4 text-lg text-muted-foreground leading-relaxed line-clamp-2">
+            {vendor.description || 'Local meals prepared fresh and pinned close to Santa Maria.'}
+          </p>
+        </div>
 
-            <div className="flex items-start gap-2 text-[13px] font-medium text-slate-500 mt-3">
-              <MapPin className="h-4 w-4 shrink-0 text-slate-400 mt-0.5" />
+        <div className="mt-8 flex items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+              <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">{vendor.address}</span>
             </div>
+            <div className="flex items-center gap-6 text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+              <span className="flex items-center gap-2"><Clock3 className="h-4 w-4" /> 20-35m</span>
+              <span className="flex items-center gap-2"><Truck className="h-4 w-4" /> Ready</span>
+            </div>
           </div>
-
-          <div className="mt-auto grid grid-cols-2 gap-3 rounded-[20px] bg-slate-50 dark:bg-gray-800 p-4 text-[13px] font-semibold text-slate-600 dark:text-slate-300">
-            <div className="flex items-center gap-2">
-              <Clock3 className="h-4 w-4 text-orange-500" />
-              <span>20-35 min</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-orange-500" />
-              <span>Delivery ready</span>
-            </div>
+          <div className="h-12 w-12 rounded-full border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+            <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
           </div>
         </div>
       </article>
     </Link>
   );
-}
+});

@@ -40,7 +40,7 @@ __decorate([
 ], Notification.prototype, "message", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'enum',
+        type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
         enum: ['order_update', 'delivery_request', 'rating', 'system'],
     }),
     __metadata("design:type", String)

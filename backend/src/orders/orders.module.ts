@@ -5,6 +5,9 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { WalletModule } from '../wallet/wallet.module';
+import { GeopayModule } from '../geopay/geopay.module';
+import { VouchersModule } from '../vouchers/vouchers.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
@@ -12,6 +15,9 @@ import { OrdersService } from './orders.service';
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, MenuItem, Vendor]),
     NotificationsModule,
+    WalletModule,
+    GeopayModule,
+    VouchersModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

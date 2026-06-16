@@ -14,7 +14,9 @@ const typeorm_1 = require("typeorm");
 const decimal_number_transformer_1 = require("../database/decimal-number.transformer");
 const menu_item_entity_1 = require("./menu-item.entity");
 const order_entity_1 = require("./order.entity");
+const promotion_entity_1 = require("./promotion.entity");
 const rating_entity_1 = require("./rating.entity");
+const favorite_entity_1 = require("./favorite.entity");
 let Vendor = class Vendor {
     id;
     userId;
@@ -26,12 +28,22 @@ let Vendor = class Vendor {
     rating;
     totalRatings;
     imageUrl;
+    businessPermit;
+    businessPermitExpiry;
+    foodSafetyCert;
+    foodSafetyCertExpiry;
+    openTime;
+    closeTime;
+    operatingHours;
+    commissionRate;
     isActive;
     createdAt;
     updatedAt;
     menuItems;
     orders;
     ratings;
+    promotions;
+    favorites;
 };
 exports.Vendor = Vendor;
 __decorate([
@@ -91,6 +103,44 @@ __decorate([
     __metadata("design:type", String)
 ], Vendor.prototype, "imageUrl", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "businessPermit", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "businessPermitExpiry", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "foodSafetyCert", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "foodSafetyCertExpiry", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "openTime", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "closeTime", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'simple-json', nullable: true }),
+    __metadata("design:type", Array)
+], Vendor.prototype, "operatingHours", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'decimal',
+        precision: 4,
+        scale: 2,
+        default: 0.25,
+        transformer: decimal_number_transformer_1.decimalNumberTransformer,
+    }),
+    __metadata("design:type", Number)
+], Vendor.prototype, "commissionRate", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], Vendor.prototype, "isActive", void 0);
@@ -114,6 +164,14 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => rating_entity_1.Rating, (rating) => rating.vendor),
     __metadata("design:type", Array)
 ], Vendor.prototype, "ratings", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => promotion_entity_1.Promotion, (promotion) => promotion.vendor),
+    __metadata("design:type", Array)
+], Vendor.prototype, "promotions", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => favorite_entity_1.Favorite, (favorite) => favorite.vendor),
+    __metadata("design:type", Array)
+], Vendor.prototype, "favorites", void 0);
 exports.Vendor = Vendor = __decorate([
     (0, typeorm_1.Entity)('vendors'),
     (0, typeorm_1.Index)(['userId'], { unique: true }),

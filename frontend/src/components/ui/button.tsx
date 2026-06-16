@@ -10,14 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[color:var(--color-primary)] text-[color:var(--color-primary-foreground)] shadow-[0_8px_18px_rgba(235,106,45,0.14)] hover:bg-[color:var(--color-primary-dark)]",
+          "bg-primary text-primary-foreground shadow-glow hover:bg-primary-dark",
         secondary:
-          "bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-foreground)] shadow-[0_8px_18px_rgba(34,53,71,0.12)] hover:bg-[#172636]",
+          "bg-surface-2 text-text shadow-sm hover:bg-surface-2/80",
         ghost:
-          "border-[color:var(--color-border)] bg-[color:var(--color-surface)]/76 text-[color:var(--color-text)] hover:bg-[color:var(--color-surface-2)]",
+          "bg-transparent text-text-soft hover:bg-accent hover:text-text",
         destructive:
-          "bg-[color:var(--color-danger)] text-white shadow-[0_8px_18px_rgba(217,72,91,0.12)] hover:bg-[#c53b4d]",
-        link: "h-auto rounded-none px-0 text-[color:var(--color-primary-dark)] underline-offset-4 hover:underline shadow-none",
+          "bg-danger text-danger-foreground shadow-[0_8px_18px_rgba(217,72,91,0.12)] hover:bg-danger-dark",
+        link: "h-auto rounded-none px-0 text-primary-dark underline-offset-4 hover:underline shadow-none",
+        outline:
+          "border border-border bg-transparent text-text hover:bg-accent",
       },
       size: {
         default:

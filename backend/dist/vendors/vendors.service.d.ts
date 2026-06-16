@@ -15,4 +15,5 @@ export declare class VendorsService {
     findOne(id: string): Promise<Vendor>;
     create(createVendorDto: CreateVendorDto, ownerUserId: string): Promise<Vendor>;
     update(id: string, updateVendorDto: UpdateVendorDto, ownerUserId: string): Promise<Vendor>;
+    remove(id: string, ownerUserId: string): Promise<void>;
 }

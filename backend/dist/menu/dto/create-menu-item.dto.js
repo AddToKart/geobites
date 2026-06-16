@@ -20,6 +20,8 @@ class CreateMenuItemDto {
     category;
     imageUrl;
     isAvailable;
+    prepTimeMinutes;
+    stockQuantity;
 }
 exports.CreateMenuItemDto = CreateMenuItemDto;
 __decorate([
@@ -60,4 +62,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateMenuItemDto.prototype, "isAvailable", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsPositive)(),
+    __metadata("design:type", Number)
+], CreateMenuItemDto.prototype, "prepTimeMinutes", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], CreateMenuItemDto.prototype, "stockQuantity", void 0);
 //# sourceMappingURL=create-menu-item.dto.js.map

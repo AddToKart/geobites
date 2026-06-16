@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   ForbiddenException,
   Injectable,
@@ -5,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MenuItem } from '../entities/menu-item.entity';
-import { Vendor } from '../entities/vendor.entity';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { MenuItem } from '../entities/menu-item.entity';
+import { Vendor } from '../entities/vendor.entity';
 
 @Injectable()
 export class MenuService {
@@ -24,6 +25,73 @@ export class MenuService {
       where: { vendorId },
       order: { name: 'ASC' },
     });
+  }
+
+  async searchAcrossVendors(
+    query: string,
+    filters?: { category?: string; priceMin?: number; priceMax?: number },
+  ) {
+    const qb = this.menuRepository
+      .createQueryBuilder('item')
+      .leftJoinAndSelect('item.vendor', 'vendor')
+      .where('item.isAvailable = :available', { available: true })
+      .andWhere(
+        '(LOWER(item.name) LIKE LOWER(:query) OR LOWER(item.description) LIKE LOWER(:query))',
+        { query: `%${query}%` },
+      );
+
+    if (filters?.category) {
+      qb.andWhere('LOWER(item.category) = LOWER(:category)', {
+        category: filters.category,
+      });
+    }
+    if (filters?.priceMin !== undefined) {
+      qb.andWhere('item.price >= :priceMin', { priceMin: filters.priceMin });
+    }
+    if (filters?.priceMax !== undefined) {
+      qb.andWhere('item.price <= :priceMax', { priceMax: filters.priceMax });
+    }
+
+    qb.orderBy('item.name', 'ASC');
+
+    const items = await qb.getMany();
+
+    // Group by vendor
+    const grouped: Record<
+      string,
+      {
+        vendor: {
+          id: string;
+          name: string;
+          imageUrl?: string;
+          rating: number;
+          totalRatings: number;
+        };
+        items: typeof items;
+      }
+    > = {};
+
+    for (const item of items) {
+      if (!item.vendor) continue;
+      const vid = item.vendor.id;
+      if (!grouped[vid]) {
+        grouped[vid] = {
+          vendor: {
+            id: item.vendor.id,
+            name: item.vendor.name,
+            imageUrl: item.vendor.imageUrl,
+            rating: item.vendor.rating,
+            totalRatings: item.vendor.totalRatings,
+          },
+          items: [],
+        };
+      }
+      const { vendor, ...itemData } = item;
+      void vendor;
+      grouped[vid].items.push(itemData as MenuItem);
+    }
+
+    return Object.values(grouped);
   }
 
   async create(createMenuItemDto: CreateMenuItemDto, sellerId: string) {
@@ -42,6 +110,7 @@ export class MenuService {
     }
 
     const menuItem = this.menuRepository.create({
+      id: randomUUID(),
       ...createMenuItemDto,
       isAvailable: createMenuItemDto.isAvailable ?? true,
     });
@@ -89,10 +158,18 @@ export class MenuService {
       throw new ForbiddenException('You can only manage your own menu');
     }
 
-    await this.menuRepository.remove(menuItem);
+    let removed = true;
+    try {
+      await this.menuRepository.remove(menuItem);
+    } catch {
+      menuItem.isAvailable = false;
+      await this.menuRepository.save(menuItem);
+      removed = false;
+    }
 
     return {
       success: true,
+      removed,
     };
   }
 }

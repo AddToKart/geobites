@@ -39,6 +39,9 @@ let VendorsController = class VendorsController {
     update(id, updateVendorDto, userId) {
         return this.vendorsService.update(id, updateVendorDto, userId);
     }
+    remove(id, userId) {
+        return this.vendorsService.remove(id, userId);
+    }
 };
 exports.VendorsController = VendorsController;
 __decorate([
@@ -76,6 +79,16 @@ __decorate([
     __metadata("design:paramtypes", [String, update_vendor_dto_1.UpdateVendorDto, String]),
     __metadata("design:returntype", void 0)
 ], VendorsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(session_guard_1.SessionGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('seller'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], VendorsController.prototype, "remove", null);
 exports.VendorsController = VendorsController = __decorate([
     (0, common_1.Controller)('vendors'),
     __metadata("design:paramtypes", [vendors_service_1.VendorsService])

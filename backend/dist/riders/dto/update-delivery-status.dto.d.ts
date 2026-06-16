@@ -1,3 +1,3 @@
 export declare class UpdateDeliveryStatusDto {
-    status: 'picked_up' | 'delivering' | 'delivered';
+    status: 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered';
 }

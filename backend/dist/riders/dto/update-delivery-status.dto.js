@@ -16,7 +16,7 @@ class UpdateDeliveryStatusDto {
 }
 exports.UpdateDeliveryStatusDto = UpdateDeliveryStatusDto;
 __decorate([
-    (0, class_validator_1.IsIn)(['picked_up', 'delivering', 'delivered']),
+    (0, class_validator_1.IsIn)(['ready_for_pickup', 'picked_up', 'delivering', 'delivered']),
     __metadata("design:type", String)
 ], UpdateDeliveryStatusDto.prototype, "status", void 0);
 //# sourceMappingURL=update-delivery-status.dto.js.map

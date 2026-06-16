@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,13 @@ import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
+import { GeopayService } from '../geopay/geopay.service';
+import { VouchersService } from '../vouchers/vouchers.service';
+import {
+  haversineKm,
+  calculateDeliveryFee,
+} from '../common/utils/distance.util';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -30,6 +38,8 @@ const riderTransitions: Record<string, string[]> = {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
@@ -40,6 +50,9 @@ export class OrdersService {
     @InjectRepository(Vendor)
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
+    private readonly walletService: WalletService,
+    private readonly geopayService: GeopayService,
+    private readonly vouchersService: VouchersService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -108,25 +121,78 @@ export class OrdersService {
           };
         });
 
-        const totalAmount = orderItems.reduce(
+        const subtotal = orderItems.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
+
+        let deliveryFee = 0;
+        if (
+          createOrderDto.deliveryLat !== undefined &&
+          createOrderDto.deliveryLng !== undefined
+        ) {
+          const distanceKm = haversineKm(
+            vendor.latitude,
+            vendor.longitude,
+            createOrderDto.deliveryLat,
+            createOrderDto.deliveryLng,
+          );
+          deliveryFee = calculateDeliveryFee(distanceKm);
+        }
+
+        let totalAmount = subtotal + deliveryFee;
+        let discountAmount = 0;
+        let discountLabel: string | undefined;
+
+        // Apply voucher
+        if (createOrderDto.voucherCode) {
+          const vd = await this.vouchersService.applyVoucher(
+            createOrderDto.voucherCode,
+            createOrderDto.vendorId,
+            totalAmount,
+          );
+          discountAmount += vd;
+        }
+
+        // Apply points discount balance
+        const pointsDiscount = createOrderDto.discountAmount ?? 0;
+        if (pointsDiscount > 0) {
+          const available = Math.min(
+            pointsDiscount,
+            totalAmount - discountAmount,
+          );
+          if (available > 0) {
+            await this.geopayService.consumeDiscount(customerId, available);
+            discountAmount += available;
+          }
+        }
+
+        if (discountAmount > 0) {
+          totalAmount = Math.max(0, totalAmount - discountAmount);
+          const parts: string[] = [];
+          if (createOrderDto.voucherCode) parts.push('Voucher');
+          if (pointsDiscount > 0) parts.push('Points');
+          discountLabel = parts.join(' + ');
+        }
 
         const order = orderRepository.create({
           customerId,
           vendorId: createOrderDto.vendorId,
           status: 'pending',
           totalAmount,
+          deliveryFee,
           street: createOrderDto.street || createOrderDto.deliveryAddress,
           barangay: createOrderDto.barangay,
           landmark: createOrderDto.landmark,
           floorOrGate: createOrderDto.floorOrGate,
           paymentMethod: createOrderDto.paymentMethod || 'COD',
           paymentStatus: 'pending',
+          paymentSessionId: createOrderDto.paymentReference || undefined,
           deliveryLat: createOrderDto.deliveryLat,
           deliveryLng: createOrderDto.deliveryLng,
           notes: createOrderDto.notes,
+          discountAmount,
+          discountLabel,
         });
 
         const savedOrder = await orderRepository.save(order);
@@ -197,6 +263,9 @@ export class OrdersService {
       }
 
       const [data, total] = await qb.getManyAndCount();
+      for (const order of data) {
+        await this.enrichOrderDetails(order);
+      }
 
       return {
         data,
@@ -231,6 +300,8 @@ export class OrdersService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
+
+    await this.enrichOrderDetails(order);
 
     if (role === 'customer' && order.customerId !== userId) {
       throw new ForbiddenException('You are not allowed to access this order');
@@ -278,13 +349,17 @@ export class OrdersService {
       if (order.customerId !== userId) {
         throw new ForbiddenException('You can only update your own orders');
       }
-      if (!(currentStatus === 'pending' && nextStatus === 'cancelled')) {
+      const cancellableStatuses = ['pending', 'accepted', 'preparing'];
+      if (
+        !(
+          cancellableStatuses.includes(currentStatus) &&
+          nextStatus === 'cancelled'
+        )
+      ) {
         throw new BadRequestException('Invalid customer status transition');
       }
-      if (nextStatus === 'cancelled') {
-        order.cancellationReason =
-          updateStatusDto.cancellationReason || 'Cancelled by customer';
-      }
+      order.cancellationReason =
+        updateStatusDto.cancellationReason || 'Cancelled by customer';
     }
 
     if (role === 'seller') {
@@ -337,6 +412,46 @@ export class OrdersService {
     order.status = nextStatus;
     const updatedOrder = await this.orderRepository.save(order);
 
+    // If cancelled by customer and paid via GeoPay, refund the customer wallet
+    if (
+      nextStatus === 'cancelled' &&
+      role === 'customer' &&
+      order.paymentMethod === 'GEOPAY' &&
+      order.paymentStatus === 'paid'
+    ) {
+      try {
+        await this.walletService.refundGeoPayOrder(
+          order.vendorId,
+          order.customerId,
+          order.id,
+          Number(order.totalAmount),
+        );
+        this.logger.log(
+          `GeoPay refund processed for cancelled order ${order.id}`,
+        );
+      } catch (refundError) {
+        this.logger.error(
+          `Failed to process GeoPay refund for order ${order.id}:`,
+          refundError,
+        );
+      }
+    }
+
+    // Notify seller when customer cancels
+    if (
+      nextStatus === 'cancelled' &&
+      role === 'customer' &&
+      order.vendor?.userId
+    ) {
+      await this.notificationsService.create({
+        userId: order.vendor.userId,
+        title: 'Order Cancelled',
+        message: `Order #${order.id.slice(0, 8)} was cancelled by the customer`,
+        type: 'order_update',
+        referenceId: order.id,
+      });
+    }
+
     // Create notifications based on status change
     if (nextStatus === 'accepted') {
       await this.notificationsService.create({
@@ -378,8 +493,180 @@ export class OrdersService {
         type: 'order_update',
         referenceId: order.id,
       });
+      // Award loyalty points for completed orders
+      try {
+        await this.geopayService.awardPoints(
+          order.customerId,
+          Number(order.totalAmount),
+          order.id,
+        );
+        this.logger.log(
+          `Reward points awarded for delivered order ${order.id}`,
+        );
+      } catch (pointsError) {
+        this.logger.error(
+          `Failed to award points for order ${order.id}:`,
+          pointsError,
+        );
+      }
+      // Reward referral on first completed order
+      try {
+        await this.geopayService.rewardReferralOnFirstOrder(order.customerId);
+      } catch (refError) {
+        this.logger.error(
+          `Failed to reward referral for user ${order.customerId}:`,
+          refError,
+        );
+      }
     }
 
     return updatedOrder;
+  }
+
+  async getAvailableRiders() {
+    const isSqlite =
+      this.dataSource.options.type === 'better-sqlite3' ||
+      this.dataSource.options.type === 'sqljs';
+    const query = isSqlite
+      ? `
+        SELECT 
+          u.id, 
+          u.name, 
+          u.phone,
+          rl.lat, 
+          rl.lng, 
+          rl.updatedAt as lastActive,
+          CASE WHEN rl.orderId IS NULL THEN 'available' ELSE 'busy' END as status
+        FROM user u
+        LEFT JOIN rider_locations rl ON rl.riderId = u.id
+        WHERE u.role = 'rider'
+      `
+      : `
+        SELECT 
+          u.id, 
+          u.name, 
+          u.phone,
+          rl.lat, 
+          rl.lng, 
+          rl."updatedAt" as "lastActive",
+          CASE WHEN rl."orderId" IS NULL THEN 'available' ELSE 'busy' END as status
+        FROM "user" u
+        LEFT JOIN "rider_locations" rl ON rl."riderId" = u.id
+        WHERE u.role = 'rider'
+      `;
+    return this.dataSource.query(query);
+  }
+
+  async assignRider(
+    id: string,
+    riderId: string,
+    sellerId: string,
+  ): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: { vendor: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const sellerVendor = await this.vendorRepository.findOne({
+      where: { userId: sellerId },
+    });
+
+    if (!sellerVendor || sellerVendor.id !== order.vendorId) {
+      throw new ForbiddenException(
+        'You can only assign riders to your own orders',
+      );
+    }
+
+    if (
+      order.status === 'pending' ||
+      order.status === 'rejected' ||
+      order.status === 'cancelled' ||
+      order.status === 'delivered'
+    ) {
+      throw new BadRequestException(
+        'Cannot assign a rider to this order in its current status',
+      );
+    }
+
+    const isSqlite =
+      this.dataSource.options.type === 'better-sqlite3' ||
+      this.dataSource.options.type === 'sqljs';
+    const query = isSqlite
+      ? `SELECT id FROM user WHERE id = ? AND role = 'rider'`
+      : `SELECT id FROM "user" WHERE id = $1 AND role = 'rider'`;
+
+    const params = [riderId];
+    const riderExists = await this.dataSource.query(query, params);
+
+    if (!riderExists || riderExists.length === 0) {
+      throw new BadRequestException('Invalid rider');
+    }
+
+    order.riderId = riderId;
+    const updated = await this.orderRepository.save(order);
+
+    await this.notificationsService.create({
+      userId: riderId,
+      title: 'New Delivery Assigned',
+      message: `You have been assigned to deliver order #${order.id.slice(0, 8)}`,
+      type: 'delivery_request',
+      referenceId: order.id,
+    });
+
+    await this.notificationsService.create({
+      userId: order.customerId,
+      title: 'Rider Assigned',
+      message: 'A rider has been assigned to deliver your order',
+      type: 'order_update',
+      referenceId: order.id,
+    });
+
+    return updated;
+  }
+
+  async enrichOrderDetails(order: Order): Promise<Order> {
+    if (order.riderId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const riders = await this.dataSource.query(query, [order.riderId]);
+      if (riders && riders[0]) {
+        order.riderName = riders[0].name;
+        order.riderPhone = riders[0].phone || 'N/A';
+      }
+    }
+    if (order.customerId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const customers = await this.dataSource.query(query, [order.customerId]);
+      if (customers && customers[0]) {
+        order.customerName = customers[0].name;
+        order.customerPhone = customers[0].phone || 'N/A';
+      }
+    }
+    if (order.vendor && order.vendor.userId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT phone FROM user WHERE id = ?'
+        : 'SELECT phone FROM "user" WHERE id = $1';
+      const sellers = await this.dataSource.query(query, [order.vendor.userId]);
+      if (sellers && sellers[0]) {
+        order.vendorPhone = sellers[0].phone || 'N/A';
+      }
+    }
+    return order;
   }
 }

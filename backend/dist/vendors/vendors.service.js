@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VendorsService = void 0;
+const node_crypto_1 = require("node:crypto");
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
@@ -27,10 +28,9 @@ let VendorsService = class VendorsService {
         const limit = query.limit ?? 20;
         const skip = (page - 1) * limit;
         const qb = this.vendorRepository.createQueryBuilder('vendor');
+        qb.where("vendor.id NOT LIKE 'demo-%'");
         if (query.search) {
-            qb.where('LOWER(vendor.name) LIKE LOWER(:search)', {
-                search: `%${query.search}%`,
-            });
+            qb.where('(LOWER(vendor.name) LIKE LOWER(:search) OR LOWER(vendor.description) LIKE LOWER(:search))', { search: `%${query.search}%` });
         }
         const sortBy = query.sortBy ?? 'rating';
         const hasCoordinates = query.lat !== undefined && query.lng !== undefined;
@@ -78,6 +78,7 @@ let VendorsService = class VendorsService {
             throw new common_1.ForbiddenException('Seller already has a vendor profile');
         }
         const vendor = this.vendorRepository.create({
+            id: (0, node_crypto_1.randomUUID)(),
             ...createVendorDto,
             userId: ownerUserId,
         });
@@ -95,6 +96,18 @@ let VendorsService = class VendorsService {
         }
         Object.assign(vendor, updateVendorDto);
         return this.vendorRepository.save(vendor);
+    }
+    async remove(id, ownerUserId) {
+        const vendor = await this.vendorRepository.findOne({
+            where: { id },
+        });
+        if (!vendor) {
+            throw new common_1.NotFoundException('Vendor not found');
+        }
+        if (vendor.userId !== ownerUserId) {
+            throw new common_1.ForbiddenException('You can only delete your own vendor');
+        }
+        await this.vendorRepository.remove(vendor);
     }
 };
 exports.VendorsService = VendorsService;

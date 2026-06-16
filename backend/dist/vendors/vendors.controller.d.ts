@@ -14,4 +14,5 @@ export declare class VendorsController {
     findOne(id: string): Promise<import("../entities/vendor.entity").Vendor>;
     create(createVendorDto: CreateVendorDto, userId: string): Promise<import("../entities/vendor.entity").Vendor>;
     update(id: string, updateVendorDto: UpdateVendorDto, userId: string): Promise<import("../entities/vendor.entity").Vendor>;
+    remove(id: string, userId: string): Promise<void>;
 }

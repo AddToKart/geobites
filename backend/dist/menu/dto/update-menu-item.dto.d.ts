@@ -5,4 +5,6 @@ export declare class UpdateMenuItemDto {
     category?: string;
     imageUrl?: string;
     isAvailable?: boolean;
+    prepTimeMinutes?: number;
+    stockQuantity?: number;
 }

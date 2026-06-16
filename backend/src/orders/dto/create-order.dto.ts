@@ -3,12 +3,10 @@ import {
   ArrayMinSize,
   IsArray,
   IsEnum,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsPositive,
   IsString,
-  IsUUID,
   Max,
   Min,
   ValidateIf,
@@ -49,9 +47,13 @@ export class CreateOrderDto {
   @IsOptional()
   floorOrGate?: string;
 
-  @IsEnum(['COD', 'GCASH', 'MAYA', 'QRPH'])
+  @IsEnum(['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'])
   @IsOptional()
-  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+
+  @IsString()
+  @IsOptional()
+  paymentReference?: string;
 
   @ValidateIf((object) => object.deliveryLng !== undefined)
   @Type(() => Number)
@@ -70,6 +72,16 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  discountAmount?: number;
+
+  @IsString()
+  @IsOptional()
+  voucherCode?: string;
 
   @IsArray()
   @ArrayMinSize(1)

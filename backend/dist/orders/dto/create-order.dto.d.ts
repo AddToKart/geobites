@@ -9,9 +9,12 @@ export declare class CreateOrderDto {
     barangay?: string;
     landmark?: string;
     floorOrGate?: string;
-    paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+    paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+    paymentReference?: string;
     deliveryLat?: number;
     deliveryLng?: number;
     notes?: string;
+    discountAmount?: number;
+    voucherCode?: string;
     items: CreateOrderItemDto[];
 }

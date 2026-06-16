@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Map, MapControls, MapMarker, MapRoute, MarkerContent, MarkerPopup, useMap } from '@/components/ui/map';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Order, Vendor } from '@/types';
 import { MapStyleSelect } from './MapStyleSelect';
 import { defaultMapStyle, mapStyles, type MapStyleKey } from './map-styles';
+import { OSRM_BASE_URL } from '@/lib/config';
+import { cn } from '@/lib/utils';
 
 type RouteVendor = Pick<Vendor, 'name' | 'address' | 'latitude' | 'longitude'>;
 
@@ -23,7 +23,7 @@ type OrderWithRoute = Pick<
 type RoutePoint = {
   lat: number;
   lng: number;
-  label: 'Shop' | 'Customer' | 'Rider';
+  label: 'Shop' | 'Customer' | 'Rider' | 'Available Rider';
   title: string;
   subtitle: string;
   color: string;
@@ -36,20 +36,28 @@ function statusLabel(status: OrderWithRoute['status']) {
 }
 
 function getProgressRiderPoint(order: OrderWithRoute) {
-  if (typeof order.riderLat === 'number' && typeof order.riderLng === 'number') {
+  const riderLat = order.riderLat != null ? Number(order.riderLat) : null;
+  const riderLng = order.riderLng != null ? Number(order.riderLng) : null;
+
+  if (riderLat !== null && riderLng !== null && !isNaN(riderLat) && !isNaN(riderLng)) {
     return {
-      lat: order.riderLat,
-      lng: order.riderLng,
+      lat: riderLat,
+      lng: riderLng,
     };
   }
 
+  const vendorLat = order.vendor?.latitude != null ? Number(order.vendor.latitude) : null;
+  const vendorLng = order.vendor?.longitude != null ? Number(order.vendor.longitude) : null;
   const vendor =
-    typeof order.vendor?.latitude === 'number' && typeof order.vendor?.longitude === 'number'
-      ? { lat: Number(order.vendor.latitude), lng: Number(order.vendor.longitude) }
+    vendorLat !== null && vendorLng !== null && !isNaN(vendorLat) && !isNaN(vendorLng)
+      ? { lat: vendorLat, lng: vendorLng }
       : null;
+
+  const deliveryLat = order.deliveryLat != null ? Number(order.deliveryLat) : null;
+  const deliveryLng = order.deliveryLng != null ? Number(order.deliveryLng) : null;
   const customer =
-    typeof order.deliveryLat === 'number' && typeof order.deliveryLng === 'number'
-      ? { lat: order.deliveryLat, lng: order.deliveryLng }
+    deliveryLat !== null && deliveryLng !== null && !isNaN(deliveryLat) && !isNaN(deliveryLng)
+      ? { lat: deliveryLat, lng: deliveryLng }
       : null;
 
   if (!vendor || !customer) {
@@ -83,7 +91,7 @@ function RouteViewportController({
 }) {
   const { map, isLoaded } = useMap();
   const viewportKey = useMemo(() => {
-    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const structuralPoints = points.filter((point) => point.label !== 'Rider' && point.label !== 'Available Rider');
     const focusPoints = structuralPoints.length ? structuralPoints : points;
 
     return focusPoints
@@ -96,7 +104,7 @@ function RouteViewportController({
       return;
     }
 
-    const structuralPoints = points.filter((point) => point.label !== 'Rider');
+    const structuralPoints = points.filter((point) => point.label !== 'Rider' && point.label !== 'Available Rider');
     const focusPoints = structuralPoints.length ? structuralPoints : points;
 
     if (focusPoints.length === 1) {
@@ -149,35 +157,39 @@ function RouteMarker({ point }: { point: RoutePoint }) {
       <MarkerContent>
         <div className="pointer-events-none flex items-center gap-2">
           <span
-            className="inline-flex h-4 w-4 rounded-full border-[3px] border-white shadow-[0_12px_22px_rgba(15,23,42,0.26)]"
+            className="inline-flex h-4.5 w-4.5 rounded-full border-[3px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.35)]"
             style={{ backgroundColor: point.color }}
           />
-          <span className="inline-flex rounded-full border border-[color:var(--color-overlay-border)] bg-[color:var(--color-overlay-bg)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(15,23,42,0.14)] backdrop-blur-sm">
+          <span className="inline-flex rounded-none border border-border bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-foreground shadow-md backdrop-blur-sm">
             {point.label}
           </span>
         </div>
       </MarkerContent>
-      <MarkerPopup closeButton className="min-w-[220px] rounded-2xl border-[color:var(--color-overlay-border)] p-4">
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--color-primary-dark)]">
+      <MarkerPopup closeButton className="min-w-[220px] rounded-none border border-border p-4 bg-background">
+        <div className="space-y-1.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-primary">
             {point.label}
           </p>
-          <p className="text-sm font-semibold text-[color:var(--color-text)]">{point.title}</p>
-          <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">{point.subtitle}</p>
+          <p className="text-sm font-bold text-foreground tracking-tight">{point.title}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">{point.subtitle}</p>
         </div>
       </MarkerPopup>
     </MapMarker>
   );
 }
 
+import { AvailableRider } from '@/services/orderService';
+
 export function OrderRouteMap({
   order,
+  availableRiders = [],
   title = 'Delivery map',
   description = 'Shop, customer pin, and rider progress appear here when coordinates are available.',
   className,
   compact = false,
 }: {
   order: OrderWithRoute;
+  availableRiders?: AvailableRider[];
   title?: string;
   description?: string;
   className?: string;
@@ -188,32 +200,38 @@ export function OrderRouteMap({
   const selectedStyle = mapStyles[style];
 
   const vendorPoint = useMemo<RoutePoint | null>(() => {
-    if (typeof order.vendor?.latitude !== 'number' || typeof order.vendor?.longitude !== 'number') {
+    const lat = order.vendor?.latitude != null ? Number(order.vendor.latitude) : null;
+    const lng = order.vendor?.longitude != null ? Number(order.vendor.longitude) : null;
+
+    if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) {
       return null;
     }
 
     return {
-      lat: Number(order.vendor.latitude),
-      lng: Number(order.vendor.longitude),
+      lat,
+      lng,
       label: 'Shop',
       title: order.vendor?.name || 'Shop',
       subtitle: order.vendor?.address || 'Pickup point',
-      color: '#eb6a2d',
+      color: '#ff5a00',
     };
   }, [order.vendor?.address, order.vendor?.latitude, order.vendor?.longitude, order.vendor?.name]);
 
   const customerPoint = useMemo<RoutePoint | null>(() => {
-    if (typeof order.deliveryLat !== 'number' || typeof order.deliveryLng !== 'number') {
+    const lat = order.deliveryLat != null ? Number(order.deliveryLat) : null;
+    const lng = order.deliveryLng != null ? Number(order.deliveryLng) : null;
+
+    if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) {
       return null;
     }
 
     return {
-      lat: order.deliveryLat,
-      lng: order.deliveryLng,
+      lat,
+      lng,
       label: 'Customer',
       title: 'Delivery point',
       subtitle: order.deliveryAddress,
-      color: '#223547',
+      color: '#3b82f6',
     };
   }, [order.deliveryAddress, order.deliveryLat, order.deliveryLng]);
 
@@ -230,38 +248,107 @@ export function OrderRouteMap({
       label: 'Rider',
       title: 'Delivery progress',
       subtitle: `Status: ${statusLabel(order.status)}`,
-      color: '#1f8c56',
+      color: '#10b981',
     };
   }, [order]);
 
+  const riderPoints = useMemo<RoutePoint[]>(() => {
+    return availableRiders
+      .filter((r) => r.lat != null && r.lng != null)
+      .map((r) => {
+        const lat = Number(r.lat);
+        const lng = Number(r.lng);
+        return {
+          lat,
+          lng,
+          label: 'Available Rider' as const,
+          title: r.name,
+          subtitle: `Rider Status: ${r.status.toUpperCase()}${r.phone ? ` • ${r.phone}` : ''}`,
+          color: r.status === 'available' ? '#8b5cf6' : '#6b7280',
+        };
+      });
+  }, [availableRiders]);
+
   const points = useMemo(
-    () => [vendorPoint, customerPoint, riderPoint].filter(Boolean) as RoutePoint[],
-    [customerPoint, riderPoint, vendorPoint],
+    () => [vendorPoint, customerPoint, riderPoint, ...riderPoints].filter(Boolean) as RoutePoint[],
+    [customerPoint, riderPoint, vendorPoint, riderPoints],
   );
 
-  const routeCoordinates = useMemo<[number, number][]>(
-    () =>
-      vendorPoint && customerPoint
-        ? [
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([]);
+  const [remainingCoordinates, setRemainingCoordinates] = useState<[number, number][]>([]);
+
+  useEffect(() => {
+    if (!vendorPoint || !customerPoint) {
+      setRouteCoordinates([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fetchRoute = async () => {
+      try {
+        const url = `${OSRM_BASE_URL}/route/v1/driving/${vendorPoint.lng},${vendorPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error('OSRM request failed');
+        const data = await res.json();
+        if (data.routes && data.routes[0]) {
+          setRouteCoordinates(data.routes[0].geometry.coordinates as [number, number][]);
+        } else {
+          setRouteCoordinates([
             [vendorPoint.lng, vendorPoint.lat],
             [customerPoint.lng, customerPoint.lat],
-          ]
-        : [],
-    [customerPoint, vendorPoint],
-  );
+          ]);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setRouteCoordinates([
+          [vendorPoint.lng, vendorPoint.lat],
+          [customerPoint.lng, customerPoint.lat],
+        ]);
+      }
+    };
 
-  const remainingCoordinates = useMemo<[number, number][]>(
-    () =>
-      riderPoint &&
-      customerPoint &&
-      (riderPoint.lng !== customerPoint.lng || riderPoint.lat !== customerPoint.lat)
-        ? [
+    void fetchRoute();
+    return () => controller.abort();
+  }, [vendorPoint?.lat, vendorPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
+
+  useEffect(() => {
+    if (!riderPoint || !customerPoint) {
+      setRemainingCoordinates([]);
+      return;
+    }
+
+    if (riderPoint.lng === customerPoint.lng && riderPoint.lat === customerPoint.lat) {
+      setRemainingCoordinates([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const fetchRoute = async () => {
+      try {
+        const url = `${OSRM_BASE_URL}/route/v1/driving/${riderPoint.lng},${riderPoint.lat};${customerPoint.lng},${customerPoint.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) throw new Error('OSRM request failed');
+        const data = await res.json();
+        if (data.routes && data.routes[0]) {
+          setRemainingCoordinates(data.routes[0].geometry.coordinates as [number, number][]);
+        } else {
+          setRemainingCoordinates([
             [riderPoint.lng, riderPoint.lat],
             [customerPoint.lng, customerPoint.lat],
-          ]
-        : [],
-    [customerPoint, riderPoint],
-  );
+          ]);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setRemainingCoordinates([
+          [riderPoint.lng, riderPoint.lat],
+          [customerPoint.lng, customerPoint.lat],
+        ]);
+      }
+    };
+
+    void fetchRoute();
+    return () => controller.abort();
+  }, [riderPoint?.lat, riderPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
 
   const initialCenter: [number, number] = points[0]
     ? [points[0].lng, points[0].lat]
@@ -269,88 +356,88 @@ export function OrderRouteMap({
 
   if (points.length === 0) {
     return (
-      <Card className={className}>
-        <CardContent className="space-y-3 p-5">
-          <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <p className="text-sm text-[color:var(--color-text-soft)]">{description}</p>
-          </div>
-          <div className="rounded-[20px] border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-6 text-sm text-[color:var(--color-text-soft)]">
-            This order does not have enough location data yet. Set a delivery pin during checkout to enable map tracking.
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cn("p-6 md:p-8 space-y-4 text-foreground", className)}>
+        <div>
+          <h3 className="text-2xl font-medium tracking-tighter">{title}</h3>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">{description}</p>
+        </div>
+        <div className="border border-border bg-secondary/5 px-6 py-8 text-sm text-muted-foreground font-medium rounded-none">
+          This order does not have enough location data yet. Set a delivery pin during checkout to enable map tracking.
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className={className}>
-      <CardContent className="space-y-4 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className={cn("p-6 md:p-8 space-y-6 text-foreground", className)}>
+      {(title || description) && (
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <p className="text-sm text-[color:var(--color-text-soft)]">{description}</p>
+            {title && <h3 className="text-2xl font-medium tracking-tighter">{title}</h3>}
+            {description && <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-2">{description}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge>Shop</Badge>
-            <Badge variant="success">Rider</Badge>
-            <Badge variant="warning">Customer</Badge>
+            <span className="border border-border bg-background px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Shop</span>
+            <span className="border border-emerald-500/30 bg-emerald-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-500">Rider</span>
+            <span className="border border-amber-500/30 bg-amber-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-500">Customer</span>
           </div>
         </div>
+      )}
 
-        <div
-          className={`relative overflow-hidden rounded-[24px] border border-[color:var(--color-border)] ${compact ? 'h-64' : 'h-80'}`}
+      <div
+        className={cn(
+          "relative overflow-hidden border border-border bg-background rounded-none",
+          compact ? "h-64" : "h-[400px]"
+        )}
+      >
+        <Map
+          center={initialCenter}
+          zoom={13.8}
+          className="h-full w-full"
+          styles={selectedStyle}
         >
-          <Map
-            center={initialCenter}
-            zoom={13.8}
-            className="h-full w-full"
-            styles={selectedStyle}
-          >
-            <RouteViewportController points={points} is3D={is3D} />
+          <RouteViewportController points={points} is3D={is3D} />
 
-            {routeCoordinates.length === 2 ? (
-              <MapRoute
-                coordinates={routeCoordinates}
-                color="#d6b487"
-                width={4}
-                opacity={0.82}
-                dashArray={[2, 2]}
-                interactive={false}
-              />
-            ) : null}
-
-            {remainingCoordinates.length === 2 ? (
-              <MapRoute
-                coordinates={remainingCoordinates}
-                color="#1f8c56"
-                width={4}
-                opacity={0.9}
-                interactive={false}
-              />
-            ) : null}
-
-            {points.map((point) => (
-              <RouteMarker
-                key={`${point.label}-${point.lat.toFixed(5)}-${point.lng.toFixed(5)}`}
-                point={point}
-              />
-            ))}
-
-            <MapControls
-              position="bottom-right"
-              showZoom
-              showCompass
-              showLocate
-              showFullscreen
+          {routeCoordinates.length >= 2 ? (
+            <MapRoute
+              coordinates={routeCoordinates}
+              color="#3b82f6"
+              width={6}
+              opacity={0.85}
+              interactive={false}
             />
-          </Map>
+          ) : null}
 
-          <div className="absolute right-3 top-3 z-10">
-            <MapStyleSelect value={style} onChange={setStyle} />
-          </div>
+          {remainingCoordinates.length >= 2 ? (
+            <MapRoute
+              coordinates={remainingCoordinates}
+              color="#ff5a00"
+              width={6}
+              opacity={0.95}
+              interactive={false}
+            />
+          ) : null}
+
+          {points.map((point) => (
+            <RouteMarker
+              key={`${point.label}-${point.lat.toFixed(5)}-${point.lng.toFixed(5)}`}
+              point={point}
+            />
+          ))}
+
+          <MapControls
+            position="bottom-right"
+            showZoom
+            showCompass
+            showLocate
+            showFullscreen
+          />
+        </Map>
+
+        <div className="absolute right-3 top-3 z-10">
+          <MapStyleSelect value={style} onChange={setStyle} />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

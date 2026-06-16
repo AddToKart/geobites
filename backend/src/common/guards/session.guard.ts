@@ -3,7 +3,6 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { auth } from '../../auth/auth';
@@ -66,8 +65,8 @@ export class SessionGuard implements CanActivate {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      console.error('SessionGuard error:', error);
-      throw new InternalServerErrorException('Failed to validate session');
+      console.warn('SessionGuard validation failure:', error);
+      throw new UnauthorizedException('Invalid session or session expired');
     }
   }
 }

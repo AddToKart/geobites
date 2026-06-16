@@ -20,6 +20,8 @@ class CreateVendorDto {
     longitude;
     imageUrl;
     isActive;
+    operatingHours;
+    commissionRate;
 }
 exports.CreateVendorDto = CreateVendorDto;
 __decorate([
@@ -63,4 +65,17 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateVendorDto.prototype, "isActive", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], CreateVendorDto.prototype, "operatingHours", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(99.99),
+    __metadata("design:type", Number)
+], CreateVendorDto.prototype, "commissionRate", void 0);
 //# sourceMappingURL=create-vendor.dto.js.map

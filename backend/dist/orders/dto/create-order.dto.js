@@ -35,9 +35,12 @@ class CreateOrderDto {
     landmark;
     floorOrGate;
     paymentMethod;
+    paymentReference;
     deliveryLat;
     deliveryLng;
     notes;
+    discountAmount;
+    voucherCode;
     items;
 }
 exports.CreateOrderDto = CreateOrderDto;
@@ -71,10 +74,15 @@ __decorate([
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "floorOrGate", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(['COD', 'GCASH', 'MAYA', 'QRPH']),
+    (0, class_validator_1.IsEnum)(['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY']),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "paymentMethod", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "paymentReference", void 0);
 __decorate([
     (0, class_validator_1.ValidateIf)((object) => object.deliveryLng !== undefined),
     (0, class_transformer_1.Type)(() => Number),
@@ -96,6 +104,18 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "notes", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateOrderDto.prototype, "discountAmount", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateOrderDto.prototype, "voucherCode", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ArrayMinSize)(1),

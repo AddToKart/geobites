@@ -1,15 +1,21 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { List, MapIcon, Store } from 'lucide-react';
-import { demoVendors, getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
-import { Button } from '@/components/ui/button';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
+import { getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
+import { useAuth } from '@/hooks/useAuth';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { getVendors } from '@/services/vendorService';
-import { Order, Vendor } from '@/types';
+import { getAddresses } from '@/services/addressService';
+import { searchMenuItems, DishSearchResult } from '@/services/menuService';
+import { Order, Vendor, MenuItem } from '@/types';
 import { toast } from 'sonner';
 import { BrowseOverviewSection } from '@/features/customer/browse/BrowseOverviewSection';
 import { BrowseResultsSection } from '@/features/customer/browse/BrowseResultsSection';
 import type { BrowseSort, BrowseVendor, BrowseViewMode } from '@/features/customer/browse/types';
+import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
+import { formatCurrency } from '@/utils/helpers';
+import { useCart } from '@/hooks/useCart';
 
 function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): BrowseVendor | null {
   if (
@@ -35,34 +41,89 @@ function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): B
   };
 }
 
+const CATEGORIES = [
+  'All',
+  'Silog',
+  'Ihaw-Ihaw',
+  'Snacks',
+  'Drinks',
+];
+
 export function BrowseVendorsPagePremium() {
+  const navigate = useNavigate();
+  const { user, isLoading: authLoading } = useAuth();
+  const { addItem, vendorId: cartVendorId, clearCart } = useCart();
   const [liveVendors, setLiveVendors] = useState<Vendor[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<BrowseSort>('distance');
+  const [sortBy] = useState<BrowseSort>('name');
   const [coords, setCoords] = useState(santaMariaBulacanCenter);
+  const [initialCoordsLoaded, setInitialCoordsLoaded] = useState(false);
+
+  // Load user's default saved address pin as initial coordinates
+  useEffect(() => {
+    if (initialCoordsLoaded || authLoading) return;
+    if (!user) {
+      setInitialCoordsLoaded(true);
+      return;
+    }
+    getAddresses()
+      .then((addresses) => {
+        const defaultAddr = addresses.find((a) => a.isDefault) ?? addresses[0];
+        if (defaultAddr?.deliveryLat != null && defaultAddr?.deliveryLng != null) {
+          setCoords({ lat: defaultAddr.deliveryLat, lng: defaultAddr.deliveryLng });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInitialCoordsLoaded(true));
+  }, [user, initialCoordsLoaded, authLoading]);
   const [viewMode, setViewMode] = useState<BrowseViewMode>('grid');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(demoVendors[0]?.id ?? null);
-  const deferredSearch = useDeferredValue(search);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [dishResults, setDishResults] = useState<DishSearchResult[]>([]);
+  const [searchingDishes, setSearchingDishes] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  // Stable ref so search effect doesn't re-run when vendor list updates
+  const allVendorsRef = useRef<BrowseVendor[]>([]);
+
+  const allVendors = useMemo(() => {
+    const merged = liveVendors
+      .map((vendor) => toBrowseVendor(vendor, coords))
+      .filter((vendor): vendor is BrowseVendor => Boolean(vendor));
+    allVendorsRef.current = merged;
+    return merged;
+  }, [coords, liveVendors]);
 
   useEffect(() => {
-    const loadBrowseData = async () => {
-      setIsLoading(true);
-
-      try {
-        const response = await getVendors({ page: 1, limit: 100 });
-        setLiveVendors(response.data);
-      } catch {
-        setLiveVendors([]);
-        toast.error('Live shops could not be loaded. Showing Santa Maria demos instead.');
-      } finally {
-        setIsLoading(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
       }
     };
-
-    void loadBrowseData();
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    setShowSuggestions(search.trim().length >= 2);
+    if (search.trim().length < 2) {
+      setDishResults([]);
+      setSearchingDishes(false);
+    }
+  }, [search]);
+
+  useVisiblePolling(async () => {
+    try {
+      const response = await getVendors({ page: 1, limit: 100 });
+      setLiveVendors(response.data);
+      setIsLoading(false);
+    } catch {
+      setLiveVendors([]);
+      toast.error('Live shops could not be loaded.');
+    }
+  }, 30000);
 
   useVisiblePolling(async () => {
     try {
@@ -83,28 +144,98 @@ export function BrowseVendorsPagePremium() {
     }
   }, 15000);
 
+  // Dish search — debounced 300ms, uses stable allVendorsRef to avoid retriggering on vendor updates
+  useEffect(() => {
+    const trimmed = search.trim();
+    if (trimmed.length < 2) return;
+
+    let cancelled = false;
+    setSearchingDishes(true);
+
+    const timerId = setTimeout(async () => {
+      try {
+        // 1. Run dish search (client-side for demo vendors + backend for live)
+        const dishSearchResults = await searchMenuItems(trimmed);
+        if (cancelled) return;
+
+        // 2. Find vendors whose NAME or DESCRIPTION match — no extra menu fetches needed
+        const queryLower = trimmed.toLowerCase();
+        const vendorNameMatches = allVendorsRef.current
+          .filter(
+            (vendor) =>
+              vendor.name.toLowerCase().includes(queryLower) ||
+              (vendor.description?.toLowerCase() ?? '').includes(queryLower),
+          )
+          .filter((vendor) => !dishSearchResults.some((r) => r.vendor.id === vendor.id));
+
+        // Represent vendor-name matches as a result entry with empty items
+        // so the dropdown shows the vendor card without fetching its full menu
+        const vendorNameResults: DishSearchResult[] = vendorNameMatches.map((vendor) => ({
+          vendor: {
+            id: vendor.id,
+            name: vendor.name,
+            imageUrl: vendor.imageUrl,
+            rating: vendor.rating,
+            totalRatings: vendor.totalRatings,
+          },
+          items: [],
+        }));
+
+        if (!cancelled) {
+          setDishResults([...dishSearchResults, ...vendorNameResults]);
+          setSearchingDishes(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setDishResults([]);
+          setSearchingDishes(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timerId);
+    };
+  }, [search]);
+
+
   const browseVendors = useMemo(() => {
-    const merged = [
-      ...demoVendors.map((vendor) => ({
-        ...vendor,
-        distance: getVendorDistanceKm(coords, { lat: vendor.latitude, lng: vendor.longitude }),
-      })),
-      ...liveVendors
-        .map((vendor) => toBrowseVendor(vendor, coords))
-        .filter((vendor): vendor is BrowseVendor => Boolean(vendor))
-        .filter((vendor) => !demoVendors.some((demoVendor) => demoVendor.id === vendor.id)),
-    ];
-
-    const normalizedSearch = deferredSearch.trim().toLowerCase();
-
-    const filtered = merged.filter((vendor) => {
-      if (!normalizedSearch) {
-        return true;
+    const trimmedSearch = search.trim();
+    const filtered = allVendors.filter((vendor) => {
+      // Text search filter: match against name, description, and specialties
+      if (trimmedSearch.length >= 2) {
+        const queryLower = trimmedSearch.toLowerCase();
+        const vendorText = [
+          vendor.name,
+          vendor.description,
+          ...(vendor.specialties || []),
+        ].join(' ').toLowerCase();
+        if (!vendorText.includes(queryLower)) return false;
       }
 
-      return [vendor.name, vendor.description, vendor.address, vendor.neighborhood]
-        .filter(Boolean)
-        .some((value) => value!.toLowerCase().includes(normalizedSearch));
+      // Category selection filter
+      if (selectedCategory === 'All') return true;
+
+      const categoryLower = selectedCategory.toLowerCase();
+      const keywords: Record<string, string[]> = {
+        'silog': ['silog', 'breakfast', 'almusal', 'tapsi'],
+        'ihaw-ihaw': ['ihaw', 'grill', 'barbecue', 'bbq', 'liempo', 'inasal'],
+        'pancit & noodles': ['pancit', 'noodles', 'bihon', 'canton', 'mami'],
+        'desserts & sweet': ['dessert', 'sweet', 'halo-halo', 'ice cream', 'cake', 'flan', 'buko'],
+        'burgers & fast food': ['burger', 'fries', 'chicken', 'fast food', 'pizza'],
+        'coffee & drinks': ['coffee', 'drinks', 'kape', 'beverage', 'latte', 'tea', 'cooler'],
+        'street food': ['street food', 'tusok-tusok', 'snack', 'siomai', 'kwek-kwek', 'fishball'],
+      };
+
+      const targetKeywords = keywords[categoryLower] || [categoryLower];
+      const vendorText = [
+        vendor.name,
+        vendor.description,
+        ...(vendor.specialties || []),
+      ].join(' ').toLowerCase();
+
+      return targetKeywords.some(keyword => vendorText.includes(keyword));
     });
 
     return filtered.sort((firstVendor, secondVendor) => {
@@ -118,10 +249,10 @@ export function BrowseVendorsPagePremium() {
 
       return secondVendor.rating - firstVendor.rating;
     });
-  }, [coords, deferredSearch, liveVendors, sortBy]);
+  }, [allVendors, sortBy, selectedCategory, search]);
 
   const selectedVendor = useMemo(
-    () => browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? browseVendors[0] ?? null,
+    () => (selectedVendorId ? browseVendors.find((vendor) => vendor.id === selectedVendorId) ?? null : null),
     [browseVendors, selectedVendorId],
   );
 
@@ -131,21 +262,90 @@ export function BrowseVendorsPagePremium() {
       return;
     }
 
-    if (!selectedVendorId || !browseVendors.some((vendor) => vendor.id === selectedVendorId)) {
-      setSelectedVendorId(browseVendors[0].id);
+    if (selectedVendorId && !browseVendors.some((vendor) => vendor.id === selectedVendorId)) {
+      setSelectedVendorId(browseVendors[0]?.id ?? null);
     }
   }, [browseVendors, selectedVendorId]);
 
-  const topRatedCount = useMemo(
-    () => browseVendors.filter((vendor) => vendor.rating >= 4.7).length,
-    [browseVendors],
-  );
+  const handleAddDishToCart = (item: MenuItem, vendorId: string) => {
+    if (cartVendorId && cartVendorId !== vendorId) {
+      clearCart();
+    }
+    addItem(item);
+    toast.success(`${item.name} added to cart`, {
+      action: { label: "View Cart", onClick: () => navigate('/cart') },
+    });
+  };
 
-  const featuredCount = demoVendors.length;
+  const dishSuggestions = search.trim().length >= 2 && (dishResults.length > 0 || searchingDishes) ? (
+    <Reveal className="absolute top-full left-0 right-0 z-50 mt-1 max-h-[400px] overflow-y-auto border border-border bg-background/98 backdrop-blur-md shadow-2xl">
+      <div className="divide-y divide-border">
+        <div className="border-b border-border px-6 py-4 flex items-center justify-between bg-background/50">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {searchingDishes
+              ? 'Searching...'
+              : `${dishResults.reduce((s, r) => s + r.items.length, 0)} dish(es) · ${dishResults.length} restaurant(s)`}
+          </p>
+        </div>
+        {dishResults.length > 0 && (
+          <Stagger className="divide-y divide-border">
+            {dishResults.map((result) => (
+              <StaggerItem key={result.vendor.id}>
+                <div className="px-6 py-5 hover:bg-secondary/10 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <Link to={`/vendor/${result.vendor.id}`} className="group/vendor">
+                      <p className="text-sm font-bold tracking-tight text-foreground group-hover/vendor:text-primary transition-colors">
+                        {result.vendor.name} →
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        ★ {result.vendor.rating.toFixed(1)} ({result.vendor.totalRatings})
+                      </p>
+                    </Link>
+                  </div>
+                  {result.items.length > 0 ? (
+                    <div className="grid gap-2">
+                      {result.items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between py-2 pl-4 border-l-2 border-border hover:border-primary transition-colors">
+                          <Link to={`/vendor/${result.vendor.id}`} className="flex-1 min-w-0 pr-4 block">
+                            <p className="text-sm font-medium text-foreground hover:text-primary transition-colors">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground truncate max-w-md">{item.description}</p>
+                            )}
+                            <p className="text-sm font-bold text-foreground mt-0.5">{formatCurrency(item.price)}</p>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDishToCart(item, result.vendor.id);
+                            }}
+                            className="ml-4 shrink-0 h-10 w-10 border border-border flex items-center justify-center hover:bg-foreground hover:text-background transition-colors cursor-pointer"
+                            title="Add to cart"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Link
+                      to={`/vendor/${result.vendor.id}`}
+                      className="inline-flex items-center gap-2 pl-4 border-l-2 border-primary text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+                    >
+                      Visit Restaurant →
+                    </Link>
+                  )}
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
+      </div>
+    </Reveal>
+  ) : null;
 
   if (viewMode === 'map') {
     return (
-      <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-slate-100">
+      <div className="absolute inset-0 z-0 h-[100dvh] w-full overflow-hidden bg-background">
         <BrowseResultsSection
           isLoading={isLoading}
           browseVendors={browseVendors}
@@ -158,71 +358,88 @@ export function BrowseVendorsPagePremium() {
             toast.success('Using your current location for nearby sorting');
           }}
         />
-        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-6 pb-0 pt-[80px] md:pt-6">
-          <div className="pointer-events-auto max-w-2xl mx-auto">
+        <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none p-4 md:p-8 pt-[80px] md:pt-8">
+          <div className="pointer-events-auto max-w-3xl mx-auto" ref={searchContainerRef}>
             <BrowseOverviewSection
               search={search}
               onSearchChange={setSearch}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              onResetArea={() => {
-                setCoords(santaMariaBulacanCenter);
-                toast.success('Centered back on Santa Maria, Bulacan');
-              }}
               browseCount={browseVendors.length}
-              topRatedCount={topRatedCount}
-              featuredCount={featuredCount}
-              selectedVendor={selectedVendor}
               activeOrder={activeOrder}
+              isMapMode={true}
+              suggestions={showSuggestions ? dishSuggestions : null}
             />
           </div>
         </div>
-        <div className="absolute bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-white/90 dark:bg-black/90 backdrop-blur-md rounded-full shadow-[var(--shadow-panel)] border border-slate-100 dark:border-gray-800 p-1">
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('grid')}>
-            <Store className="h-4 w-4 mr-2" /> Grid
-          </Button>
-          <Button variant="ghost" size="sm" className="rounded-full px-4 text-slate-600 dark:text-slate-300" onClick={() => setViewMode('list')}>
-            <List className="h-4 w-4 mr-2" /> List
-          </Button>
-          <Button variant="default" size="sm" className="rounded-full px-4 bg-primary text-white shadow-sm" onClick={() => setViewMode('map')}>
-            <MapIcon className="h-4 w-4 mr-2" /> Map
-          </Button>
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center bg-background border-2 border-foreground">
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('grid')}>
+            <span className="flex items-center gap-2"><Store className="h-4 w-4" /> Grid</span>
+          </button>
+          <div className="w-px h-12 bg-foreground" />
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('list')}>
+            <span className="flex items-center gap-2"><List className="h-4 w-4" /> List</span>
+          </button>
+          <div className="w-px h-12 bg-foreground" />
+          <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest bg-foreground text-background" onClick={() => setViewMode('map')}>
+            <span className="flex items-center gap-2"><MapIcon className="h-4 w-4" /> Map</span>
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-stack">
-      <div className="flex flex-col gap-6 w-full max-w-[1600px] mx-auto py-6">
-        <BrowseOverviewSection
-          search={search}
-          onSearchChange={setSearch}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onResetArea={() => {
-            setCoords(santaMariaBulacanCenter);
-            toast.success('Centered back on Santa Maria, Bulacan');
-          }}
-          browseCount={browseVendors.length}
-          topRatedCount={topRatedCount}
-          featuredCount={featuredCount}
-          selectedVendor={selectedVendor}
-          activeOrder={activeOrder}
-        />
-        
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-gray-800">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">All Restaurants</h2>
-          <div className="flex items-center bg-slate-100 dark:bg-gray-800 rounded-full p-1">
-            <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('grid')}>
-              <Store className="h-4 w-4 mr-1.5" /> Grid
-            </Button>
-            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" className={`rounded-full px-4 h-8 ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`} onClick={() => setViewMode('list')}>
-              <List className="h-4 w-4 mr-1.5" /> List
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-full px-4 h-8 text-slate-500" onClick={() => setViewMode('map')}>
-              <MapIcon className="h-4 w-4 mr-1.5" /> Map
-            </Button>
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="flex flex-col w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12 lg:py-16">
+        <div ref={searchContainerRef} className="relative w-full z-40">
+          <BrowseOverviewSection
+            search={search}
+            onSearchChange={setSearch}
+            browseCount={browseVendors.length}
+            activeOrder={activeOrder}
+            suggestions={showSuggestions ? dishSuggestions : null}
+          />
+        </div>
+
+        {/* Sticky Categories Bar */}
+        <div className="sticky top-16 md:top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 -mx-6 lg:-mx-12 px-6 lg:px-12">
+          <div className="py-4">
+            <Reveal delay={0.1} className="flex flex-nowrap md:flex-wrap gap-3 overflow-x-auto md:overflow-x-visible [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
+              {CATEGORIES.map((category) => {
+                const isActive = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`shrink-0 border px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground border-primary font-extrabold'
+                        : 'border-border bg-transparent text-foreground hover:bg-secondary/40'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </Reveal>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mt-16 mb-4">
+          <h2 className="text-3xl font-medium tracking-tighter text-foreground mb-4 sm:mb-0">
+            Explore local kitchens
+          </h2>
+          <div className="flex items-center border border-border">
+            <button className={`px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${viewMode === 'grid' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`} onClick={() => setViewMode('grid')}>
+              Grid
+            </button>
+            <div className="w-px h-full bg-border" />
+            <button className={`px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`} onClick={() => setViewMode('list')}>
+              List
+            </button>
+            <div className="w-px h-full bg-border" />
+            <button className="px-6 py-3 text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" onClick={() => setViewMode('map')}>
+              Map
+            </button>
           </div>
         </div>
 

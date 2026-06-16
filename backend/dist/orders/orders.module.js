@@ -14,6 +14,9 @@ const order_item_entity_1 = require("../entities/order-item.entity");
 const order_entity_1 = require("../entities/order.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
+const wallet_module_1 = require("../wallet/wallet.module");
+const geopay_module_1 = require("../geopay/geopay.module");
+const vouchers_module_1 = require("../vouchers/vouchers.module");
 const orders_controller_1 = require("./orders.controller");
 const orders_service_1 = require("./orders.service");
 let OrdersModule = class OrdersModule {
@@ -24,6 +27,9 @@ exports.OrdersModule = OrdersModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order, order_item_entity_1.OrderItem, menu_item_entity_1.MenuItem, vendor_entity_1.Vendor]),
             notifications_module_1.NotificationsModule,
+            wallet_module_1.WalletModule,
+            geopay_module_1.GeopayModule,
+            vouchers_module_1.VouchersModule,
         ],
         controllers: [orders_controller_1.OrdersController],
         providers: [orders_service_1.OrdersService],

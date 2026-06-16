@@ -6,4 +6,6 @@ export declare class CreateMenuItemDto {
     category?: string;
     imageUrl?: string;
     isAvailable?: boolean;
+    prepTimeMinutes?: number;
+    stockQuantity?: number;
 }

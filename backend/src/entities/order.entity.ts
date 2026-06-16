@@ -34,7 +34,7 @@ export class Order {
   riderId?: string;
 
   @Column({
-    type: 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: [
       'pending',
       'accepted',
@@ -67,6 +67,15 @@ export class Order {
   })
   totalAmount!: number;
 
+  @Column({
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    default: 0,
+    transformer: decimalNumberTransformer,
+  })
+  deliveryFee!: number;
+
   @Column({ type: 'text', nullable: true })
   street?: string;
 
@@ -80,18 +89,21 @@ export class Order {
   floorOrGate?: string;
 
   @Column({
-    type: 'enum',
-    enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
+    enum: ['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'],
     default: 'COD',
   })
-  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
 
   @Column({
-    type: 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: ['pending', 'paid', 'failed'],
     default: 'pending',
   })
   paymentStatus!: 'pending' | 'paid' | 'failed';
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  paymentSessionId?: string;
 
   @Column({ type: 'text', nullable: true })
   cancellationReason?: string;
@@ -100,13 +112,16 @@ export class Order {
   disputeReason?: string;
 
   @Column({
-    type: 'enum',
+    type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
     enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
     default: 'none',
   })
   disputeStatus!: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({
+    type: process.env.DB_TYPE === 'sqlite' ? 'datetime' : 'timestamp',
+    nullable: true,
+  })
   estimatedDeliveryTime?: Date;
 
   @Column({
@@ -130,6 +145,18 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    transformer: decimalNumberTransformer,
+  })
+  discountAmount!: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  discountLabel?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
@@ -149,4 +176,10 @@ export class Order {
 
   @OneToMany(() => Rating, (rating) => rating.order)
   ratings!: Rating[];
+
+  riderName?: string;
+  riderPhone?: string;
+  customerName?: string;
+  customerPhone?: string;
+  vendorPhone?: string;
 }

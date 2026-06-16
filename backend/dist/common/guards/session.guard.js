@@ -43,8 +43,8 @@ let SessionGuard = class SessionGuard {
             if (error instanceof common_1.UnauthorizedException) {
                 throw error;
             }
-            console.error('SessionGuard error:', error);
-            throw new common_1.InternalServerErrorException('Failed to validate session');
+            console.warn('SessionGuard validation failure:', error);
+            throw new common_1.UnauthorizedException('Invalid session or session expired');
         }
     }
 };

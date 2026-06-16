@@ -13,6 +13,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MenuService = void 0;
+const node_crypto_1 = require("node:crypto");
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
@@ -31,6 +32,48 @@ let MenuService = class MenuService {
             order: { name: 'ASC' },
         });
     }
+    async searchAcrossVendors(query, filters) {
+        const qb = this.menuRepository
+            .createQueryBuilder('item')
+            .leftJoinAndSelect('item.vendor', 'vendor')
+            .where('item.isAvailable = :available', { available: true })
+            .andWhere('(LOWER(item.name) LIKE LOWER(:query) OR LOWER(item.description) LIKE LOWER(:query))', { query: `%${query}%` });
+        if (filters?.category) {
+            qb.andWhere('LOWER(item.category) = LOWER(:category)', {
+                category: filters.category,
+            });
+        }
+        if (filters?.priceMin !== undefined) {
+            qb.andWhere('item.price >= :priceMin', { priceMin: filters.priceMin });
+        }
+        if (filters?.priceMax !== undefined) {
+            qb.andWhere('item.price <= :priceMax', { priceMax: filters.priceMax });
+        }
+        qb.orderBy('item.name', 'ASC');
+        const items = await qb.getMany();
+        const grouped = {};
+        for (const item of items) {
+            if (!item.vendor)
+                continue;
+            const vid = item.vendor.id;
+            if (!grouped[vid]) {
+                grouped[vid] = {
+                    vendor: {
+                        id: item.vendor.id,
+                        name: item.vendor.name,
+                        imageUrl: item.vendor.imageUrl,
+                        rating: item.vendor.rating,
+                        totalRatings: item.vendor.totalRatings,
+                    },
+                    items: [],
+                };
+            }
+            const { vendor, ...itemData } = item;
+            void vendor;
+            grouped[vid].items.push(itemData);
+        }
+        return Object.values(grouped);
+    }
     async create(createMenuItemDto, sellerId) {
         const vendor = await this.vendorRepository.findOne({
             where: {
@@ -44,6 +87,7 @@ let MenuService = class MenuService {
             throw new common_1.ForbiddenException('You can only manage your own menu');
         }
         const menuItem = this.menuRepository.create({
+            id: (0, node_crypto_1.randomUUID)(),
             ...createMenuItemDto,
             isAvailable: createMenuItemDto.isAvailable ?? true,
         });
@@ -78,9 +122,18 @@ let MenuService = class MenuService {
         if (menuItem.vendor.userId !== sellerId) {
             throw new common_1.ForbiddenException('You can only manage your own menu');
         }
-        await this.menuRepository.remove(menuItem);
+        let removed = true;
+        try {
+            await this.menuRepository.remove(menuItem);
+        }
+        catch {
+            menuItem.isAvailable = false;
+            await this.menuRepository.save(menuItem);
+            removed = false;
+        }
         return {
             success: true,
+            removed,
         };
     }
 };

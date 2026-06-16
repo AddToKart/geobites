@@ -5,9 +5,20 @@ export declare class MenuController {
     private readonly menuService;
     constructor(menuService: MenuService);
     findVendorMenu(vendorId: string): Promise<import("../entities/menu-item.entity").MenuItem[]>;
+    searchMenu(query: string, category?: string, priceMin?: string, priceMax?: string): never[] | Promise<{
+        vendor: {
+            id: string;
+            name: string;
+            imageUrl?: string;
+            rating: number;
+            totalRatings: number;
+        };
+        items: import("../entities/menu-item.entity").MenuItem[];
+    }[]>;
     create(createMenuItemDto: CreateMenuItemDto, sellerId: string): Promise<import("../entities/menu-item.entity").MenuItem>;
     update(id: string, updateMenuItemDto: UpdateMenuItemDto, sellerId: string): Promise<import("../entities/menu-item.entity").MenuItem>;
     remove(id: string, sellerId: string): Promise<{
         success: boolean;
+        removed: boolean;
     }>;
 }

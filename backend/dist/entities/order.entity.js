@@ -22,12 +22,14 @@ let Order = class Order {
     riderId;
     status;
     totalAmount;
+    deliveryFee;
     street;
     barangay;
     landmark;
     floorOrGate;
     paymentMethod;
     paymentStatus;
+    paymentSessionId;
     cancellationReason;
     disputeReason;
     disputeStatus;
@@ -35,11 +37,18 @@ let Order = class Order {
     deliveryLat;
     deliveryLng;
     notes;
+    discountAmount;
+    discountLabel;
     createdAt;
     updatedAt;
     vendor;
     items;
     ratings;
+    riderName;
+    riderPhone;
+    customerName;
+    customerPhone;
+    vendorPhone;
 };
 exports.Order = Order;
 __decorate([
@@ -60,7 +69,7 @@ __decorate([
 ], Order.prototype, "riderId", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'enum',
+        type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
         enum: [
             'pending',
             'accepted',
@@ -86,6 +95,16 @@ __decorate([
     __metadata("design:type", Number)
 ], Order.prototype, "totalAmount", void 0);
 __decorate([
+    (0, typeorm_1.Column)({
+        type: 'decimal',
+        precision: 8,
+        scale: 2,
+        default: 0,
+        transformer: decimal_number_transformer_1.decimalNumberTransformer,
+    }),
+    __metadata("design:type", Number)
+], Order.prototype, "deliveryFee", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Order.prototype, "street", void 0);
@@ -103,20 +122,24 @@ __decorate([
 ], Order.prototype, "floorOrGate", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: ['COD', 'GCASH', 'MAYA', 'QRPH'],
+        type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
+        enum: ['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'],
         default: 'COD',
     }),
     __metadata("design:type", String)
 ], Order.prototype, "paymentMethod", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'enum',
+        type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
         enum: ['pending', 'paid', 'failed'],
         default: 'pending',
     }),
     __metadata("design:type", String)
 ], Order.prototype, "paymentStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "paymentSessionId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
@@ -127,14 +150,17 @@ __decorate([
 ], Order.prototype, "disputeReason", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        type: 'enum',
+        type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
         enum: ['none', 'open', 'resolved_refunded', 'resolved_rejected'],
         default: 'none',
     }),
     __metadata("design:type", String)
 ], Order.prototype, "disputeStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    (0, typeorm_1.Column)({
+        type: process.env.DB_TYPE === 'sqlite' ? 'datetime' : 'timestamp',
+        nullable: true,
+    }),
     __metadata("design:type", Date)
 ], Order.prototype, "estimatedDeliveryTime", void 0);
 __decorate([
@@ -161,6 +187,20 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Order.prototype, "notes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        default: 0,
+        transformer: decimal_number_transformer_1.decimalNumberTransformer,
+    }),
+    __metadata("design:type", Number)
+], Order.prototype, "discountAmount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "discountLabel", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

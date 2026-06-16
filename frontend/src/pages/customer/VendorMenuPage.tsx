@@ -1,6 +1,6 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useDeferredValue, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { Heart, ShoppingBag } from "lucide-react";
 import {
   getDemoVendorById,
   isDemoVendorId,
@@ -10,64 +10,49 @@ import {
   defaultMapStyle,
   type MapStyleKey,
 } from "@/components/maps/map-styles";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Reveal } from "@/components/motion/Reveal";
 import { useCart } from "@/hooks/useCart";
-import { getVendorMenu } from "@/services/menuService";
-import { getVendorById } from "@/services/vendorService";
-import { MenuItem, Vendor } from "@/types";
+import { useVendor, useVendorMenu, useActivePromotions, useVendorRatings, useIsFavorite, useAddFavorite, useRemoveFavorite } from "@/hooks/queries";
+import type { MenuItem } from "@/types";
+
 import { toast } from "sonner";
 import { VendorMenuFilters } from "@/features/customer/vendor-menu/VendorMenuFilters";
 import { VendorMenuSections } from "@/features/customer/vendor-menu/VendorMenuSections";
 import { VendorSidebar } from "@/features/customer/vendor-menu/VendorSidebar";
 import { VendorStorefrontHero } from "@/features/customer/vendor-menu/VendorStorefrontHero";
+import { VendorPromotions } from "@/features/customer/vendor-menu/VendorPromotions";
+import { CustomerReviews } from "@/features/customer/vendor-menu/CustomerReviews";
 
 export function VendorMenuPage() {
   const { id } = useParams<{ id: string }>();
-  const { items, addItem, updateQuantity } = useCart();
-  const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const { items, addItem, removeItem, updateQuantity } = useCart();
+
+  const { data: vendor, isLoading: vendorLoading, error: vendorError } = useVendor(id!);
+  const { data: menuItems = [], isLoading: menuLoading } = useVendorMenu(id!);
+  const { data: promotions = [] } = useActivePromotions(id!);
+  const { data: ratingData } = useVendorRatings(id!);
+
+  const { data: isFav = false } = useIsFavorite(id!);
+  const addFav = useAddFavorite();
+  const removeFav = useRemoveFavorite();
+
+  const ratings = ratingData?.ratings ?? [];
+  const avgRating = ratingData?.averageScore ?? 0;
+  const totalRatingCount = ratingData?.totalRatings ?? 0;
+
+  const isLoading = vendorLoading || menuLoading;
+  const queryError = vendorError ? (vendorError instanceof Error ? vendorError.message : "Failed to load menu") : null;
+
+  useEffect(() => {
+    if (queryError) toast.error("Failed to load menu data");
+  }, [queryError]);
+
   const [menuSearch, setMenuSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [style, setStyle] = useState<MapStyleKey>(defaultMapStyle);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const deferredMenuSearch = useDeferredValue(menuSearch);
-
-  useEffect(() => {
-    if (!id) {
-      return;
-    }
-
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const [vendorData, menuData] = await Promise.all([
-          getVendorById(id),
-          getVendorMenu(id),
-        ]);
-        setVendor(vendorData);
-        setMenuItems(menuData);
-      } catch (caughtError) {
-        setError(
-          caughtError instanceof Error
-            ? caughtError.message
-            : "Failed to load menu",
-        );
-        toast.error("Failed to load menu data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadData();
-  }, [id]);
 
   const vendorMeta = useMemo<DemoVendor | null>(() => {
     if (!id || !isDemoVendorId(id)) {
@@ -154,113 +139,124 @@ export function VendorMenuPage() {
 
   if (isLoading) {
     return (
-      <div className="page-stack">
-        <Skeleton className="h-56 rounded-[28px]" />
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-5">
-            <Skeleton className="h-32 rounded-[28px]" />
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12">
+        <Skeleton className="h-64 rounded-none border-b border-border" />
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_340px] mt-12">
+          <div className="space-y-8">
+            <Skeleton className="h-32 rounded-none border border-border" />
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-56 rounded-[28px]" />
+              <Skeleton key={index} className="h-56 rounded-none border border-border" />
             ))}
           </div>
-          <Skeleton className="h-[420px] rounded-[28px]" />
+          <Skeleton className="h-[420px] rounded-none border border-border" />
         </div>
       </div>
     );
   }
 
-  if (error || !vendor) {
+  if (queryError || !vendor) {
     return (
-      <Card className="mx-auto max-w-2xl p-8 text-center">
-        <h1 className="text-2xl font-semibold">Vendor not available</h1>
-        <p className="mt-3 subtle-copy">
-          {error ||
-            "The vendor you are looking for could not be loaded right now."}
+      <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center border-b border-border">
+        <h1 className="text-4xl font-medium tracking-tighter mb-4">Vendor not available</h1>
+        <p className="text-lg text-muted-foreground mb-8">
+          {queryError || "The vendor you are looking for could not be loaded right now."}
         </p>
-        <div className="mt-6">
-          <Button asChild>
-            <Link to="/browse">Back to browse</Link>
-          </Button>
-        </div>
-      </Card>
+        <Link to="/browse" className="border border-border px-6 py-3 font-bold uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors">
+          Back to browse
+        </Link>
+      </div>
     );
   }
-
-  const visibleCategoryCount = Object.keys(groupedItems).length;
-
+  
   return (
-    <div className="page-stack pb-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-        <div>
-          <p className="eyebrow">Vendor</p>
-          <h1 className="text-3xl font-bold tracking-tight">{vendor.name}</h1>
-          <p className="subtle-copy mt-2 max-w-2xl">
-            {vendor.description ||
-              "Search the menu, filter by category, and order from a cleaner storefront instead of a long unstructured list."}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            className="rounded-full font-bold px-6"
-            asChild
-          >
-            <Link to="/browse">Back to browse</Link>
-          </Button>
-          {cartCount > 0 ? (
-            <Button asChild className="rounded-full font-bold px-6">
-              <Link to="/cart">
-                <ShoppingBag className="h-4 w-4 mr-2" />
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="w-full max-w-[1600px] mx-auto px-6 py-12 lg:px-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 border-b-2 border-foreground pb-6">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Vendor</p>
+            <h1 className="text-5xl font-medium tracking-tighter text-foreground">{vendor.name}</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => isFav ? removeFav.mutate(id!) : addFav.mutate(id!)}
+              disabled={addFav.isPending || removeFav.isPending}
+              className={`border px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2 ${
+                isFav
+                  ? "border-red-500 bg-red-500 text-white hover:bg-red-600"
+                  : "border-border bg-transparent text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+            >
+              <Heart className={`h-4 w-4 ${isFav ? "fill-current" : ""}`} />
+              {isFav ? "Saved" : "Save"}
+            </button>
+            <Link to="/browse" className="text-sm font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">
+              Back to shops
+            </Link>
+            {cartCount > 0 ? (
+              <Link to="/cart" className="flex items-center gap-2 border border-border bg-foreground text-background px-6 py-3 text-sm font-bold uppercase tracking-widest transition-colors hover:opacity-90">
+                <ShoppingBag className="h-4 w-4" />
                 View cart ({cartCount})
               </Link>
-            </Button>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          <Reveal delay={0.02}>
-            <VendorStorefrontHero
+        <section className="grid gap-12 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="space-y-12">
+            <Reveal delay={0.02}>
+              <VendorStorefrontHero
+                vendor={vendor}
+                vendorMeta={vendorMeta}
+                filteredCount={filteredItems.length}
+              />
+            </Reveal>
+
+            <Reveal delay={0.08}>
+              <VendorMenuFilters
+                menuSearch={menuSearch}
+                onMenuSearchChange={setMenuSearch}
+                showAvailableOnly={showAvailableOnly}
+                onToggleAvailableOnly={() =>
+                  setShowAvailableOnly((current) => !current)
+                }
+                categories={categories}
+                activeCategory={activeCategory}
+                onActiveCategoryChange={setActiveCategory}
+              />
+            </Reveal>
+
+            <VendorPromotions promotions={promotions} />
+
+            <VendorMenuSections
+              groupedItems={groupedItems}
+              getItemQuantity={getItemQuantity}
+              onAddItem={handleAddItem}
+              onUpdateQuantity={updateQuantity}
+            />
+
+            <CustomerReviews
+              ratings={ratings}
+              avgRating={avgRating}
+              totalRatingCount={totalRatingCount}
+            />
+          </div>
+
+          <div className="border-t border-border xl:border-none pt-12 xl:pt-0">
+            <VendorSidebar
+              items={items}
+              cartCount={cartCount}
+              cartTotal={cartTotal}
               vendor={vendor}
               vendorMeta={vendorMeta}
-              categoryCount={categories.length - 1}
-              filteredCount={filteredItems.length}
+              style={style}
+              onStyleChange={setStyle}
+              onRemoveItem={removeItem}
+              onUpdateQuantity={updateQuantity}
             />
-          </Reveal>
-
-          <Reveal delay={0.08}>
-            <VendorMenuFilters
-              menuSearch={menuSearch}
-              onMenuSearchChange={setMenuSearch}
-              showAvailableOnly={showAvailableOnly}
-              onToggleAvailableOnly={() =>
-                setShowAvailableOnly((current) => !current)
-              }
-              categories={categories}
-              activeCategory={activeCategory}
-              onActiveCategoryChange={setActiveCategory}
-              visibleCategoryCount={visibleCategoryCount}
-            />
-          </Reveal>
-
-          <VendorMenuSections
-            groupedItems={groupedItems}
-            getItemQuantity={getItemQuantity}
-            onAddItem={handleAddItem}
-            onUpdateQuantity={updateQuantity}
-          />
-        </div>
-
-        <VendorSidebar
-          cartCount={cartCount}
-          cartTotal={cartTotal}
-          vendor={vendor}
-          vendorMeta={vendorMeta}
-          style={style}
-          onStyleChange={setStyle}
-        />
-      </section>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

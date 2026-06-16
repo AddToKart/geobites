@@ -1,9 +1,20 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, memo, useCallback, useState } from "react";
+import { Search } from "lucide-react";
+import { AnimatePresence, m } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { VendorCardPremium } from "@/components/custom/VendorCardPremium";
-import { getVendorDistanceKm } from "@/data/demoVendors";
 import { BrowseListItem } from "./BrowseListItem";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { usePagination } from "@/hooks/usePagination";
 import type { BrowseVendor, BrowseViewMode } from "./types";
 
 const BrowseVendorMapPanel = lazy(() =>
@@ -12,7 +23,107 @@ const BrowseVendorMapPanel = lazy(() =>
   })),
 );
 
-export function BrowseResultsSection({
+const ITEMS_PER_PAGE = 12;
+
+function PaginationControls({
+  currentPage,
+  visiblePages,
+  goNext,
+  goPrev,
+  goTo,
+  isFirstPage,
+  isLastPage,
+  startIndex,
+  endIndex,
+  totalItems,
+}: {
+  currentPage: number;
+  visiblePages: (number | "ellipsis")[];
+  goNext: () => void;
+  goPrev: () => void;
+  goTo: (page: number) => void;
+  isFirstPage: boolean;
+  isLastPage: boolean;
+  startIndex: number;
+  endIndex: number;
+  totalItems: number;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 pt-12 pb-6 border-t border-border mt-16">
+      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        Showing {startIndex}&ndash;{endIndex} of {totalItems}
+      </p>
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious disabled={isFirstPage} onClick={goPrev} />
+          </PaginationItem>
+          {visiblePages.map((page, index) =>
+            page === "ellipsis" ? (
+              <PaginationItem key={`ellipsis-${index}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            ) : (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  isActive={page === currentPage}
+                  onClick={() => goTo(page)}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ),
+          )}
+          <PaginationItem>
+            <PaginationNext disabled={isLastPage} onClick={goNext} />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  );
+}
+
+function useDelayedNavigation(goTo: (page: number) => void, goNext: () => void, goPrev: () => void) {
+  const [isPending, setIsPending] = useState(false);
+
+  const scrollUp = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const delayedGoTo = useCallback(
+    (page: number) => {
+      setIsPending(true);
+      scrollUp();
+      setTimeout(() => {
+        goTo(page);
+        setIsPending(false);
+      }, 800);
+    },
+    [goTo, scrollUp],
+  );
+
+  const delayedGoNext = useCallback(() => {
+    setIsPending(true);
+    scrollUp();
+    setTimeout(() => {
+      goNext();
+      setIsPending(false);
+    }, 800);
+  }, [goNext, scrollUp]);
+
+  const delayedGoPrev = useCallback(() => {
+    setIsPending(true);
+    scrollUp();
+    setTimeout(() => {
+      goPrev();
+      setIsPending(false);
+    }, 800);
+  }, [goPrev, scrollUp]);
+
+  return { isPending, delayedGoTo, delayedGoNext, delayedGoPrev };
+}
+
+export const BrowseResultsSection = memo(function BrowseResultsSection({
   isLoading,
   browseVendors,
   viewMode,
@@ -26,14 +137,26 @@ export function BrowseResultsSection({
   viewMode: BrowseViewMode;
   coords: { lat: number; lng: number };
   selectedVendor: BrowseVendor | null;
-  onSelectVendor: (vendorId: string) => void;
+  onSelectVendor: (vendorId: string | null) => void;
   onLocate: (coords: { lat: number; lng: number }) => void;
 }) {
+  const listPagination = usePagination(
+    viewMode === "list" ? browseVendors : [],
+    ITEMS_PER_PAGE,
+  );
+  const gridPagination = usePagination(
+    viewMode === "grid" ? browseVendors : [],
+    ITEMS_PER_PAGE,
+  );
+
+  const listPaging = useDelayedNavigation(listPagination.goTo, listPagination.goNext, listPagination.goPrev);
+  const gridPaging = useDelayedNavigation(gridPagination.goTo, gridPagination.goNext, gridPagination.goPrev);
+
   if (isLoading) {
     return (
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} className="h-80 rounded-[28px]" />
+          <Skeleton key={index} className="h-80 rounded-none border-b border-border" />
         ))}
       </section>
     );
@@ -41,21 +164,29 @@ export function BrowseResultsSection({
 
   if (browseVendors.length === 0) {
     return (
-      <section className="panel-card py-16 text-center">
-        <p className="text-lg font-semibold text-[color:var(--color-text)]">
-          No shops found
+      <section className="border border-border py-24 text-center mt-12 bg-secondary/10">
+        <h2 className="text-4xl font-medium tracking-tighter text-foreground">
+          No shops found.
+        </h2>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Try a different search term or browse available categories above.
         </p>
-        <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-          Try a different search term or reset back to the Santa Maria anchor.
-        </p>
+        <Button
+          variant="outline"
+          className="mt-8 rounded-none border-border px-8 py-6 text-lg font-bold shadow-none hover:bg-foreground hover:text-background transition-colors"
+          onClick={() => window.location.reload()}
+        >
+          <Search className="h-5 w-5 mr-3" />
+          Reset search
+        </Button>
       </section>
     );
   }
 
   if (viewMode === "map") {
     return (
-      <section className="h-[calc(100vh-70px)] md:h-screen w-full relative">
-        <Suspense fallback={<Skeleton className="h-full w-full" />}>
+      <section className="h-[calc(100vh-70px)] md:h-screen w-full relative border border-border">
+        <Suspense fallback={<Skeleton className="h-full w-full rounded-none" />}>
           <BrowseVendorMapPanel
             vendors={browseVendors}
             selectedVendor={selectedVendor}
@@ -69,74 +200,142 @@ export function BrowseResultsSection({
   }
 
   if (viewMode === "list") {
+    const {
+      currentPage,
+      totalPages,
+      paginatedItems,
+      goNext,
+      goPrev,
+      goTo,
+      isFirstPage,
+      isLastPage,
+      startIndex,
+      endIndex,
+      visiblePages,
+    } = listPagination;
+
+    const { isPending, delayedGoNext, delayedGoPrev, delayedGoTo } = listPaging;
+
     return (
-      <section className="space-y-4">
-        {browseVendors.map((vendor) => (
-          <BrowseListItem
-            key={vendor.id}
-            vendor={vendor}
-            distanceKm={getVendorDistanceKm(coords, {
-              lat: vendor.latitude,
-              lng: vendor.longitude,
-            })}
-            isSelected={vendor.id === selectedVendor?.id}
-            onSelect={() => onSelectVendor(vendor.id)}
+      <section className="mt-12">
+        <div className="border-t border-border divide-y divide-border">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {isPending ? (
+              <m.div
+                key="loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-center py-24 col-span-full"
+              >
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </m.div>
+            ) : (
+              paginatedItems.map((vendor) => (
+                <m.div
+                  key={vendor.id}
+                  layout
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <BrowseListItem
+                    vendor={vendor}
+                    distanceKm={vendor.distance}
+                    isSelected={vendor.id === selectedVendor?.id}
+                    onSelect={() => onSelectVendor(vendor.id)}
+                  />
+                </m.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+        {totalPages > 1 && (
+          <PaginationControls
+            currentPage={currentPage}
+            visiblePages={visiblePages}
+            goNext={delayedGoNext}
+            goPrev={delayedGoPrev}
+            goTo={delayedGoTo}
+            isFirstPage={isFirstPage || isPending}
+            isLastPage={isLastPage || isPending}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            totalItems={browseVendors.length}
           />
-        ))}
+        )}
       </section>
     );
   }
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goNext,
+    goPrev,
+    goTo,
+    isFirstPage,
+    isLastPage,
+    startIndex,
+    endIndex,
+    visiblePages,
+  } = gridPagination;
+
+  const { isPending, delayedGoNext, delayedGoPrev, delayedGoTo } = gridPaging;
+
   return (
-    <section className="space-y-8 mt-8">
-      <Stagger
-        className="grid gap-6 md:grid-cols-3"
-        delayChildren={0.02}
-        stagger={0.06}
-      >
-        {browseVendors.slice(0, 3).map((vendor) => (
-          <StaggerItem
-            key={`${vendor.id}-feature`}
-            className="group relative flex flex-col justify-between h-full overflow-hidden rounded-[32px] bg-slate-50/60 dark:bg-gray-800/40 backdrop-blur-sm border border-slate-200/50 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-900 hover:shadow-[0_16px_40px_rgb(249,115,22,0.06)] hover:-translate-y-1 transition-all duration-500 cursor-pointer p-8"
-            onClick={() => onSelectVendor(vendor.id)}
-          >
-            <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-gradient-to-br from-orange-400/10 to-transparent blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="h-1.5 w-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8)]" />
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 group-hover:text-orange-500 transition-colors">
-                  {vendor.spotlight || "Featured nearby"}
-                </p>
-              </div>
-              <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-white mb-3">
-                {vendor.name}
-              </h2>
-              <p className="text-[14px] leading-relaxed font-medium text-slate-500 dark:text-slate-400 line-clamp-3">
-                {vendor.description ||
-                  "Discover our most popular picks from this top-rated local vendor."}
-              </p>
-            </div>
-
-            <div className="mt-8 flex flex-wrap gap-2 relative z-10">
-              {(vendor.specialties || []).slice(0, 3).map((specialty) => (
-                <span
-                  key={specialty}
-                  className="rounded-full bg-white dark:bg-gray-800 px-3.5 py-1.5 text-[12px] font-semibold text-slate-500 dark:text-slate-400 shadow-sm border border-slate-100 border-b-slate-200 dark:border-gray-700/50 transition-colors group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700 dark:group-hover:border-orange-900/30 dark:group-hover:bg-orange-900/20 dark:group-hover:text-orange-300"
+    <section className="space-y-16 mt-16">
+      {browseVendors.length > 0 && (
+        <div className="border-t border-border pt-16">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-8">
+            Restaurants
+          </h2>
+          <div className="grid gap-x-0 gap-y-0 md:grid-cols-2 xl:grid-cols-3 border-t border-border">
+            <AnimatePresence mode="popLayout" initial={false}>
+              {isPending ? (
+                <m.div
+                  key="loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center justify-center py-24 col-span-full"
                 >
-                  {specialty}
-                </span>
-              ))}
-            </div>
-          </StaggerItem>
-        ))}
-      </Stagger>
-
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {browseVendors.map((vendor) => (
-          <VendorCardPremium key={vendor.id} vendor={vendor} />
-        ))}
-      </div>
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </m.div>
+              ) : (
+                paginatedItems.map((vendor) => (
+                  <m.div
+                    key={vendor.id}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <VendorCardPremium vendor={vendor} />
+                  </m.div>
+                ))
+              )}
+            </AnimatePresence>
+          </div>
+          {totalPages > 1 && (
+            <PaginationControls
+              currentPage={currentPage}
+              visiblePages={visiblePages}
+              goNext={delayedGoNext}
+              goPrev={delayedGoPrev}
+              goTo={delayedGoTo}
+              isFirstPage={isFirstPage || isPending}
+              isLastPage={isLastPage || isPending}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              totalItems={browseVendors.length}
+            />
+          )}
+        </div>
+      )}
     </section>
   );
-}
+});

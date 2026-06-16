@@ -38,6 +38,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
+const path = __importStar(require("path"));
+const express_1 = __importDefault(require("express"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
@@ -67,6 +69,19 @@ async function bootstrap() {
     const app = await core_1.NestFactory.create(AppModule);
     app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     app.use((0, cookie_parser_1.default)());
+    app.use((req, res, next) => {
+        if (req.headers.cookie) {
+            req.headers.cookie = req.headers.cookie
+                .split(';')
+                .map((c) => c.trim())
+                .filter((c) => {
+                const name = c.split('=')[0].trim();
+                return (!name.endsWith('session_data') && !name.endsWith('account_data'));
+            })
+                .join('; ');
+        }
+        next();
+    });
     app.enableCors({
         origin: parseCorsOrigins(),
         credentials: true,
@@ -77,25 +92,22 @@ async function bootstrap() {
         whitelist: true,
         forbidNonWhitelisted: true,
     }));
+    app.use('/uploads', express_1.default.static(path.join(process.cwd(), 'uploads')));
     app.use('/api/auth', toNodeHandler(auth));
     const port = Number(process.env.PORT ?? 3000);
     const server = await app.listen(port, '0.0.0.0');
     console.log(`Backend server running on http://localhost:${port}/api`);
     console.log(`Local network access: http://192.168.100.116:${port}/api`);
-    const { DataSource } = await import('typeorm');
-    const { seedDemoData } = await import('./database/seed-demo.js');
-    const dataSource = app.get(DataSource);
-    await seedDemoData(dataSource);
-    process.on('SIGTERM', async () => {
+    process.on('SIGTERM', () => {
         console.log('SIGTERM received, shutting down gracefully...');
-        server.close(async () => {
+        server.close(() => {
             console.log('Server closed');
             process.exit(0);
         });
     });
-    process.on('SIGINT', async () => {
+    process.on('SIGINT', () => {
         console.log('SIGINT received, shutting down gracefully...');
-        server.close(async () => {
+        server.close(() => {
             console.log('Server closed');
             process.exit(0);
         });

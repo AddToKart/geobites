@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
@@ -17,48 +17,60 @@ export class RidersService {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly notificationsService: NotificationsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
     const type = query.type ?? 'available';
+    let orders: Order[] = [];
 
-    if (type === 'active') {
-      return this.orderRepository.find({
+    if (type === 'available') {
+      // Global booking pool: orders accepted by seller, not yet claimed by a rider
+      orders = await this.orderRepository.find({
+        where: {
+          status: 'accepted',
+          riderId: IsNull(),
+        },
+        relations: {
+          vendor: true,
+          items: true,
+        },
+        order: { updatedAt: 'DESC' },
+      });
+    } else if (type === 'active') {
+      orders = await this.orderRepository.find({
         where: [
+          { riderId, status: 'accepted' },
+          { riderId, status: 'preparing' },
           { riderId, status: 'ready_for_pickup' },
           { riderId, status: 'picked_up' },
           { riderId, status: 'delivering' },
         ],
         relations: {
           vendor: true,
+          items: true,
         },
         order: { updatedAt: 'DESC' },
       });
     }
 
-    return this.orderRepository.find({
-      where: {
-        status: 'ready_for_pickup',
-        riderId: IsNull(),
-      },
-      relations: {
-        vendor: true,
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
+    for (const order of orders) {
+      await this.enrichOrderDetails(order);
+    }
+
+    return orders;
   }
 
   async acceptDelivery(orderId: string, riderId: string) {
+    // Atomic claim: only succeeds if the booking hasn't been taken yet
     const result = await this.orderRepository.update(
-      { id: orderId, status: 'ready_for_pickup', riderId: IsNull() },
+      { id: orderId, status: 'accepted', riderId: IsNull() },
       { riderId },
     );
 
     if (result.affected === 0) {
       throw new BadRequestException(
-        'Order is no longer available or already accepted',
+        'This booking is no longer available or has already been claimed',
       );
     }
 
@@ -71,6 +83,7 @@ export class RidersService {
       throw new NotFoundException('Order not found');
     }
 
+    await this.enrichOrderDetails(updatedOrder);
     await this.notifyDeliveryAccepted(updatedOrder);
     return updatedOrder;
   }
@@ -96,6 +109,8 @@ export class RidersService {
     }
 
     const transitions: Record<string, string[]> = {
+      accepted: ['ready_for_pickup'],
+      preparing: ['ready_for_pickup'],
       ready_for_pickup: ['picked_up'],
       picked_up: ['delivering'],
       delivering: ['delivered'],
@@ -108,24 +123,27 @@ export class RidersService {
 
     order.status = updateStatusDto.status;
     const updatedOrder = await this.orderRepository.save(order);
+    await this.enrichOrderDetails(updatedOrder);
     await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
     return updatedOrder;
   }
 
   private async notifyDeliveryAccepted(order: Order) {
+    // Notify the customer
     await this.notificationsService.create({
       userId: order.customerId,
-      title: 'Rider Assigned',
-      message: 'A rider has accepted your delivery request',
+      title: 'Rider On The Way',
+      message: 'A rider accepted your delivery and is heading to the shop',
       type: 'order_update',
       referenceId: order.id,
     });
 
+    // Notify the seller so they know a rider is coming
     if (order.vendor?.userId) {
       await this.notificationsService.create({
         userId: order.vendor.userId,
-        title: 'Rider Assigned',
-        message: 'A rider is heading to pick up this order',
+        title: 'Rider Accepted',
+        message: `A rider claimed the delivery for order #${order.id.slice(0, 8).toUpperCase()}`,
         type: 'delivery_request',
         referenceId: order.id,
       });
@@ -136,6 +154,17 @@ export class RidersService {
     order: Order,
     status: UpdateDeliveryStatusDto['status'],
   ) {
+    if (status === 'ready_for_pickup') {
+      await this.notificationsService.create({
+        userId: order.customerId,
+        title: 'Rider At The Shop',
+        message: 'Your rider is at the shop waiting for your order',
+        type: 'order_update',
+        referenceId: order.id,
+      });
+      return;
+    }
+
     if (status === 'picked_up') {
       await this.notificationsService.create({
         userId: order.customerId,
@@ -154,7 +183,6 @@ export class RidersService {
           referenceId: order.id,
         });
       }
-
       return;
     }
 
@@ -162,18 +190,18 @@ export class RidersService {
       await this.notificationsService.create({
         userId: order.customerId,
         title: 'Order On The Way',
-        message: 'Your rider is on the way to the delivery pin',
+        message: 'Your rider is on the way to your delivery pin',
         type: 'order_update',
         referenceId: order.id,
       });
-
       return;
     }
 
+    // delivered
     await this.notificationsService.create({
       userId: order.customerId,
       title: 'Order Delivered',
-      message: 'Your rider marked the order as delivered',
+      message: 'Your rider marked the order as delivered. Enjoy!',
       type: 'order_update',
       referenceId: order.id,
     });
@@ -187,5 +215,47 @@ export class RidersService {
         referenceId: order.id,
       });
     }
+  }
+
+  async enrichOrderDetails(order: Order): Promise<Order> {
+    if (order.riderId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const riders = await this.dataSource.query(query, [order.riderId]);
+      if (riders && riders[0]) {
+        order.riderName = riders[0].name;
+        order.riderPhone = riders[0].phone || 'N/A';
+      }
+    }
+    if (order.customerId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT name, phone FROM user WHERE id = ?'
+        : 'SELECT name, phone FROM "user" WHERE id = $1';
+      const customers = await this.dataSource.query(query, [order.customerId]);
+      if (customers && customers[0]) {
+        order.customerName = customers[0].name;
+        order.customerPhone = customers[0].phone || 'N/A';
+      }
+    }
+    if (order.vendor && order.vendor.userId) {
+      const isSqlite =
+        this.dataSource.options.type === 'better-sqlite3' ||
+        this.dataSource.options.type === 'sqljs';
+      const query = isSqlite
+        ? 'SELECT phone FROM user WHERE id = ?'
+        : 'SELECT phone FROM "user" WHERE id = $1';
+      const sellers = await this.dataSource.query(query, [order.vendor.userId]);
+      if (sellers && sellers[0]) {
+        order.vendorPhone = sellers[0].phone || 'N/A';
+      }
+    }
+    return order;
   }
 }

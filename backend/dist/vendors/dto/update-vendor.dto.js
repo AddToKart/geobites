@@ -20,6 +20,8 @@ class UpdateVendorDto {
     longitude;
     imageUrl;
     isActive;
+    operatingHours;
+    commissionRate;
 }
 exports.UpdateVendorDto = UpdateVendorDto;
 __decorate([
@@ -65,4 +67,17 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateVendorDto.prototype, "isActive", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    __metadata("design:type", Array)
+], UpdateVendorDto.prototype, "operatingHours", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(99.99),
+    __metadata("design:type", Number)
+], UpdateVendorDto.prototype, "commissionRate", void 0);
 //# sourceMappingURL=update-vendor.dto.js.map

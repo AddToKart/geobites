@@ -8,12 +8,14 @@ export declare class Order {
     riderId?: string;
     status: 'pending' | 'accepted' | 'preparing' | 'ready_for_pickup' | 'picked_up' | 'delivering' | 'delivered' | 'rejected' | 'cancelled';
     totalAmount: number;
+    deliveryFee: number;
     street?: string;
     barangay?: string;
     landmark?: string;
     floorOrGate?: string;
-    paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH';
+    paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
     paymentStatus: 'pending' | 'paid' | 'failed';
+    paymentSessionId?: string;
     cancellationReason?: string;
     disputeReason?: string;
     disputeStatus: 'none' | 'open' | 'resolved_refunded' | 'resolved_rejected';
@@ -21,9 +23,16 @@ export declare class Order {
     deliveryLat?: number;
     deliveryLng?: number;
     notes?: string;
+    discountAmount: number;
+    discountLabel?: string;
     createdAt: Date;
     updatedAt: Date;
     vendor: Vendor;
     items: OrderItem[];
     ratings: Rating[];
+    riderName?: string;
+    riderPhone?: string;
+    customerName?: string;
+    customerPhone?: string;
+    vendorPhone?: string;
 }
