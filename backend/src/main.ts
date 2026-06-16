@@ -7,6 +7,8 @@ import { NestFactory } from '@nestjs/core';
 import { ensureDatabaseExists } from './database/create-db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import * as os from 'os';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 const defaultOrigins = [
   'http://localhost:5173',
@@ -59,12 +61,19 @@ async function bootstrap() {
   const { auth } = await import('./auth/auth.js');
   const { toNodeHandler } = await import('better-auth/node');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(cookieParser());
   app.enableCors({
-    origin: parseCorsOrigins(),
+    origin: (origin, callback) => {
+      // Allow all origins dynamically to support random Flutter Web ports while keeping credentials: true
+      callback(null, true);
+    },
     credentials: true,
   });
   app.setGlobalPrefix('api');
@@ -80,6 +89,14 @@ async function bootstrap() {
     console.log(`[Incoming Request] ${req.method} ${req.originalUrl}`);
     console.log(`[Headers] Authorization: ${req.headers.authorization}`);
     console.log(`[Headers] Cookie: ${req.headers.cookie}`);
+    console.log(`[Headers] Origin: ${req.headers.origin}`);
+    console.log(`[Headers] Host: ${req.headers.host}`);
+    
+    // Spoof origin for Better Auth to allow Flutter Web ephemeral ports
+    if (req.headers.origin && (req.headers.origin.startsWith('http://localhost:') || req.headers.origin.startsWith('http://127.0.0.1:'))) {
+      req.headers.origin = 'http://localhost:3000';
+    }
+    
     next();
   });
 
@@ -91,10 +108,10 @@ async function bootstrap() {
   console.log(`Local network access: http://192.168.100.116:${port}/api`);
 
   // Seed demo data
-  const { DataSource } = await import('typeorm');
-  const { seedDemoData } = await import('./database/seed-demo.js');
-  const dataSource = app.get(DataSource);
-  await seedDemoData(dataSource);
+  // const { DataSource } = await import('typeorm');
+  // const { seedDemoData } = await import('./database/seed-demo.js');
+  // const dataSource = app.get(DataSource);
+  // await seedDemoData(dataSource);
 
   // Graceful shutdown
   process.on('SIGTERM', async () => {

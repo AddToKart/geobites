@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import '../../models/vendor.dart';
 import '../../services/vendor_service.dart';
+import '../../services/upload_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
@@ -20,6 +23,8 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
   final _nameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
   Vendor? _vendor;
+  PlatformFile? _selectedCoverFile;
+  String? _existingCoverUrl;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -44,6 +49,7 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       _nameCtrl.text = myVendor.name;
       _addressCtrl.text = myVendor.address;
       if (_vendor != null) {
+        _existingCoverUrl = myVendor.imageUrl;
         _shopLocation = LatLng(myVendor.latitude, myVendor.longitude);
       }
     } catch (e) {
@@ -60,11 +66,21 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
 
     setState(() => _isSaving = true);
     try {
+      String? finalImageUrl = _existingCoverUrl;
+      if (_selectedCoverFile != null) {
+        if (kIsWeb && _selectedCoverFile!.bytes != null) {
+          finalImageUrl = await uploadService.uploadImageBytes(_selectedCoverFile!.bytes!, _selectedCoverFile!.name);
+        } else if (_selectedCoverFile!.path != null) {
+          finalImageUrl = await uploadService.uploadImage(_selectedCoverFile!.path!);
+        }
+      }
+
       final payload = {
         'name': name,
         'address': address,
         'lat': _shopLocation.latitude,
         'lng': _shopLocation.longitude,
+        if (finalImageUrl != null) 'imageUrl': finalImageUrl,
       };
 
       if (_vendor == null) {
@@ -82,6 +98,24 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
       GlassToast.error(context, 'Error saving: $e');
     } finally {
       setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _pickCoverImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: kIsWeb, // Required for web to get bytes
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedCoverFile = result.files.single;
+          _existingCoverUrl = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) GlassToast.error(context, 'Failed to pick image: $e');
     }
   }
 
@@ -152,24 +186,32 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                     const SizedBox(height: 16),
                     const Text('Shop Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     const SizedBox(height: 16),
-                    // Mock Shop Cover Upload
                     GestureDetector(
-                      onTap: () => GlassToast.info(context, 'Shop cover upload simulation'),
+                      onTap: _pickCoverImage,
                       child: Container(
                         height: 150,
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                          image: _selectedCoverFile != null
+                              ? (kIsWeb && _selectedCoverFile!.bytes != null 
+                                  ? DecorationImage(image: MemoryImage(_selectedCoverFile!.bytes!), fit: BoxFit.cover)
+                                  : DecorationImage(image: FileImage(File(_selectedCoverFile!.path!)), fit: BoxFit.cover))
+                              : (_existingCoverUrl != null && _existingCoverUrl!.isNotEmpty
+                                  ? DecorationImage(image: NetworkImage(_existingCoverUrl!), fit: BoxFit.cover)
+                                  : null),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.primary.withValues(alpha: 0.8)),
-                            const SizedBox(height: 8),
-                            Text('Upload Shop Cover Photo', style: TextStyle(color: AppColors.primary.withValues(alpha: 0.8))),
-                          ],
-                        ),
+                        child: _selectedCoverFile == null && (_existingCoverUrl == null || _existingCoverUrl!.isEmpty)
+                            ? Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_photo_alternate_outlined, size: 40, color: AppColors.primary.withValues(alpha: 0.8)),
+                                  const SizedBox(height: 8),
+                                  Text('Upload Shop Cover Photo', style: TextStyle(color: AppColors.primary.withValues(alpha: 0.8))),
+                                ],
+                              )
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 24),

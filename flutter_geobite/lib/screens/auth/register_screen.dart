@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import '../../widgets/glass_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,25 +18,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   String _role = 'customer';
+  bool _agreedToTerms = false;
+  double _passwordStrength = 0.0;
+  String _passwordStrengthText = '';
+  Color _passwordStrengthColor = Colors.grey;
   bool _isLoading = false;
-  String? _error;
+
+  void _checkPasswordStrength(String value) {
+    double strength = 0;
+    if (value.length >= 8) strength += 0.25;
+    if (value.contains(RegExp(r'[A-Z]'))) strength += 0.25;
+    if (value.contains(RegExp(r'[a-z]'))) strength += 0.25;
+    if (value.contains(RegExp(r'[0-9!@#\$&*~]'))) strength += 0.25;
+
+    setState(() {
+      _passwordStrength = strength;
+      if (value.isEmpty) {
+        _passwordStrengthText = '';
+        _passwordStrengthColor = Colors.grey;
+      } else if (strength <= 0.25) {
+        _passwordStrengthText = 'Weak';
+        _passwordStrengthColor = Colors.red;
+      } else if (strength <= 0.5) {
+        _passwordStrengthText = 'Fair';
+        _passwordStrengthColor = Colors.orange;
+      } else if (strength <= 0.75) {
+        _passwordStrengthText = 'Good';
+        _passwordStrengthColor = Colors.yellow;
+      } else {
+        _passwordStrengthText = 'Strong';
+        _passwordStrengthColor = Colors.green;
+      }
+    });
+  }
 
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
     final phone = _phoneController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || phone.isEmpty) {
-      setState(() => _error = 'Please fill in all required fields');
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty || phone.isEmpty) {
+      GlassToast.info(context, 'Please fill in all required fields');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      GlassToast.error(context, 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      GlassToast.error(context, 'Password must be at least 6 characters long');
+      return;
+    }
+
+    if (!_agreedToTerms) {
+      GlassToast.info(context, 'You must agree to the Terms of Service and Privacy Policy');
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _error = null;
     });
 
     try {
@@ -45,20 +94,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         role: _role,
         phone: phone,
       );
+      // Sign out immediately so they are forced to log in manually
+      await Provider.of<AuthProvider>(context, listen: false).signOut();
       
-      // Successfully registered, now ask for location permissions
-      final status = await Permission.location.request();
-      if (status.isGranted) {
-        try {
-          final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-          // Optional: We could save this initial GPS location to the profile here 
-          // or just proceed since they granted permission.
-        } catch (e) {
-          print("Location fetch failed after permission granted: $e");
-        }
+      if (mounted) {
+        GlassToast.success(context, 'Account created successfully! Please sign in.');
+        Navigator.of(context).pop(); // Pop back to LoginScreen
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      if (mounted) GlassToast.error(context, e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -191,6 +235,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
                         ),
                         obscureText: true,
+                        onChanged: _checkPasswordStrength,
+                      ),
+                      if (_passwordController.text.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: _passwordStrength,
+                                  backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                                  valueColor: AlwaysStoppedAnimation<Color>(_passwordStrengthColor),
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _passwordStrengthText,
+                              style: TextStyle(
+                                color: _passwordStrengthColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _confirmPasswordController,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                          prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
+                        ),
+                        obscureText: true,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -216,14 +304,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           if (val != null) setState(() => _role = val);
                         },
                       ),
-                      if (_error != null) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Checkbox(
+                            value: _agreedToTerms,
+                            onChanged: (val) {
+                              setState(() => _agreedToTerms = val ?? false);
+                            },
+                            activeColor: AppColors.primary,
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _agreedToTerms = !_agreedToTerms);
+                              },
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'I agree to the ',
+                                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Terms of Service',
+                                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                    ),
+                                    TextSpan(text: ' and '),
+                                    TextSpan(
+                                      text: 'Privacy Policy',
+                                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 32),
                       Container(
                         decoration: BoxDecoration(
@@ -251,9 +368,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 24),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => LoginScreen()),
-                          );
+                          Navigator.of(context).pop();
                         },
                         child: RichText(
                           text: TextSpan(

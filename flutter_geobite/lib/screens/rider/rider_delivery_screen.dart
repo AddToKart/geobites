@@ -10,6 +10,8 @@ import '../../theme/glass_theme.dart';
 import 'package:intl/intl.dart';
 import 'rider_proof_of_delivery_screen.dart';
 import '../../widgets/glass_toast.dart';
+import 'package:geolocator/geolocator.dart';
+import '../../services/socket_service.dart';
 
 class RiderDeliveryScreen extends StatefulWidget {
   final Order order;
@@ -36,6 +38,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
   int _currentSpeed = 0;
   Timer? _speedTimer;
   bool _isNavigating = false;
+  StreamSubscription<Position>? _positionStream;
   
   // Real OSRM Data
   String _etaMinutes = '-- min';
@@ -55,6 +58,21 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
     _fetchWeather();
     
     _loadRouteForCurrentState();
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position position) {
+      if (_currentStatus == 'picked_up' || _currentStatus == 'delivering') {
+        SocketService().emitRiderLocation(
+          widget.order.id,
+          position.latitude,
+          position.longitude,
+        );
+      }
+    });
   }
 
   void _updateTime() {
@@ -117,6 +135,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
   void dispose() {
     _timer?.cancel();
     _speedTimer?.cancel();
+    _positionStream?.cancel();
     super.dispose();
   }
 
@@ -175,11 +194,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
   Future<void> _updateStatus(String newStatus) async {
     setState(() => _isLoading = true);
     try {
-      if (widget.order.id.startsWith('mock-')) {
-        await Future.delayed(const Duration(seconds: 1));
-      } else {
-        await orderService.updateOrderStatus(widget.order.id, newStatus);
-      }
+      await orderService.updateOrderStatus(widget.order.id, newStatus);
       if (mounted) {
         if (newStatus == 'delivered') {
           Navigator.pop(context); // Go back after marking delivered

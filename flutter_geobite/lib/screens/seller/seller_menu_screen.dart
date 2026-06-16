@@ -6,6 +6,7 @@ import '../../services/menu_service.dart';
 import '../../services/vendor_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../widgets/pagination_controls.dart';
 import '../../widgets/glass_menu_dialog.dart';
 import '../../widgets/glass_toast.dart';
 
@@ -20,6 +21,8 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
   List<MenuItem> _menuItems = [];
   Vendor? _vendor;
   bool _isLoading = true;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
 
   @override
   void initState() {
@@ -61,7 +64,7 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
       context: context,
       builder: (context) {
         return GlassMenuDialog(
-          onSave: (name, description, price) async {
+          onSave: (name, description, price, imageUrl) async {
             try {
               final auth = Provider.of<AuthProvider>(context, listen: false);
               final newItem = MenuItem(
@@ -69,6 +72,7 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
                 name: name,
                 description: description,
                 price: price,
+                imageUrl: imageUrl,
                 vendorId: auth.user!.id,
                 isAvailable: true,
                 createdAt: DateTime.now().toIso8601String(),
@@ -91,12 +95,13 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
       builder: (context) {
         return GlassMenuDialog(
           initialItem: item,
-          onSave: (name, description, price) async {
+          onSave: (name, description, price, imageUrl) async {
             try {
               final updates = {
                 'name': name,
                 'description': description,
                 'price': price,
+                'imageUrl': imageUrl,
               };
               await menuService.updateMenuItem(item.id, updates);
               _loadData();
@@ -129,50 +134,86 @@ class _SellerMenuScreenState extends State<SellerMenuScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _vendor == null
               ? const Center(child: Text('Please setup your shop profile first in Settings.'))
-              : ListView.builder(
-                  padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 100.0),
-                  itemCount: _menuItems.length,
-                  itemBuilder: (context, index) {
-                    final item = _menuItems[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: NeumorphicCard(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                  if (item.description != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(item.description!, style: const TextStyle(color: AppColors.primaryDark, fontSize: 12)),
-                                  ],
-                                  const SizedBox(height: 8),
-                                  Text('₱${item.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: item.isAvailable,
-                              onChanged: (val) async {
-                                await menuService.updateMenuItem(item.id, {'isAvailable': val});
-                                _loadData();
-                              },
-                              activeColor: AppColors.primary,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                              onPressed: () => _showEditItemDialog(item),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
-                              onPressed: () => _deleteItem(item.id),
-                            ),
-                          ],
+              : Builder(
+                  builder: (context) {
+                    final int totalPages = (_menuItems.length / _itemsPerPage).ceil();
+                    final paginatedItems = _menuItems.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 16.0),
+                            itemCount: paginatedItems.length,
+                            itemBuilder: (context, index) {
+                              final item = paginatedItems[index];
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16.0),
+                                child: NeumorphicCard(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                        Container(
+                                          width: 60,
+                                          height: 60,
+                                          margin: const EdgeInsets.only(right: 16),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.network(
+                                              item.imageUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                color: Colors.grey.withValues(alpha: 0.2),
+                                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                            if (item.description != null) ...[
+                                              const SizedBox(height: 4),
+                                              Text(item.description!, style: const TextStyle(color: AppColors.primaryDark, fontSize: 12)),
+                                            ],
+                                            const SizedBox(height: 8),
+                                            Text('₱${item.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                          ],
+                                        ),
+                                      ),
+                                      Switch(
+                                        value: item.isAvailable,
+                                        onChanged: (val) async {
+                                          await menuService.updateMenuItem(item.id, {'isAvailable': val});
+                                          _loadData();
+                                        },
+                                        activeColor: AppColors.primary,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                                        onPressed: () => _showEditItemDialog(item),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                        onPressed: () => _deleteItem(item.id),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
+                        PaginationControls(
+                          currentPage: _currentPage,
+                          totalPages: totalPages,
+                          onPageChanged: (page) => setState(() => _currentPage = page),
+                        ),
+                      ],
                     );
                   },
                 ),

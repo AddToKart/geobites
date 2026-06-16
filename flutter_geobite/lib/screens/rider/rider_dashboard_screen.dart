@@ -7,9 +7,13 @@ import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/animated_tap_card.dart';
+import '../../widgets/pagination_controls.dart';
 import 'rider_accept_task_screen.dart';
 import 'rider_delivery_screen.dart';
 import '../../widgets/glass_toast.dart';
+import '../../services/socket_service.dart';
+import 'dart:async';
 
 class RiderDashboardScreen extends StatefulWidget {
   const RiderDashboardScreen({Key? key}) : super(key: key);
@@ -22,14 +26,37 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   List<Order> _availableOrders = [];
   List<Order> _myDeliveries = [];
   bool _isLoading = true;
-  String _temperature = '--°C';
+  String _temperature = '32°C';
   IconData _weatherIcon = Icons.wb_sunny;
+  
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
+  StreamSubscription? _orderSub;
+  StreamSubscription? _newOrderSub;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
     _fetchWeather();
+
+    _orderSub = SocketService().orderStatusStream.listen((data) {
+      _loadOrders();
+    });
+
+    _newOrderSub = SocketService().newOrderStream.listen((data) {
+      if (mounted) {
+        GlassToast.info(context, 'New delivery task available!');
+        _loadOrders();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderSub?.cancel();
+    _newOrderSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchWeather() async {
@@ -69,42 +96,6 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
       final available = orders.where((o) => o.status == 'ready_for_pickup' && o.riderId == null).toList();
       final mine = orders.where((o) => o.riderId == currentUserId && (o.status == 'ready_for_pickup' || o.status == 'picked_up' || o.status == 'delivering')).toList();
 
-      // Inject Hardcoded Mock Data if empty so UI is never blank
-      if (available.isEmpty) {
-        available.add(
-          Order(
-            id: 'mock-avail-1',
-            customerId: 'cust-1',
-            vendorId: 'vend-1',
-            status: 'ready_for_pickup',
-            totalAmount: 350.00,
-            deliveryAddress: 'Block 4, San Vicente, Santa Maria',
-            paymentMethod: 'cash',
-            createdAt: DateTime.now().toIso8601String(),
-            updatedAt: DateTime.now().toIso8601String(),
-            items: [],
-          )
-        );
-      }
-
-      if (mine.isEmpty) {
-        mine.add(
-          Order(
-            id: 'mock-mine-1',
-            customerId: 'cust-2',
-            vendorId: 'vend-2',
-            status: 'picked_up',
-            totalAmount: 1250.00,
-            deliveryAddress: 'Phase 2, Guyong, Santa Maria',
-            paymentMethod: 'gcash',
-            notes: 'Please call when near the gate.',
-            createdAt: DateTime.now().toIso8601String(),
-            updatedAt: DateTime.now().toIso8601String(),
-            items: [],
-          )
-        );
-      }
-
       setState(() {
         _availableOrders = available;
         _myDeliveries = mine;
@@ -119,6 +110,9 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
+    
+    final int totalPages = (_availableOrders.length / _itemsPerPage).ceil();
+    final paginatedAvailableOrders = _availableOrders.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -292,7 +286,14 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                     if (_availableOrders.isNotEmpty) ...[
                       const Text('Incoming Tasks', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
                       const SizedBox(height: 16),
-                      ..._availableOrders.map((order) => _buildIncomingTaskCard(order)),
+                      ...paginatedAvailableOrders.map((order) => _buildIncomingTaskCard(order)),
+                      if (totalPages > 1)
+                        PaginationControls(
+                          currentPage: _currentPage,
+                          totalPages: totalPages,
+                          bottomPadding: 16.0,
+                          onPageChanged: (page) => setState(() => _currentPage = page),
+                        ),
                       const SizedBox(height: 24),
                     ],
                     const Text('My Deliveries', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),

@@ -7,7 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/auth_service.dart';
-import '../../services/api_client.dart';
+import '../../core/api_client.dart';
 import '../../theme/glass_theme.dart';
 import 'map_selection_screen.dart';
 import '../../widgets/glass_toast.dart';
@@ -52,22 +52,37 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
   Future<void> _saveProfile() async {
     final address = _addressCtrl.text.trim();
     final phone = _phoneCtrl.text.trim();
-    if (address.isEmpty || phone.isEmpty) {
-      GlassToast.info(context, 'Please fill all required fields');
-      return;
+    
+    if (_selectedTab == 0) {
+      // Profile Details Validation
+      if (phone.isEmpty) {
+        GlassToast.info(context, 'Please fill all required fields');
+        return;
+      }
+      final phonePattern = RegExp(r'^(?:\+639|09)\d{9}$');
+      if (!phonePattern.hasMatch(phone)) {
+        GlassToast.error(context, 'Phone must start with +639 or 09 and have 11 digits');
+        return;
+      }
+    } else {
+      // Saved Addresses Validation
+      if (address.isEmpty) {
+        GlassToast.info(context, 'Please fill the address field');
+        return;
+      }
     }
 
     setState(() => _isSaving = true);
     try {
       final user = Provider.of<AuthProvider>(context, listen: false).user;
       if (user != null) {
-        await apiClient.put('/user/profile', body: {
+        await apiClient.dio.put('/user/profile', data: {
           'defaultAddress': address,
           'phone': phone,
           'defaultLat': _defaultLocation.latitude,
           'defaultLng': _defaultLocation.longitude,
         });
-        GlassToast.success(context, 'Default address saved!');
+        GlassToast.success(context, 'Profile changes saved!');
       }
     } catch (e) {
       GlassToast.error(context, 'Error saving: $e');

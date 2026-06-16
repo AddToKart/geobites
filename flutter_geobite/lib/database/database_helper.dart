@@ -29,9 +29,25 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      const idType = 'TEXT PRIMARY KEY';
+      const textType = 'TEXT';
+      await db.execute('''
+CREATE TABLE offline_queue (
+  id $idType,
+  actionType $textType,
+  payload $textType,
+  timestamp $textType
+)
+''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -59,22 +75,62 @@ CREATE TABLE orders (
   itemsJson $textType
 )
 ''');
+
+    // Offline Queue Table
+    await db.execute('''
+CREATE TABLE offline_queue (
+  id $idType,
+  actionType $textType,
+  payload $textType,
+  timestamp $textType
+)
+''');
   }
 
   // --- CRUD Operations ---
 
   Future<void> upsertOrder(Map<String, dynamic> orderData) async {
+    if (kIsWeb) return;
     final db = await instance.database;
     await db.insert('orders', orderData, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Map<String, dynamic>>> getAllOrders() async {
+    if (kIsWeb) return [];
     final db = await instance.database;
     return await db.query('orders', orderBy: 'createdAt DESC');
   }
 
   Future<void> clearAll() async {
+    if (kIsWeb) return;
     final db = await instance.database;
     await db.delete('orders');
+    await db.delete('offline_queue');
+  }
+
+  // --- Offline Queue Operations ---
+
+  Future<void> enqueueAction(String actionType, String payload) async {
+    if (kIsWeb) return;
+    final db = await instance.database;
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    await db.insert('offline_queue', {
+      'id': id,
+      'actionType': actionType,
+      'payload': payload,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> getPendingActions() async {
+    if (kIsWeb) return [];
+    final db = await instance.database;
+    return await db.query('offline_queue', orderBy: 'timestamp ASC');
+  }
+
+  Future<void> removeAction(String id) async {
+    if (kIsWeb) return;
+    final db = await instance.database;
+    await db.delete('offline_queue', where: 'id = ?', whereArgs: [id]);
   }
 }

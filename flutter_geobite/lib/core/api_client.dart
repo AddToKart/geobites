@@ -22,7 +22,7 @@ class ApiClient {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': 'http://localhost:3000', // Explicitly match backend trusted origin
+          'Origin': 'http://localhost:3000',
         },
       ),
     );

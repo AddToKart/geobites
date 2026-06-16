@@ -19,6 +19,8 @@ import { RidersModule } from './riders/riders.module';
 import { VendorsModule } from './vendors/vendors.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PaymentsModule } from './payments/payments.module';
+import { UploadModule } from './upload/upload.module';
+import { SocketModule } from './socket/socket.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { PaymentsModule } from './payments/payments.module';
     NotificationsModule,
     TrackingModule,
     PaymentsModule,
+    UploadModule,
+    SocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,6 +5,7 @@ import 'seller_kds_screen.dart';
 import 'seller_menu_screen.dart';
 import 'seller_orders_screen.dart';
 import 'seller_more_screen.dart';
+import '../../services/socket_service.dart';
 
 class SellerMainScreen extends StatefulWidget {
   const SellerMainScreen({Key? key}) : super(key: key);
@@ -31,6 +32,30 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
       body: Stack(
         children: [
           _screens[_currentIndex],
+          StreamBuilder<bool>(
+            stream: SocketService().connectionStateStream,
+            initialData: SocketService().isConnected,
+            builder: (context, snapshot) {
+              final isConnected = snapshot.data ?? false;
+              if (isConnected) return const SizedBox.shrink();
+              
+              return Positioned(
+                top: MediaQuery.of(context).padding.top,
+                left: 0,
+                right: 0,
+                child: Container(
+                  width: double.infinity,
+                  color: Colors.red.withValues(alpha: 0.8),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Text(
+                    'You are offline. Changes will be saved locally and synced later.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              );
+            },
+          ),
           Positioned(
             bottom: 0,
             left: 0,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/socket_service.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
@@ -15,6 +16,9 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       _user = await authService.getSession();
+      if (_user != null) {
+        _initSocket(_user!);
+      }
     } catch (e) {
       print('Session check failed: $e');
     } finally {
@@ -28,6 +32,9 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       _user = await authService.signIn(email, password);
+      if (_user != null) {
+        _initSocket(_user!);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -51,6 +58,9 @@ class AuthProvider with ChangeNotifier {
         role: role,
         phone: phone,
       );
+      if (_user != null) {
+        _initSocket(_user!);
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -63,8 +73,15 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       print('Error during sign out: $e');
     } finally {
+      SocketService().disconnect();
       _user = null;
       notifyListeners();
     }
+  }
+
+  void _initSocket(User user) {
+    SocketService().connect();
+    // Join generic role room
+    SocketService().joinRoom('${user.role}_${user.id}');
   }
 }

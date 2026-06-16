@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../models/user.dart';
 import '../core/api_client.dart';
 
@@ -43,6 +44,12 @@ class AuthService {
       }
       return user;
     } catch (e) {
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['message'] != null) {
+          throw Exception(data['message']);
+        }
+      }
       throw Exception('Failed to sign in: $e');
     }
   }
@@ -95,6 +102,12 @@ class AuthService {
       }
       return user;
     } catch (e) {
+      if (e is DioException && e.response?.data != null) {
+        final data = e.response!.data;
+        if (data is Map && data['message'] != null) {
+          throw Exception(data['message']);
+        }
+      }
       throw Exception('Failed to sign up: $e');
     }
   }

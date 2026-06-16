@@ -63,11 +63,7 @@ class _RiderAcceptTaskScreenState extends State<RiderAcceptTaskScreen> {
   Future<void> _acceptTask() async {
     setState(() => _isAccepting = true);
     try {
-      if (widget.order.id.startsWith('mock-')) {
-        await Future.delayed(const Duration(seconds: 1));
-      } else {
-        await orderService.updateOrderStatus(widget.order.id, 'ready_for_pickup');
-      }
+      await orderService.updateOrderStatus(widget.order.id, 'ready_for_pickup');
       if (mounted) {
         Navigator.pop(context, true); // true indicates successful acceptance
       }

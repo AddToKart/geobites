@@ -8,6 +8,7 @@ import '../../theme/glass_theme.dart';
 import '../../widgets/menu_item_card.dart';
 import '../../widgets/animated_tap_card.dart';
 import 'cart_screen.dart';
+import 'vendor_reviews_screen.dart';
 
 class VendorDetailScreen extends StatefulWidget {
   final Vendor vendor;
@@ -93,15 +94,30 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                           ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${widget.vendor.rating.toStringAsFixed(1)} (${widget.vendor.totalRatings} ratings)',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => VendorReviewsScreen(vendor: widget.vendor)),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, size: 16, color: Colors.orange),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.vendor.rating.toStringAsFixed(1)} (${widget.vendor.totalRatings} reviews)',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8), decoration: TextDecoration.underline),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.chevron_right, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -131,7 +147,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {

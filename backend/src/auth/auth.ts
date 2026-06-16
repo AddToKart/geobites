@@ -32,6 +32,8 @@ function parseTrustedOrigins(): string[] {
     'http://10.0.2.2:3000',
     'http://10.0.2.2:8081',
     'http://10.0.2.2:5173',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
   ];
 
   // Dynamically resolve and add all local IP addresses on relevant ports
@@ -91,86 +93,7 @@ if (process.env.USE_MEMORY_DB === 'true') {
       console.log('Better Auth tables already exist in persistent SQLite database.');
     }
 
-    // Pre-seed default demo users for instant developer login
-    const demoUsers = [
-      {
-        id: 'demo-user-ciel',
-        name: 'Ciel',
-        email: 'ciel@gmail.com',
-        role: 'customer',
-        password: 'password123',
-      },
-      {
-        id: 'demo-user-customer',
-        name: 'Demo Customer',
-        email: 'customer@geobites.com',
-        role: 'customer',
-        password: 'password123',
-      },
-      {
-        id: 'demo-seller-kape-baryo',
-        name: 'Kape at Almusal Baryo Owner',
-        email: 'seller-kape@geobites.com',
-        role: 'seller',
-        password: 'password123',
-      },
-      {
-        id: 'demo-seller-ihaw-central',
-        name: 'Bulacan Ihaw Central Owner',
-        email: 'seller-ihaw@geobites.com',
-        role: 'seller',
-        password: 'password123',
-      },
-      {
-        id: 'demo-seller-pancit-palengke',
-        name: 'Palengke Pancit Corner Owner',
-        email: 'seller-pancit@geobites.com',
-        role: 'seller',
-        password: 'password123',
-      },
-      {
-        id: 'demo-seller-garden-sweets',
-        name: 'Garden Halo & Sweets Owner',
-        email: 'seller-garden@geobites.com',
-        role: 'seller',
-        password: 'password123',
-      },
-      {
-        id: 'demo-user-seller',
-        name: 'Demo Seller',
-        email: 'seller@geobites.com',
-        role: 'seller',
-        password: 'password123',
-      },
-      {
-        id: 'demo-user-rider',
-        name: 'Demo Rider',
-        email: 'rider@geobites.com',
-        role: 'rider',
-        password: 'password123',
-      },
-    ];
-
-    const bcrypt = require('bcryptjs');
-    for (const u of demoUsers) {
-      const userExists = dbInstance.prepare("SELECT id FROM user WHERE email = ?").get(u.email);
-      if (!userExists) {
-        console.log(`Seeding demo user: ${u.email} (${u.role})`);
-        
-        // Insert into user table
-        dbInstance.prepare(
-          `INSERT INTO user (id, name, email, emailVerified, role, createdAt, updatedAt) 
-           VALUES (?, ?, ?, 1, ?, datetime('now'), datetime('now'))`
-        ).run(u.id, u.name, u.email, u.role);
-
-        // Insert into account table
-        const hashedPassword = bcrypt.hashSync(u.password, 10);
-        dbInstance.prepare(
-          `INSERT INTO account (id, accountId, providerId, userId, password, createdAt, updatedAt) 
-           VALUES (?, ?, 'credential', ?, ?, datetime('now'), datetime('now'))`
-        ).run(`account-${u.id}`, u.email, u.id, hashedPassword);
-      }
-    }
+    // Pre-seed default demo users disabled by user request
   } catch (err) {
     console.error('Failed to initialize or seed Better Auth persistent SQLite database:', err);
   }

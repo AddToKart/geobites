@@ -4,8 +4,12 @@ import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
+import '../../widgets/animated_tap_card.dart';
+import '../../widgets/pagination_controls.dart';
 import '../../widgets/receipt_widget.dart';
 import '../../widgets/glass_toast.dart';
+import 'dart:async';
+import '../../services/socket_service.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({Key? key}) : super(key: key);
@@ -17,11 +21,34 @@ class SellerDashboardScreen extends StatefulWidget {
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   List<Order> _orders = [];
   bool _isLoading = true;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
+  StreamSubscription? _orderSub;
+  StreamSubscription? _newOrderSub;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
+
+    _orderSub = SocketService().orderStatusStream.listen((data) {
+      // Refresh if the status of any of our orders changes
+      _loadOrders();
+    });
+
+    _newOrderSub = SocketService().newOrderStream.listen((data) {
+      if (mounted) {
+        GlassToast.success(context, 'New Order Received!');
+        _loadOrders();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderSub?.cancel();
+    _newOrderSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadOrders() async {
@@ -116,19 +143,59 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         title: Text('Live Orders', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
         actions: [
           Stack(
-            alignment: Alignment.center,
+            clipBehavior: Clip.none,
             children: [
-              IconButton(
-                icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface),
-                onPressed: () => GlassToast.info(context, 'You have 3 new notifications'),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface, size: 24),
+                padding: EdgeInsets.zero,
+                offset: const Offset(0, 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: Theme.of(context).colorScheme.surface,
+                onSelected: (value) {
+                  if (value == 'read_all') {
+                    GlassToast.info(context, 'All marked as read');
+                  } else if (value == 'clear') {
+                    GlassToast.info(context, 'Notifications removed');
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'view_1',
+                    child: Text('System Update: New features are now available!'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem<String>(
+                    value: 'read_all',
+                    child: Row(
+                      children: [
+                        Icon(Icons.checklist, size: 18),
+                        SizedBox(width: 8),
+                        Text('Mark all as read'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'clear',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Remove all notifications', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               Positioned(
-                right: 8,
                 top: 8,
+                right: 8,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                  child: const Text('3', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
             ],
@@ -139,17 +206,82 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadOrders,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _orders.isEmpty
-                ? const Center(child: Text('No orders yet.'))
-                : ListView.builder(
-                    padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 100.0),
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Builder(
+              builder: (context) {
+                final user = Provider.of<AuthProvider>(context).user;
+                final todayOrders = _orders.where((o) {
+                  try {
+                    return DateTime.parse(o.createdAt).toLocal().day == DateTime.now().day;
+                  } catch (e) { return false; }
+                }).toList();
+                final todayRevenue = todayOrders.fold<double>(0.0, (sum, order) => sum + order.totalAmount);
+                final activeOrders = _orders.where((o) => o.status == 'pending' || o.status == 'accepted' || o.status == 'preparing').length;
+
+                final int totalPages = (_orders.length / _itemsPerPage).ceil();
+                final paginatedOrders = _orders.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Greeting Header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Hello, ${user?.name ?? 'Seller'}! 👋',
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    
+                    // Analytics Summary
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: NeumorphicCard(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Today\'s Revenue', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  Text('₱${todayRevenue.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: NeumorphicCard(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Active Orders', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 12)),
+                                  const SizedBox(height: 4),
+                                  Text('$activeOrders', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Orders List
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _loadOrders,
+                        child: paginatedOrders.isEmpty
+                            ? const Center(child: Text('No orders yet.'))
+                            : ListView.builder(
+                                padding: const EdgeInsets.only(top: 8.0, left: 16.0, right: 16.0, bottom: 16.0),
+                                itemCount: paginatedOrders.length,
+                                itemBuilder: (context, index) {
+                                  final order = paginatedOrders[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: NeumorphicCard(
@@ -159,7 +291,31 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Order #${order.id.substring(0, 8).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  Expanded(
+                                    child: Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 8,
+                                      children: [
+                                        Text('Order #${order.id.substring(0, 8).toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: (order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided') ? Colors.orange.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: (order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided') ? Colors.orange.withValues(alpha: 0.3) : Colors.blue.withValues(alpha: 0.3)),
+                                          ),
+                                          child: Text(
+                                            (order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided') ? 'To Pickup' : 'Delivery',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: (order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided') ? Colors.orange : Colors.blue,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
@@ -221,6 +377,17 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                       );
                     },
                   ),
+                ),
+              ),
+              if (totalPages > 1)
+                PaginationControls(
+                  currentPage: _currentPage,
+                  totalPages: totalPages,
+                  onPageChanged: (page) => setState(() => _currentPage = page),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

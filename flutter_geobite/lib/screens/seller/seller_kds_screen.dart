@@ -6,6 +6,7 @@ import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/glass_toast.dart';
+import '../../services/socket_service.dart';
 
 class SellerKdsScreen extends StatefulWidget {
   const SellerKdsScreen({Key? key}) : super(key: key);
@@ -17,19 +18,30 @@ class SellerKdsScreen extends StatefulWidget {
 class _SellerKdsScreenState extends State<SellerKdsScreen> {
   List<Order> _orders = [];
   bool _isLoading = true;
-  Timer? _pollingTimer;
+  StreamSubscription? _orderSub;
+  StreamSubscription? _newOrderSub;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
-    // Auto-refresh KDS every 10 seconds
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) => _loadOrders(silent: true));
+
+    _orderSub = SocketService().orderStatusStream.listen((data) {
+      _loadOrders(silent: true);
+    });
+
+    _newOrderSub = SocketService().newOrderStream.listen((data) {
+      if (mounted) {
+        GlassToast.success(context, 'New Order for Kitchen!');
+        _loadOrders(silent: true);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    _orderSub?.cancel();
+    _newOrderSub?.cancel();
     super.dispose();
   }
 

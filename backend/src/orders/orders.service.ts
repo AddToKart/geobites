@@ -15,6 +15,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CreateOrderDto, CreatePosOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { AppGateway } from '../socket/socket.gateway';
 
 const sellerTransitions: Record<string, string[]> = {
   pending: ['accepted', 'rejected'],
@@ -41,6 +42,7 @@ export class OrdersService {
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
+    private readonly appGateway: AppGateway,
   ) {}
 
   async create(
@@ -159,7 +161,11 @@ export class OrdersService {
       referenceId: savedOrderId,
     });
 
-    return this.findOneForUser(savedOrderId, customerId, 'customer');
+    // Broadcast the new order via WebSockets
+    const populatedOrder = await this.findOneForUser(savedOrderId, customerId, 'customer');
+    this.appGateway.broadcastNewOrder(populatedOrder.vendorId, populatedOrder);
+
+    return populatedOrder;
   }
 
   async createPosOrder(
@@ -518,6 +524,14 @@ export class OrdersService {
         referenceId: order.id,
       });
     }
+
+    // Broadcast the status update via WebSockets
+    this.appGateway.broadcastOrderStatus(
+      updatedOrder.id,
+      updatedOrder.status,
+      updatedOrder.vendorId,
+      updatedOrder.customerId,
+    );
 
     return updatedOrder;
   }

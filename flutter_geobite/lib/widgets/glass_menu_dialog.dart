@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import '../theme/glass_theme.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import '../services/upload_service.dart';
+import '../widgets/glass_toast.dart';
 
 import '../models/menu_item.dart';
 
 class GlassMenuDialog extends StatefulWidget {
-  final Function(String name, String description, double price) onSave;
+  final Function(String name, String description, double price, String? imageUrl) onSave;
   final MenuItem? initialItem;
 
   const GlassMenuDialog({Key? key, required this.onSave, this.initialItem}) : super(key: key);
@@ -19,7 +23,11 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
+  final _imageUrlController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  PlatformFile? _selectedFile;
+  String? _existingImageUrl;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -28,6 +36,25 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
       _nameController.text = widget.initialItem!.name;
       _descController.text = widget.initialItem!.description ?? '';
       _priceController.text = widget.initialItem!.price.toString();
+      _existingImageUrl = widget.initialItem!.imageUrl;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: kIsWeb, // Required for web to get bytes
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedFile = result.files.single;
+          _existingImageUrl = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) GlassToast.error(context, 'Failed to pick image: $e');
     }
   }
 
@@ -96,6 +123,36 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                     validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                   ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: _pickImage,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        image: _selectedFile != null
+                            ? (kIsWeb && _selectedFile!.bytes != null
+                                ? DecorationImage(image: MemoryImage(_selectedFile!.bytes!), fit: BoxFit.cover)
+                                : DecorationImage(image: FileImage(File(_selectedFile!.path!)), fit: BoxFit.cover))
+                            : (_existingImageUrl != null && _existingImageUrl!.isNotEmpty
+                                ? DecorationImage(image: NetworkImage(_existingImageUrl!), fit: BoxFit.cover)
+                                : null),
+                      ),
+                      child: _selectedFile == null && (_existingImageUrl == null || _existingImageUrl!.isEmpty)
+                          ? Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate_outlined, size: 40, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                                const SizedBox(height: 8),
+                                Text('Tap to select image', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
+                              ],
+                            )
+                          : null,
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   Row(
                     children: [
@@ -113,14 +170,30 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: FilledButton(
-                          onPressed: () {
+                          onPressed: _isSubmitting ? null : () async {
                             if (_formKey.currentState!.validate()) {
-                              widget.onSave(
-                                _nameController.text.trim(),
-                                _descController.text.trim(),
-                                double.parse(_priceController.text),
-                              );
-                              Navigator.pop(context);
+                              setState(() => _isSubmitting = true);
+                              try {
+                                String? finalImageUrl = _existingImageUrl;
+                                if (_selectedFile != null) {
+                                  if (kIsWeb && _selectedFile!.bytes != null) {
+                                    finalImageUrl = await uploadService.uploadImageBytes(_selectedFile!.bytes!, _selectedFile!.name);
+                                  } else if (_selectedFile!.path != null) {
+                                    finalImageUrl = await uploadService.uploadImage(_selectedFile!.path!);
+                                  }
+                                }
+                                
+                                widget.onSave(
+                                  _nameController.text.trim(),
+                                  _descController.text.trim(),
+                                  double.tryParse(_priceController.text.trim()) ?? 0.0,
+                                  finalImageUrl,
+                                );
+                                if (mounted) Navigator.pop(context);
+                              } catch (e) {
+                                if (mounted) GlassToast.error(context, e.toString());
+                                setState(() => _isSubmitting = false);
+                              }
                             }
                           },
                           style: FilledButton.styleFrom(
@@ -128,7 +201,9 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text(widget.initialItem == null ? 'Save Item' : 'Save Changes', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                          child: _isSubmitting 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(widget.initialItem == null ? 'Save Item' : 'Save Changes', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ),
                     ],

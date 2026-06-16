@@ -22,7 +22,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   final _notesController = TextEditingController();
   String _paymentMethod = 'COD';
   bool _isCheckingOut = false;
-  String? _error;
 
   LatLng _deliveryLocation = const LatLng(14.8214, 120.9565); // Default to Santa Maria
   MapcnController? _mapController;
@@ -59,13 +58,12 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
     
     final address = _addressController.text.trim();
     if (address.isEmpty) {
-      setState(() => _error = 'Delivery address is required');
+      GlassToast.info(context, 'Delivery address is required');
       return;
     }
 
     setState(() {
       _isCheckingOut = true;
-      _error = null;
     });
 
     try {
@@ -90,7 +88,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
         builder: (_) => OrderDetailScreen(orderId: order.id),
       ));
     } catch (e) {
-      setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      if (mounted) GlassToast.error(context, e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isCheckingOut = false);
     }
@@ -268,23 +266,23 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: ['COD', 'GCASH', 'MAYA', 'QRPH'].map((method) {
-                  final isSelected = _paymentMethod == method;
-                  return ChoiceChip(
-                    label: Text(method),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      if (val) setState(() => _paymentMethod = method);
-                    },
-                    selectedColor: AppColors.primary.withValues(alpha: 0.1),
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                children: [
+                  for (final method in ['COD', 'GCASH', 'MAYA', 'QRPH'])
+                    ChoiceChip(
+                      label: Text(method),
+                      selected: _paymentMethod == method,
+                      onSelected: (val) {
+                        if (val) setState(() => _paymentMethod = method);
+                      },
+                      selectedColor: AppColors.primary.withValues(alpha: 0.1),
+                      labelStyle: TextStyle(
+                        color: _paymentMethod == method ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontWeight: _paymentMethod == method ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: Colors.white.withOpacity(0.4),
+                      side: BorderSide(color: _paymentMethod == method ? AppColors.primary.withValues(alpha: 0.5) : Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
                     ),
-                    backgroundColor: Colors.white.withOpacity(0.4),
-                    side: BorderSide(color: isSelected ? AppColors.primary.withValues(alpha: 0.5) : Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
-                  );
-                }).toList(),
+                ],
               ),
             ),
             const SizedBox(height: 24),
@@ -297,10 +295,6 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            if (_error != null) ...[
-              const SizedBox(height: 16),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error), textAlign: TextAlign.center),
-            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _isCheckingOut ? null : _handleCheckout,
@@ -313,7 +307,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Confirm & Place Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 120),
           ],
         ),
       ),

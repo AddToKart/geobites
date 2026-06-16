@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../models/vendor.dart';
 import '../../models/rating.dart';
-import '../../services/vendor_service.dart';
 import '../../services/rating_service.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/pagination_controls.dart';
 import 'package:intl/intl.dart';
 
-class SellerReviewsScreen extends StatefulWidget {
-  const SellerReviewsScreen({Key? key}) : super(key: key);
+class VendorReviewsScreen extends StatefulWidget {
+  final Vendor vendor;
+
+  const VendorReviewsScreen({Key? key, required this.vendor}) : super(key: key);
 
   @override
-  _SellerReviewsScreenState createState() => _SellerReviewsScreenState();
+  _VendorReviewsScreenState createState() => _VendorReviewsScreenState();
 }
 
-class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
-  Vendor? _vendor;
+class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
   VendorRatingSummary? _summary;
   bool _isLoading = true;
   int _currentPage = 0;
@@ -26,35 +24,18 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadRatings();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadRatings() async {
     try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final vendors = await vendorService.getVendors();
-      
-      try {
-        final myVendor = vendors.firstWhere((v) => v.userId == auth.user?.id);
-        _vendor = myVendor;
-        
-        final summary = await ratingService.getVendorRatings(myVendor.id);
-        if (mounted) {
-          setState(() {
-            _summary = summary;
-            _isLoading = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _summary = null;
-            _isLoading = false;
-          });
-        }
-      }
+      final summary = await ratingService.getVendorRatings(widget.vendor.id);
+      setState(() {
+        _summary = summary;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -67,17 +48,10 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       );
     }
 
-    if (_vendor == null) {
-      return const GlassScaffold(
-        appBar: GlassAppBar(title: Text('Store Reviews')),
-        body: Center(child: Text('Vendor profile not setup.')),
-      );
-    }
-
     if (_summary == null || _summary!.ratings.isEmpty) {
       return const GlassScaffold(
         appBar: GlassAppBar(title: Text('Store Reviews')),
-        body: Center(child: Text('No reviews yet. Keep up the good work!')),
+        body: Center(child: Text('No reviews yet. Be the first to order!')),
       );
     }
 
@@ -85,7 +59,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     final paginatedRatings = _summary!.ratings.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
 
     return GlassScaffold(
-      appBar: const GlassAppBar(title: Text('Store Reviews')),
+      appBar: GlassAppBar(title: Text('${widget.vendor.name} Reviews')),
       body: Column(
         children: [
           Padding(

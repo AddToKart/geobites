@@ -34,11 +34,7 @@ class _RiderProofOfDeliveryScreenState extends State<RiderProofOfDeliveryScreen>
   Future<void> _submitDelivery() async {
     setState(() => _isSubmitting = true);
     try {
-      if (widget.order.id.startsWith('mock-')) {
-        await Future.delayed(const Duration(seconds: 1));
-      } else {
-        await orderService.updateOrderStatus(widget.order.id, 'delivered');
-      }
+      await orderService.updateOrderStatus(widget.order.id, 'delivered');
       if (mounted) {
         // Show beautiful success dialog
         showDialog(

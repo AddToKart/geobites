@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/menu_item.dart';
 import '../../models/vendor.dart';
 import '../../services/menu_service.dart';
+import '../../widgets/pagination_controls.dart';
 import '../../services/vendor_service.dart';
 import '../../services/order_service.dart';
 import '../../providers/auth_provider.dart';
@@ -21,6 +22,8 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
   List<MenuItem> _menuItems = [];
   Vendor? _vendor;
   bool _isLoading = true;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 6;
   
   // Cart state: mapping of menuItemId to quantity
   final Map<String, int> _cart = {};
@@ -202,58 +205,85 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                             flex: 3,
                             child: _menuItems.isEmpty
                                 ? const Center(child: Text('No available items.'))
-                                : GridView.builder(
-                                    padding: const EdgeInsets.all(16),
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: isDesktop ? 3 : 2,
-                                      childAspectRatio: 0.8,
-                                      crossAxisSpacing: 16,
-                                      mainAxisSpacing: 16,
-                                    ),
-                                    itemCount: _menuItems.length,
-                                    itemBuilder: (context, index) {
-                                      final item = _menuItems[index];
-                                      final quantity = _cart[item.id] ?? 0;
-                                      return GestureDetector(
-                                        onTap: () => _addToCart(item),
-                                        child: NeumorphicCard(
-                                          padding: EdgeInsets.zero,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                                            children: [
-                                              Expanded(
-                                                child: ClipRRect(
-                                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                                                  child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                                                      ? Image.network(item.imageUrl!, fit: BoxFit.cover)
-                                                      : Container(color: Colors.grey.withValues(alpha: 0.2), child: const Icon(Icons.fastfood, size: 40)),
-                                                ),
+                                : Builder(
+                                    builder: (context) {
+                                      final int totalPages = (_menuItems.length / _itemsPerPage).ceil();
+                                      final paginatedItems = _menuItems.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+
+                                      return Column(
+                                        children: [
+                                          Expanded(
+                                            child: GridView.builder(
+                                              padding: const EdgeInsets.all(16),
+                                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                                crossAxisCount: isDesktop ? 3 : 2,
+                                                childAspectRatio: 0.8,
+                                                crossAxisSpacing: 16,
+                                                mainAxisSpacing: 16,
                                               ),
-                                              Padding(
-                                                padding: const EdgeInsets.all(12.0),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                                    const SizedBox(height: 4),
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              itemCount: paginatedItems.length,
+                                              itemBuilder: (context, index) {
+                                                final item = paginatedItems[index];
+                                                final quantity = _cart[item.id] ?? 0;
+                                                return GestureDetector(
+                                                  onTap: () => _addToCart(item),
+                                                  child: NeumorphicCard(
+                                                    padding: EdgeInsets.zero,
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.stretch,
                                                       children: [
-                                                        Text('₱${item.price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                                                        if (quantity > 0)
-                                                          Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
-                                                            child: Text('x$quantity', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                                        Expanded(
+                                                          child: ClipRRect(
+                                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                                            child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                                                                ? Image.network(
+                                                                    item.imageUrl!,
+                                                                    fit: BoxFit.cover,
+                                                                    errorBuilder: (context, error, stackTrace) => Container(
+                                                                      color: Colors.grey.withValues(alpha: 0.2),
+                                                                      child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                                                    ),
+                                                                  )
+                                                                : Container(color: Colors.grey.withValues(alpha: 0.2), child: const Icon(Icons.fastfood, size: 40)),
                                                           ),
+                                                        ),
+                                                        Padding(
+                                                          padding: const EdgeInsets.all(12.0),
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            children: [
+                                                              Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                              const SizedBox(height: 4),
+                                                              Row(
+                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                children: [
+                                                                  Text('₱${item.price.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                                                                  if (quantity > 0)
+                                                                    Container(
+                                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
+                                                                      child: Text('x$quantity', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                                                    ),
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
                                                       ],
                                                     ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ),
-                                        ),
+                                          if (totalPages > 1)
+                                            PaginationControls(
+                                              currentPage: _currentPage,
+                                              totalPages: totalPages,
+                                              bottomPadding: 16.0,
+                                              onPageChanged: (page) => setState(() => _currentPage = page),
+                                            ),
+                                        ],
                                       );
                                     },
                                   ),

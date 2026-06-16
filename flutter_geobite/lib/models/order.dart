@@ -1,5 +1,6 @@
 import 'user.dart';
 import 'vendor.dart';
+import 'dart:convert';
 
 class OrderItem {
   final String id;
@@ -110,6 +111,58 @@ class Order {
           : [],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
+    );
+  }
+
+  // --- SQLite Serialization ---
+  Map<String, dynamic> toSqlMap() {
+    return {
+      'id': id,
+      'customerId': customerId,
+      'vendorId': vendorId,
+      'riderId': riderId,
+      'status': status,
+      'totalAmount': totalAmount,
+      'deliveryAddress': deliveryAddress,
+      'deliveryLat': deliveryLat,
+      'deliveryLng': deliveryLng,
+      'paymentMethod': paymentMethod,
+      'notes': notes,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+      'vendorJson': vendor != null ? jsonEncode(vendor!.toJson()) : null,
+      'itemsJson': jsonEncode(items.map((i) => i.toJson()).toList()),
+    };
+  }
+
+  factory Order.fromSqlMap(Map<String, dynamic> map) {
+    Vendor? vendor;
+    if (map['vendorJson'] != null && map['vendorJson'].toString().isNotEmpty) {
+      vendor = Vendor.fromJson(jsonDecode(map['vendorJson']));
+    }
+
+    List<OrderItem> items = [];
+    if (map['itemsJson'] != null && map['itemsJson'].toString().isNotEmpty) {
+      final List decodedList = jsonDecode(map['itemsJson']);
+      items = decodedList.map((i) => OrderItem.fromJson(i)).toList();
+    }
+
+    return Order(
+      id: map['id'],
+      customerId: map['customerId'],
+      vendorId: map['vendorId'],
+      riderId: map['riderId'],
+      status: map['status'],
+      totalAmount: (map['totalAmount'] as num).toDouble(),
+      deliveryAddress: map['deliveryAddress'] ?? 'No address',
+      deliveryLat: map['deliveryLat'] != null ? (map['deliveryLat'] as num).toDouble() : null,
+      deliveryLng: map['deliveryLng'] != null ? (map['deliveryLng'] as num).toDouble() : null,
+      paymentMethod: map['paymentMethod'],
+      notes: map['notes'],
+      createdAt: map['createdAt'] ?? '',
+      updatedAt: map['updatedAt'] ?? '',
+      vendor: vendor,
+      items: items,
     );
   }
 

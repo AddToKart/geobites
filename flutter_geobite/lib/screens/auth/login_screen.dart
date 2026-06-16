@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
 import '../../theme/glass_theme.dart';
+import '../../widgets/glass_toast.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,26 +15,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  String? _error;
-
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Please enter both email and password');
+      GlassToast.info(context, 'Please enter both email and password');
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _error = null;
     });
 
     try {
       await Provider.of<AuthProvider>(context, listen: false).signIn(email, password);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceAll('Exception: ', ''));
+      if (mounted) GlassToast.error(context, e.toString().replaceAll('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -146,14 +144,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         obscureText: true,
                       ),
-                      if (_error != null) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
                       const SizedBox(height: 32),
                       Container(
                         decoration: BoxDecoration(
@@ -181,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pushReplacement(
+                          Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => RegisterScreen()),
                           );
                         },

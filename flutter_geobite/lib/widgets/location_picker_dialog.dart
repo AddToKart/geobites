@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:mapcn_flutter/mapcn_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../theme/glass_theme.dart';
 
 class LocationPickerDialog extends StatefulWidget {
@@ -13,7 +14,6 @@ class LocationPickerDialog extends StatefulWidget {
 
 class _LocationPickerDialogState extends State<LocationPickerDialog> {
   late LatLng _currentLocation;
-  GoogleMapController? _mapController;
 
   @override
   void initState() {
@@ -27,13 +27,21 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: CameraPosition(target: _currentLocation, zoom: 16),
-            onMapCreated: (controller) => _mapController = controller,
-            onCameraMove: (position) => _currentLocation = position.target,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
+          Mapcn(
+            initialCenter: _currentLocation,
+            initialZoom: 16,
+            style: Theme.of(context).brightness == Brightness.dark 
+                ? MapcnStyle.midnight 
+                : MapcnStyle.normal,
+            accentColor: AppColors.primary,
+            interactive: true,
+            onPositionChanged: (position) {
+              if (position.center != null) {
+                setState(() {
+                  _currentLocation = position.center!;
+                });
+              }
+            },
           ),
           // Center Marker
           const Center(

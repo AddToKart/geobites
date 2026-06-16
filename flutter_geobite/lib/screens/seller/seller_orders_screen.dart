@@ -5,6 +5,8 @@ import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../../widgets/receipt_widget.dart';
 import '../../widgets/glass_toast.dart';
+import '../../widgets/animated_tap_card.dart';
+import '../../widgets/pagination_controls.dart';
 
 class SellerOrdersScreen extends StatefulWidget {
   const SellerOrdersScreen({Key? key}) : super(key: key);
@@ -171,32 +173,12 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                   },
                 ),
               ),
-                        if (totalPages > 1)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-                                  icon: const Icon(Icons.chevron_left),
-                                  label: const Text('Previous'),
-                                ),
-                                Text('Page ${_currentPage + 1} of $totalPages', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                TextButton(
-                                  onPressed: _currentPage < totalPages - 1 ? () => setState(() => _currentPage++) : null,
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [Text('Next'), Icon(Icons.chevron_right)],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+            ),
+                        PaginationControls(
+                          currentPage: _currentPage,
+                          totalPages: totalPages,
+                          onPageChanged: (page) => setState(() => _currentPage = page),
+                        ),
                       ],
                     );
                   },

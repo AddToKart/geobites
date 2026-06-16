@@ -30,15 +30,15 @@ export class SessionGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<RequestWithSession>();
     const cookieHeader = request.headers.cookie;
 
+    const authHeader = request.headers.authorization;
+    
+    const headers = new Headers();
+    if (cookieHeader) headers.append('cookie', cookieHeader);
+    if (authHeader) headers.append('authorization', authHeader);
+
     try {
       const response = await auth.api.getSession({
-        headers: new Headers(
-          cookieHeader
-            ? {
-                cookie: cookieHeader,
-              }
-            : undefined,
-        ),
+        headers: headers,
       });
 
       const currentSession = response?.session;
