@@ -66,14 +66,14 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
       elevation: 0,
       insetPadding: const EdgeInsets.all(24),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(kSharpRadius),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.5),
               boxShadow: [
                 BoxShadow(
@@ -127,12 +127,12 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                   const SizedBox(height: 16),
                   InkWell(
                     onTap: _pickImage,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                     child: Container(
                       height: 120,
                       decoration: BoxDecoration(
                         color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(kSharpRadius),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                         image: _selectedFile != null
                             ? (kIsWeb && _selectedFile!.bytes != null
@@ -164,8 +164,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                           ),
                           child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.bold)),
                         ),
@@ -175,6 +174,39 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                         child: FilledButton(
                           onPressed: _isSubmitting ? null : () async {
                             if (_formKey.currentState!.validate()) {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
+                                  title: Text(
+                                    widget.initialItem == null ? 'Add New Item' : 'Confirm Changes',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  content: Text(
+                                    widget.initialItem == null
+                                        ? 'Are you sure you want to add this new menu item?'
+                                        : 'Are you sure you want to save changes to this menu item?'
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('Discard', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
+                                      ),
+                                      child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm != true) return;
+
                               setState(() => _isSubmitting = true);
                               try {
                                 String? finalImageUrl = _existingImageUrl;
@@ -202,7 +234,7 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                           ),
                           child: _isSubmitting 
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -247,19 +279,19 @@ class _GlassMenuDialogState extends State<GlassMenuDialog> {
         filled: true,
         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kSharpRadius),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kSharpRadius),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kSharpRadius),
           borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.5), width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kSharpRadius),
           borderSide: BorderSide(color: Colors.red.withValues(alpha: 0.5), width: 2),
         ),
       ),

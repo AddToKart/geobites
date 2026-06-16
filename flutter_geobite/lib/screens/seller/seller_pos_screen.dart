@@ -20,6 +20,9 @@ class SellerPosScreen extends StatefulWidget {
 
 class _SellerPosScreenState extends State<SellerPosScreen> {
   List<MenuItem> _menuItems = [];
+  List<String> _categories = [];
+  String? _selectedCategory;
+
   Vendor? _vendor;
   bool _isLoading = true;
   int _currentPage = 0;
@@ -45,6 +48,10 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
       final items = await menuService.getVendorMenu(myVendor.id);
       setState(() {
         _menuItems = items.where((item) => item.isAvailable).toList();
+       // Extract distinct categories for filtering
+       _categories = _menuItems.map((i) => i.category ?? 'Other').toSet().toList();
+       _selectedCategory = null;
+
         _isLoading = false;
       });
     } catch (e) {
@@ -98,7 +105,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
         title: const Text('Process Walk-in Order'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -112,7 +119,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.primary),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(kSharpRadius),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -207,11 +214,36 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                                 ? const Center(child: Text('No available items.'))
                                 : Builder(
                                     builder: (context) {
-                                      final int totalPages = (_menuItems.length / _itemsPerPage).ceil();
-                                      final paginatedItems = _menuItems.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+                                       // Apply category filter if selected
+                                       final filteredItems = _selectedCategory == null
+                                           ? _menuItems
+                                           : _menuItems.where((i) => (i.category ?? 'Other') == _selectedCategory).toList();
+                                       final int totalPages = (filteredItems.length / _itemsPerPage).ceil();
+                                       final paginatedItems = filteredItems.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
 
                                       return Column(
                                         children: [
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                                            child: Row(
+                                              children: [
+                                                FilterChip(
+                                                  label: const Text('All'),
+                                                  selected: _selectedCategory == null,
+                                                  onSelected: (val) => setState(() { _selectedCategory = null; _currentPage = 0; }),
+                                                ),
+                                                ..._categories.map((cat) => Padding(
+                                                  padding: const EdgeInsets.only(left: 8),
+                                                  child: FilterChip(
+                                                    label: Text(cat),
+                                                    selected: _selectedCategory == cat,
+                                                    onSelected: (val) => setState(() { _selectedCategory = cat; _currentPage = 0; }),
+                                                  ),
+                                                )),
+                                              ],
+                                            ),
+                                          ),
                                           Expanded(
                                             child: GridView.builder(
                                               padding: const EdgeInsets.all(16),
@@ -234,7 +266,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                                                       children: [
                                                         Expanded(
                                                           child: ClipRRect(
-                                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                                                            borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                                                             child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
                                                                 ? Image.network(
                                                                     item.imageUrl!,
@@ -363,7 +395,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                                             onPressed: _cart.isEmpty ? null : _processCheckout,
                                             style: FilledButton.styleFrom(
                                               backgroundColor: AppColors.primary,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                                             ),
                                             child: Text('Charge (${_cartItemCount} items)', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                                           ),
@@ -428,7 +460,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
           builder: (context, setDialogState) {
             return Dialog(
               backgroundColor: Theme.of(context).colorScheme.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
               insetPadding: const EdgeInsets.all(16),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -473,7 +505,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                                   Container(
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(kSharpRadius),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -522,7 +554,7 @@ class _SellerPosScreenState extends State<SellerPosScreen> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                       ),
                       child: const Text('PROCEED TO CHECKOUT', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.2)),
                     )

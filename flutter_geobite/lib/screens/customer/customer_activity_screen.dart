@@ -93,7 +93,7 @@ class _CustomerActivityScreenState extends State<CustomerActivityScreen> {
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                                 decoration: BoxDecoration(
                                                   color: isActive ? AppColors.primary.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.2),
-                                                  borderRadius: BorderRadius.circular(12),
+                                                  borderRadius: BorderRadius.circular(kSharpRadius),
                                                 ),
                                                 child: Text(
                                                   order.status.toUpperCase(),

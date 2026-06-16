@@ -158,8 +158,8 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.1),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.person)),
                       ),
                     ),
@@ -174,7 +174,7 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         height: 150,
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                           image: _selectedCoverFile != null
                               ? (kIsWeb && _selectedCoverFile!.bytes != null 
@@ -207,9 +207,9 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.storefront)),
                       ),
                     ),
@@ -222,9 +222,9 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.location_on)),
                       ),
                     ),
@@ -252,7 +252,7 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                         ),
                         child: Row(
@@ -276,7 +276,7 @@ class _SellerShopScreenState extends State<SellerShopScreen> {
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                       ),
                       child: _isSaving 
                           ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

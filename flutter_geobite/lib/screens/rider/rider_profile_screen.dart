@@ -136,7 +136,7 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(kSharpRadius),
                       ),
                       child: const Text('Top Rated Rider', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                     ),
@@ -235,9 +235,11 @@ class _RiderProfileScreenState extends State<RiderProfileScreen> {
                 icon: const Icon(Icons.logout, color: Colors.red),
                 label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: Colors.red,
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  side: BorderSide.none,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                 ),
                 onPressed: () async {
                   await auth.signOut();

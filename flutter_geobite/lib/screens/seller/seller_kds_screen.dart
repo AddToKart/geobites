@@ -61,9 +61,13 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
     }
   }
 
-  Future<void> _updateStatus(String orderId, String newStatus) async {
+  Future<void> _updateStatus(Order order, String newStatus) async {
     try {
-      await orderService.updateOrderStatus(orderId, newStatus);
+      if (newStatus == 'preparing' && order.status == 'pending') {
+        // Sequence: first accept to trigger proper notifications/rider alerts, then prepare
+        await orderService.updateOrderStatus(order.id, 'accepted');
+      }
+      await orderService.updateOrderStatus(order.id, newStatus);
       _loadOrders(silent: true);
       if (mounted) GlassToast.success(context, 'Order updated to $newStatus');
     } catch (e) {
@@ -111,7 +115,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kSharpRadius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -161,7 +165,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(kSharpRadius),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2)),
         ],
@@ -194,7 +198,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: Colors.blue),
-                onPressed: () => _updateStatus(order.id, 'preparing'),
+                onPressed: () => _updateStatus(order, 'preparing'),
                 child: const Text('Start Cooking'),
               ),
             )
@@ -203,7 +207,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
               width: double.infinity,
               child: FilledButton(
                 style: FilledButton.styleFrom(backgroundColor: Colors.green),
-                onPressed: () => _updateStatus(order.id, 'ready_for_pickup'),
+                onPressed: () => _updateStatus(order, 'ready_for_pickup'),
                 child: const Text('Mark Ready'),
               ),
             )
@@ -213,7 +217,7 @@ class _SellerKdsScreenState extends State<SellerKdsScreen> {
               child: (order.orderType == 'PICKUP' || order.notes == 'POS Walk-in Order' || order.deliveryAddress == 'No address provided')
                   ? FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: Colors.green),
-                      onPressed: () => _updateStatus(order.id, 'delivered'),
+                      onPressed: () => _updateStatus(order, 'delivered'),
                       child: const Text('Complete Pickup'),
                     )
                   : OutlinedButton(

@@ -85,7 +85,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                     color: Theme.of(context).brightness == Brightness.dark 
                         ? const Color(0xFF1A1A1A) 
                         : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                   ),
                   child: Column(
                     children: [
@@ -122,7 +122,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                           color: Theme.of(context).brightness == Brightness.dark 
                               ? const Color(0xFF1A1A1A) 
                               : Colors.white.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +144,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                           color: Theme.of(context).brightness == Brightness.dark 
                               ? const Color(0xFF1A1A1A) 
                               : Colors.white.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,7 +170,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                     color: Theme.of(context).brightness == Brightness.dark 
                         ? const Color(0xFF1A1A1A) 
                         : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                   ),
                   child: Column(
                     children: [
@@ -192,7 +192,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                     color: Theme.of(context).brightness == Brightness.dark 
                         ? const Color(0xFF1A1A1A) 
                         : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                   ),
                   child: Column(
                     children: [
@@ -214,7 +214,7 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                     color: Theme.of(context).brightness == Brightness.dark 
                         ? const Color(0xFF1A1A1A) 
                         : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                   ),
                   child: Column(
                     children: [
@@ -250,8 +250,9 @@ class _SellerMoreScreenState extends State<SellerMoreScreen> {
                   label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: const BorderSide(color: Colors.red, width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor: Colors.red.withValues(alpha: 0.15),
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                   ),
                 ),
                 const SizedBox(height: 100), // padding for bottom nav

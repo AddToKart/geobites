@@ -13,8 +13,10 @@ import 'vendor_detail_screen.dart';
 import 'customer_profile_screen.dart';
 import 'cart_screen.dart';
 import '../../widgets/pagination_controls.dart';
+import 'notification_detail_screen.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/glass_toast.dart';
+import '../../widgets/locate_me_button.dart';
 
 const int _kPageSize = 12;
 
@@ -35,6 +37,8 @@ class _BrowseScreenState extends State<BrowseScreen> {
   String _searchQuery = '';
   String _selectedCategory = 'ALL';
   String _viewMode = 'LIST'; // 'GRID', 'LIST', 'MAP'
+
+  MapcnController? _mapController;
 
   double? _currentTemperature;
   String _currentGreeting = 'DAY';
@@ -176,12 +180,16 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           .withValues(alpha: 0.6))),
               Row(
                 children: [
-                  Text(
-                    user?.address ?? 'Current Location',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface),
+                  Flexible(
+                    child: Text(
+                      user?.address ?? 'Current Location',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.keyboard_arrow_down,
@@ -215,7 +223,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface, size: 24),
                     padding: EdgeInsets.zero,
                     offset: const Offset(0, 40),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                     color: Theme.of(context).colorScheme.surface,
                     onSelected: (value) {
                       if (value == 'read_all') {
@@ -225,7 +233,17 @@ class _BrowseScreenState extends State<BrowseScreen> {
                         notificationProvider.clearLocal();
                         GlassToast.info(context, 'Notifications cleared');
                       } else {
+                        // Find the notification data
+                        final notif = notificationProvider.notifications.firstWhere((n) => n['id'] == value, orElse: () => {});
                         notificationProvider.markAsRead(value);
+                        if (notif != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => NotificationDetailScreen(notification: notif),
+                            ),
+                          );
+                        }
                       }
                     },
                     itemBuilder: (BuildContext context) {
@@ -598,7 +616,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                   child: Container(
                     height: 400,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
                       border: Border.all(
                           color: Theme.of(context)
                               .colorScheme
@@ -606,26 +624,38 @@ class _BrowseScreenState extends State<BrowseScreen> {
                               .withOpacity(0.1)),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Mapcn(
-                        initialCenter:
-                            const LatLng(14.8214, 120.9565),
-                        initialZoom: 14,
-                        style: Theme.of(context).brightness ==
-                                Brightness.dark
-                            ? MapcnStyle.midnight
-                            : MapcnStyle.normal,
-                        accentColor: AppColors.primary,
-                        markerConfig: const MarkerConfig(
-                          style: MarkerStyle.pulse,
-                          pulseRadius: 35,
-                          glowIntensity: 0.8,
-                          showShadow: true,
-                          coreRadius: 8,
-                        ),
-                        points: filtered
-                            .map((v) => LatLng(v.latitude, v.longitude))
-                            .toList(),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
+                      child: Stack(
+                        children: [
+                          Mapcn(
+                            controller: _mapController,
+                            initialCenter:
+                                const LatLng(14.8214, 120.9565),
+                            initialZoom: 14,
+                            style: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? MapcnStyle.midnight
+                                : MapcnStyle.normal,
+                            accentColor: AppColors.primary,
+                            markerConfig: const MarkerConfig(
+                              style: MarkerStyle.pulse,
+                              pulseRadius: 35,
+                              glowIntensity: 0.8,
+                              showShadow: true,
+                              coreRadius: 8,
+                            ),
+                            points: filtered
+                                .map((v) => LatLng(v.latitude, v.longitude))
+                                .toList(),
+                          ),
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: LocateMeButton(
+                              mapController: _mapController,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -79,7 +79,9 @@ describe('OrdersService', () => {
     options: {
       type: 'postgres',
     },
-    query: jest.fn().mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
+    query: jest
+      .fn()
+      .mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
     transaction: jest.fn(async (callback: (manager: unknown) => unknown) =>
       callback({
         getRepository: (entity: unknown) => {

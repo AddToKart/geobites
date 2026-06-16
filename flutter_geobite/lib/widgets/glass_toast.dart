@@ -16,14 +16,14 @@ class GlassToast {
         margin: const EdgeInsets.all(16),
         duration: const Duration(seconds: 3),
         content: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(kSharpRadius),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1A1A1A).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(kSharpRadius),
                 border: Border.all(color: themeColor.withValues(alpha: 0.5), width: 1),
                 boxShadow: [
                   BoxShadow(

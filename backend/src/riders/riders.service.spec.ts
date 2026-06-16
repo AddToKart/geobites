@@ -20,7 +20,9 @@ describe('RidersService', () => {
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
-    getRawOne: jest.fn().mockResolvedValue({ totalRatings: '0', averageScore: null }),
+    getRawOne: jest
+      .fn()
+      .mockResolvedValue({ totalRatings: '0', averageScore: null }),
   };
   const notificationsService = {
     create: jest.fn(),
@@ -29,7 +31,9 @@ describe('RidersService', () => {
     options: {
       type: 'postgres',
     },
-    query: jest.fn().mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
+    query: jest
+      .fn()
+      .mockResolvedValue([{ name: 'Test User', phone: '123456' }]),
   };
 
   beforeEach(async () => {

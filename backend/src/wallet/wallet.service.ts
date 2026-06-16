@@ -9,6 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Wallet } from '../entities/wallet.entity';
 import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { WithdrawalRequest } from '../entities/withdrawal-request.entity';
+import { Order } from '../entities/order.entity';
 
 @Injectable()
 export class WalletService {
@@ -518,6 +519,142 @@ export class WalletService {
     return this.withdrawalRepository.find({
       where: { vendorId: customerId },
       order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Processes the payout splits on delivery completion:
+   * Credits the rider with the delivery fee (for online payment orders).
+   * Credits the vendor with the subtotal (for online payment orders).
+   */
+  async handleOrderDeliveryPayout(orderId: string): Promise<void> {
+    return await this.dataSource.transaction(async (manager) => {
+      const orderRepo = manager.getRepository(Order);
+      const walletRepo = manager.getRepository(Wallet);
+      const transactionRepo = manager.getRepository(WalletTransaction);
+
+      const order = await orderRepo.findOne({
+        where: { id: orderId },
+        relations: { vendor: true },
+      });
+
+      if (!order || order.status !== 'delivered') {
+        return;
+      }
+
+      this.logger.log(
+        `Processing order delivery payout for order ${order.id} (Total: ₱${order.totalAmount}, Delivery Fee: ₱${order.deliveryFee}, Payment Method: ${order.paymentMethod})`,
+      );
+
+      // 1. Pay the Rider their Delivery Fee (if a rider is assigned and it's a delivery order)
+      if (
+        order.orderType === 'DELIVERY' &&
+        order.riderId &&
+        Number(order.deliveryFee) > 0
+      ) {
+        let riderWallet = await walletRepo.findOne({
+          where: { customerId: order.riderId },
+        });
+
+        if (!riderWallet) {
+          riderWallet = walletRepo.create({
+            customerId: order.riderId,
+            balance: 0.0,
+          });
+          riderWallet = await walletRepo.save(riderWallet);
+        }
+
+        // We only pay the rider digitally if the payment was online (not COD)
+        if (order.paymentMethod !== 'COD') {
+          // If it was GEOPAY, the vendor was credited totalAmount upfront, so we deduct deliveryFee from vendor
+          if (order.paymentMethod === 'GEOPAY' && order.vendor) {
+            const vendorWallet = await walletRepo.findOne({
+              where: { vendorId: order.vendor.id },
+            });
+            if (vendorWallet) {
+              vendorWallet.balance = Math.max(
+                0,
+                Number(vendorWallet.balance) - Number(order.deliveryFee),
+              );
+              await walletRepo.save(vendorWallet);
+
+              // Record transaction for vendor deduction
+              const vendorTxn = transactionRepo.create({
+                walletId: vendorWallet.id,
+                amount: -Number(order.deliveryFee),
+                type: 'withdrawal',
+                status: 'success',
+                referenceId: order.id,
+                paymentMethod: 'GEOPAY',
+              });
+              await transactionRepo.save(vendorTxn);
+              this.logger.log(
+                `Deducted ₱${order.deliveryFee} delivery fee from vendor ${order.vendor.id} wallet for GEOPAY order`,
+              );
+            }
+          }
+
+          // Credit the rider's wallet
+          riderWallet.balance =
+            Number(riderWallet.balance) + Number(order.deliveryFee);
+          await walletRepo.save(riderWallet);
+
+          // Record rider credit transaction
+          const riderTxn = transactionRepo.create({
+            walletId: riderWallet.id,
+            amount: Number(order.deliveryFee),
+            type: 'cash_in',
+            status: 'success',
+            referenceId: order.id,
+            paymentMethod: order.paymentMethod,
+          });
+          await transactionRepo.save(riderTxn);
+          this.logger.log(
+            `Credited ₱${order.deliveryFee} delivery fee to rider ${order.riderId} wallet`,
+          );
+        }
+      }
+
+      // 2. Pay the Vendor their Subtotal if payment was GCASH, MAYA, or QRPH
+      // (For GEOPAY, the vendor was already credited totalAmount upfront, which we just adjusted above)
+      if (
+        (order.paymentMethod === 'GCASH' ||
+          order.paymentMethod === 'MAYA' ||
+          order.paymentMethod === 'QRPH') &&
+        order.vendor
+      ) {
+        let vendorWallet = await walletRepo.findOne({
+          where: { vendorId: order.vendor.id },
+        });
+
+        if (!vendorWallet) {
+          vendorWallet = walletRepo.create({
+            vendorId: order.vendor.id,
+            balance: 0.0,
+          });
+          vendorWallet = await walletRepo.save(vendorWallet);
+        }
+
+        const vendorShare =
+          Number(order.totalAmount) - Number(order.deliveryFee);
+        if (vendorShare > 0) {
+          vendorWallet.balance = Number(vendorWallet.balance) + vendorShare;
+          await walletRepo.save(vendorWallet);
+
+          const vendorTxn = transactionRepo.create({
+            walletId: vendorWallet.id,
+            amount: vendorShare,
+            type: 'vendor_credit',
+            status: 'success',
+            referenceId: order.id,
+            paymentMethod: order.paymentMethod,
+          });
+          await transactionRepo.save(vendorTxn);
+          this.logger.log(
+            `Credited ₱${vendorShare} vendor share to vendor ${order.vendor.id} wallet for ${order.paymentMethod} order`,
+          );
+        }
+      }
     });
   }
 }

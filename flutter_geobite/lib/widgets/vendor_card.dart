@@ -24,8 +24,8 @@ class VendorCard extends StatelessWidget {
                 aspectRatio: 16 / 9,
                 child: Container(
                   decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  color: AppColors.lightCard,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                   image: DecorationImage(
                     image: NetworkImage(
                       (vendor.imageUrl != null && vendor.imageUrl!.isNotEmpty)
@@ -61,7 +61,7 @@ class VendorCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                         ),
                         child: Row(

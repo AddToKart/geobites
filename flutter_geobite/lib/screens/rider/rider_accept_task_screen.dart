@@ -123,7 +123,7 @@ class _RiderAcceptTaskScreenState extends State<RiderAcceptTaskScreen> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, -5)),
                 ],
@@ -164,7 +164,8 @@ class _RiderAcceptTaskScreenState extends State<RiderAcceptTaskScreen> {
                             onPressed: _isAccepting ? null : () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.red,
-                              side: const BorderSide(color: Colors.red),
+                              backgroundColor: Colors.red.withValues(alpha: 0.15),
+                              side: BorderSide.none,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
                             child: const Text('DECLINE'),
@@ -201,7 +202,7 @@ class _RiderAcceptTaskScreenState extends State<RiderAcceptTaskScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(kSharpRadius)),
           child: Icon(icon, color: AppColors.primary),
         ),
         const SizedBox(width: 16),

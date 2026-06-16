@@ -105,7 +105,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface.withOpacity(0.95), // Slightly transparent for glass effect
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
                       border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05)),
                       boxShadow: [
                         BoxShadow(
@@ -117,7 +117,7 @@ class _CustomerMainScreenState extends State<CustomerMainScreen> {
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
                       child: BottomNavigationBar(
                         currentIndex: _currentIndex,
                         onTap: (index) => setState(() => _currentIndex = index),

@@ -150,7 +150,7 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(kSharpRadius),
                         border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05)),
                       ),
                       child: Row(
@@ -205,7 +205,7 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                                         icon: const Icon(Icons.notifications_none, size: 20),
                                         padding: EdgeInsets.zero,
                                         offset: const Offset(0, 40),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                                         color: Theme.of(context).colorScheme.surface,
                                         onSelected: (value) {
                                           if (value == 'read_all') {
@@ -442,7 +442,7 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           contentPadding: EdgeInsets.zero,
           leading: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(kSharpRadius)),
             child: const Icon(Icons.notifications_active, color: AppColors.primary),
           ),
           title: const Text('New Delivery Available', style: TextStyle(fontWeight: FontWeight.bold)),

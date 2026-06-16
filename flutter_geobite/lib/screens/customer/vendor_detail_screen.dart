@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../theme/glass_theme.dart';
 import '../../widgets/menu_item_card.dart';
 import '../../widgets/animated_tap_card.dart';
+import '../../widgets/pagination_controls.dart';
 import 'cart_screen.dart';
 import 'vendor_reviews_screen.dart';
 
@@ -22,6 +23,8 @@ class VendorDetailScreen extends StatefulWidget {
 class _VendorDetailScreenState extends State<VendorDetailScreen> {
   List<MenuItem> _menuItems = [];
   bool _isLoading = true;
+  int _currentPage = 0;
+  static const int _itemsPerPage = 5;
 
   @override
   void initState() {
@@ -45,6 +48,8 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
+    final int totalPages = (_menuItems.length / _itemsPerPage).ceil();
+    final paginatedItems = _menuItems.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
 
     return GlassScaffold(
       appBar: const GlassAppBar(),
@@ -145,13 +150,13 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
             const SliverFillRemaining(
               child: Center(child: Text('No menu items available.')),
             )
-          else
+          else ...[
             SliverPadding(
               padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final item = _menuItems[index];
+                    final item = paginatedItems[index];
                     final cartItem = cart.items.firstWhere(
                       (ci) => ci.menuItem.id == item.id,
                       orElse: () => CartItem(menuItem: item, quantity: 0),
@@ -166,10 +171,20 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                       ),
                     );
                   },
-                  childCount: _menuItems.length,
+                  childCount: paginatedItems.length,
                 ),
               ),
             ),
+            if (totalPages > 1)
+              SliverToBoxAdapter(
+                child: PaginationControls(
+                  currentPage: _currentPage,
+                  totalPages: totalPages,
+                  bottomPadding: 32,
+                  onPageChanged: (page) => setState(() => _currentPage = page),
+                ),
+              ),
+          ],
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -180,7 +195,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
               child: AnimatedTapCard(
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withOpacity(0.6),
@@ -197,7 +212,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -206,7 +221,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                         ),
                         child: Text('${cart.items.fold(0, (sum, i) => sum + i.quantity)}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),

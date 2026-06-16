@@ -111,7 +111,7 @@ class SellerAnalyticsScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: isHighlight ? AppColors.primaryGradient : null,
                   color: isHighlight ? null : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(kSharpRadius),
                   boxShadow: isHighlight 
                       ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4))] 
                       : null,
@@ -131,7 +131,7 @@ class SellerAnalyticsScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kSharpRadius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(

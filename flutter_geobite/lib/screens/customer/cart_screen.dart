@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mapcn_flutter/mapcn_flutter.dart';
@@ -13,6 +14,8 @@ import 'map_selection_screen.dart';
 import '../../widgets/glass_toast.dart';
 import '../../services/vendor_service.dart';
 import '../../models/vendor.dart';
+import '../../core/api_client.dart';
+import '../../services/wallet_service.dart';
 
 class CartScreen extends StatefulWidget {
   @override
@@ -30,12 +33,63 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   LatLng _deliveryLocation = const LatLng(14.8214, 120.9565); // Default to Santa Maria
   MapcnController? _mapController;
 
+  double? _walletBalance;
+  bool _isLoadingWallet = false;
+
+  // ── Delivery fee helpers ─────────────────────────────────────────────────
+  /// Haversine distance in km between two lat/lng points.
+  double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * pi / 180;
+    final dLng = (lng2 - lng1) * pi / 180;
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180) * cos(lat2 * pi / 180) *
+        sin(dLng / 2) * sin(dLng / 2);
+    return r * 2 * atan2(sqrt(a), sqrt(1 - a));
+  }
+
+  /// Mirrors the backend formula: ₱25 base + ₱8/km, capped at ₱120.
+  double get _estimatedDeliveryFee {
+    if (_orderType == 'PICKUP' || _vendor == null) return 0;
+    final distKm = _haversineKm(
+      _vendor!.latitude, _vendor!.longitude,
+      _deliveryLocation.latitude, _deliveryLocation.longitude,
+    );
+    const base = 25.0;
+    const ratePerKm = 8.0;
+    const maxFee = 120.0;
+    return (base + distKm * ratePerKm).clamp(base, maxFee);
+  }
+
   @override
   void initState() {
     super.initState();
     _mapController = MapcnController(vsync: this);
     _loadDefaultAddress();
     _fetchVendorDetails();
+    _loadWalletBalance();
+  }
+
+  Future<void> _loadWalletBalance() async {
+    setState(() {
+      _isLoadingWallet = true;
+    });
+    try {
+      final wallet = await walletService.getWallet();
+      if (mounted) {
+        setState(() {
+          _walletBalance = (wallet['balance'] as num?)?.toDouble() ?? 0.0;
+        });
+      }
+    } catch (e) {
+      print('Error loading wallet balance: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingWallet = false;
+        });
+      }
+    }
   }
 
   void _fetchVendorDetails() {
@@ -57,7 +111,41 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
   }
 
   void _loadDefaultAddress() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final response = await apiClient.dio.get('/addresses');
+        final List list = response.data is List ? response.data : [];
+        Map<String, dynamic>? defaultAddr;
+        for (var item in list) {
+          if (item is Map && item['isDefault'] == true) {
+            defaultAddr = Map<String, dynamic>.from(item);
+            break;
+          }
+        }
+
+        if (defaultAddr != null && mounted) {
+          final String? street = defaultAddr['street'];
+          final double? lat = (defaultAddr['deliveryLat'] as num?)?.toDouble();
+          final double? lng = (defaultAddr['deliveryLng'] as num?)?.toDouble();
+
+          if (street != null && street.isNotEmpty) {
+            _addressController.text = street;
+          }
+          if (lat != null && lng != null) {
+            setState(() {
+              _deliveryLocation = LatLng(lat, lng);
+              if (_mapController != null) {
+                _mapController!.flyTo(_deliveryLocation, zoom: 15);
+              }
+            });
+          }
+          return;
+        }
+      } catch (e) {
+        print('Error loading default saved address from API: $e');
+      }
+
+      if (!mounted) return;
       final user = Provider.of<AuthProvider>(context, listen: false).user;
       if (user != null) {
         if (user.defaultAddress != null) {
@@ -83,6 +171,18 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
     if (_orderType == 'DELIVERY' && address.isEmpty) {
       GlassToast.info(context, 'Delivery address is required');
       return;
+    }
+
+    if (_paymentMethod == 'GEOPAY') {
+      if (_walletBalance == null) {
+        GlassToast.error(context, 'Wallet balance not loaded yet. Please wait...');
+        _loadWalletBalance();
+        return;
+      }
+      if (_walletBalance! < cart.total) {
+        GlassToast.error(context, 'Insufficient GeoPay balance');
+        return;
+      }
     }
 
     setState(() {
@@ -189,13 +289,13 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                       onSelected: (val) {
                         if (val) setState(() => _orderType = 'DELIVERY');
                       },
-                      selectedColor: AppColors.primary.withValues(alpha: 0.1),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
                       labelStyle: TextStyle(
-                        color: _orderType == 'DELIVERY' ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: _orderType == 'DELIVERY' ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
                         fontWeight: _orderType == 'DELIVERY' ? FontWeight.bold : FontWeight.normal,
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.4),
-                      side: BorderSide(color: _orderType == 'DELIVERY' ? AppColors.primary.withValues(alpha: 0.5) : Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      side: BorderSide(color: _orderType == 'DELIVERY' ? AppColors.primary.withValues(alpha: 0.6) : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -206,13 +306,13 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                       onSelected: (val) {
                         if (val) setState(() => _orderType = 'PICKUP');
                       },
-                      selectedColor: AppColors.primary.withValues(alpha: 0.1),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
                       labelStyle: TextStyle(
-                        color: _orderType == 'PICKUP' ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: _orderType == 'PICKUP' ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
                         fontWeight: _orderType == 'PICKUP' ? FontWeight.bold : FontWeight.normal,
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.4),
-                      side: BorderSide(color: _orderType == 'PICKUP' ? AppColors.primary.withValues(alpha: 0.5) : Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      side: BorderSide(color: _orderType == 'PICKUP' ? AppColors.primary.withValues(alpha: 0.6) : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
                     ),
                   ),
                 ],
@@ -229,9 +329,21 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                           controller: _addressController,
                           decoration: InputDecoration(
                             labelText: 'Drop-off Address *',
+                            labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.6),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            fillColor: AppColors.primary.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -283,11 +395,11 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                           child: Container(
                             height: 180,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(kSharpRadius),
                               child: AbsorbPointer(
                                 child: Stack(
                                   alignment: Alignment.center,
@@ -318,9 +430,21 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                           controller: _notesController,
                           decoration: InputDecoration(
                             labelText: 'Notes for Rider',
+                            labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.6),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            fillColor: AppColors.primary.withValues(alpha: 0.05),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: BorderSide(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(kSharpRadius),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                            ),
                           ),
                           maxLines: 2,
                         ),
@@ -355,11 +479,11 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                         Container(
                           height: 180,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(kSharpRadius),
                             border: Border.all(color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(kSharpRadius),
                             child: AbsorbPointer(
                               child: Mapcn(
                                 initialCenter: LatLng(_vendor?.latitude ?? 14.8214, _vendor?.longitude ?? 120.9565),
@@ -396,38 +520,213 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                       onSelected: (val) {
                         if (val) setState(() => _paymentMethod = method);
                       },
-                      selectedColor: AppColors.primary.withValues(alpha: 0.1),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.15),
                       labelStyle: TextStyle(
-                        color: _paymentMethod == method ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: _paymentMethod == method ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
                         fontWeight: _paymentMethod == method ? FontWeight.bold : FontWeight.normal,
                       ),
-                      backgroundColor: Colors.white.withOpacity(0.4),
-                      side: BorderSide(color: _paymentMethod == method ? AppColors.primary.withValues(alpha: 0.5) : Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05)),
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      side: BorderSide(color: _paymentMethod == method ? AppColors.primary.withValues(alpha: 0.6) : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3)),
                     ),
                 ],
               ),
             ),
+            if (_paymentMethod == 'GEOPAY') ...[
+              const SizedBox(height: 12),
+              NeumorphicCard(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GeoPay Wallet'.toUpperCase(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_isLoadingWallet)
+                        const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                        )
+                      else if (_walletBalance != null) ...[
+                        Text(
+                          'Balance: ₱${_walletBalance!.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (_walletBalance! < cart.total)
+                          Text(
+                            'Insufficient funds. Top up ₱${(cart.total - _walletBalance!).toStringAsFixed(2)} to proceed.',
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else
+                          const Text(
+                            'Sufficient funds available.',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ] else
+                        const Text(
+                          'Could not load wallet balance.',
+                          style: TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
+            // ── Order Summary Breakdown ──────────────────────────────────────
             NeumorphicCard(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              child: Column(
                 children: [
-                  Text('Total Payout', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
-                  Text('₱${cart.total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                  // Subtotal row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Subtotal',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      Text(
+                        '₱${cart.total.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Delivery fee row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _orderType == 'PICKUP' ? 'Delivery Fee' : 'Delivery Fee (est.)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          if (_orderType == 'DELIVERY') ...[
+                            const SizedBox(width: 4),
+                            Tooltip(
+                              message: '₱25 base + ₱8/km (max ₱120)',
+                              child: Icon(
+                                Icons.info_outline,
+                                size: 13,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      _orderType == 'PICKUP'
+                          ? const Text(
+                              'FREE',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.green,
+                              ),
+                            )
+                          : Text(
+                              '₱${_estimatedDeliveryFee.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Divider(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    thickness: 1,
+                  ),
+                  const SizedBox(height: 10),
+                  // Grand total row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        '₱${(cart.total + _estimatedDeliveryFee).toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_orderType == 'DELIVERY') ...[  
+                    const SizedBox(height: 6),
+                    Text(
+                      'Final delivery fee confirmed at order acceptance',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: _isCheckingOut ? null : _handleCheckout,
+              onPressed: _isCheckingOut || (_paymentMethod == 'GEOPAY' && _walletBalance != null && _walletBalance! < cart.total)
+                  ? null
+                  : _handleCheckout,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
               ),
               child: _isCheckingOut
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Text('Confirm & Place Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  : Text(
+                      _paymentMethod == 'GEOPAY' && _walletBalance != null && _walletBalance! < cart.total
+                          ? 'Insufficient GeoPay Balance'
+                          : 'Confirm & Place Order',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
             ),
             const SizedBox(height: 120),
           ],

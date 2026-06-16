@@ -12,6 +12,7 @@ import 'rider_proof_of_delivery_screen.dart';
 import '../../widgets/glass_toast.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../services/socket_service.dart';
+import '../../widgets/locate_me_button.dart';
 
 class RiderDeliveryScreen extends StatefulWidget {
   final Order order;
@@ -281,7 +282,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(kSharpRadius),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 boxShadow: [
                   BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10),
@@ -310,7 +311,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(kSharpRadius),
                 boxShadow: [
                   BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4)),
                 ],
@@ -364,29 +365,41 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
             ),
           ),
 
-          // Map Style Toggles (Bottom Right - stays above card)
+          // HUD: Map Style Toggles (Bottom Right - stays above card)
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             bottom: _isCardMinimized ? 180 : 320,
             right: 16,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildSmallToggle(MapcnStyle.normal, Icons.map),
-                  const SizedBox(height: 4),
-                  _buildSmallToggle(MapcnStyle.silver, Icons.layers_clear),
-                  const SizedBox(height: 4),
-                  _buildSmallToggle(MapcnStyle.midnight, Icons.dark_mode),
-                ],
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Locate Me button
+                LocateMeButton(
+                  mapController: _mapController,
+                  zoom: 15,
+                ),
+                const SizedBox(height: 8),
+                // Map style toggles
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildSmallToggle(MapcnStyle.normal, Icons.map),
+                      const SizedBox(height: 4),
+                      _buildSmallToggle(MapcnStyle.silver, Icons.layers_clear),
+                      const SizedBox(height: 4),
+                      _buildSmallToggle(MapcnStyle.midnight, Icons.dark_mode),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -413,7 +426,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                   boxShadow: [
                     BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, -5)),
                   ],
@@ -439,7 +452,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
                         Text('Order #${widget.order.id.substring(0, 8).toUpperCase()}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(kSharpRadius)),
                           child: Text(_currentStatus.toUpperCase().replaceAll('_', ' '), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
                         ),
                       ],
@@ -543,7 +556,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> with TickerPr
       children: [
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(kSharpRadius)),
           child: Icon(icon, color: AppColors.primary),
         ),
         const SizedBox(width: 16),

@@ -158,7 +158,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface, size: 24),
                     padding: EdgeInsets.zero,
                     offset: const Offset(0, 40),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                     color: Theme.of(context).colorScheme.surface,
                     onSelected: (value) {
                       if (value == 'read_all') {
@@ -309,7 +309,22 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                     return DateTime.parse(o.createdAt).toLocal().day == DateTime.now().day;
                   } catch (e) { return false; }
                 }).toList();
-                final todayRevenue = todayOrders.fold<double>(0.0, (sum, order) => sum + order.totalAmount);
+                final todayRevenue = todayOrders.fold<double>(0.0, (sum, order) {
+                  final method = (order.paymentMethod ?? 'COD').toUpperCase();
+                  if (method == 'COD') {
+                    // COD only counts as revenue if delivered AND paid
+                    if (order.status == 'delivered' && order.paymentStatus == 'paid') {
+                      return sum + order.totalAmount;
+                    }
+                    return sum;
+                  } else {
+                    // Online payments count as revenue if the order is active/not rejected/not cancelled
+                    if (order.status != 'rejected' && order.status != 'cancelled') {
+                      return sum + order.totalAmount;
+                    }
+                    return sum;
+                  }
+                });
                 final activeOrders = _orders.where((o) => o.status == 'pending' || o.status == 'accepted' || o.status == 'preparing').length;
 
                 final int totalPages = (_orders.length / _itemsPerPage).ceil();
@@ -427,7 +442,10 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                                     Expanded(
                                       child: OutlinedButton(
                                         onPressed: () => _updateStatus(order.id, 'rejected'),
-                                        style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                          backgroundColor: Colors.red.withValues(alpha: 0.15),
+                                        ),
                                         child: const Text('Reject'),
                                       ),
                                     ),

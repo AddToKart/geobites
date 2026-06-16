@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/glass_toast.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-
 import '../../theme/glass_theme.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _phoneController = TextEditingController(text: '+63');
+  final _phoneController = TextEditingController(); // local digits only (9-10 digits)
   String _role = 'customer';
   bool _agreedToTerms = false;
   double _passwordStrength = 0.0;
@@ -58,20 +58,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    final phone = _phoneController.text.trim();
+    // Phone: combine +63 prefix with local number input
+    final localDigits = _phoneController.text.trim();
+    if (localDigits.isEmpty) {
+      GlassToast.info(context, 'Please enter your mobile number');
+      return;
+    }
+    if (localDigits.length < 9 || localDigits.length > 10) {
+      GlassToast.error(context, 'Mobile number must be 9–10 digits after +63 (e.g. 9171234567)');
+      return;
+    }
+    final phone = '+63$localDigits';
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty || phone.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       GlassToast.info(context, 'Please fill in all required fields');
-      return;
-    }
-
-    if (!phone.startsWith('+63')) {
-      GlassToast.error(context, 'Mobile number must start with +63');
-      return;
-    }
-
-    if (phone.length < 13) {
-      GlassToast.error(context, 'Mobile number must be a valid 10-digit number after +63 (e.g., +639171234567)');
       return;
     }
 
@@ -195,9 +195,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.person_outline)),
                       ),
                     ),
@@ -210,28 +210,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.email_outlined)),
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                      controller: _phoneController,
-                      style: TextStyle(color: theme.colorScheme.onSurface),
-                      decoration: InputDecoration(
-                        labelText: 'Mobile Number',
-                        labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                        filled: true,
-                        fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-                        prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.phone_outlined)),
-                      ),
-                      keyboardType: TextInputType.phone,
+                    // ── Phone number field with locked +63 prefix ────────────
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Locked +63 badge
+                        Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.white.withValues(alpha: 0.6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
+                            borderRadius: BorderRadius.circular(kSharpRadius),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🇵🇭', style: TextStyle(fontSize: 18)),
+                              const SizedBox(width: 6),
+                              Text(
+                                '+63',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Local digits input
+                        Expanded(
+                          child: TextField(
+                            controller: _phoneController,
+                            style: TextStyle(color: theme.colorScheme.onSurface),
+                            decoration: InputDecoration(
+                              labelText: 'Mobile Number',
+                              hintText: '9XX XXX XXXX',
+                              labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
+                              filled: true,
+                              fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                              counterText: '${_phoneController.text.length}/10',
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -242,9 +287,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
                         suffixIcon: Padding(
                           padding: const EdgeInsets.only(right: 8.0),
@@ -300,9 +345,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.lock_outline)),
                         suffixIcon: Padding(
                           padding: const EdgeInsets.only(right: 8.0),
@@ -331,9 +376,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelStyle: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                         filled: true,
                         fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.6),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                         prefixIcon: const Padding(padding: EdgeInsets.only(left: 16.0, right: 8.0), child: Icon(Icons.badge_outlined)),
                       ),
                       items: const [
@@ -385,7 +430,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 32),
                     Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(kSharpRadius),
                         boxShadow: [
                           BoxShadow(
                             color: AppColors.primary.withOpacity(0.3),
@@ -399,7 +444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                         ),
                         child: _isLoading
                             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

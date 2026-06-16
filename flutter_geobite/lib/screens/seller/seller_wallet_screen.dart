@@ -276,7 +276,7 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                       ),
                       child: const Text('Go to Shop Settings', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -570,7 +570,7 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
             height: 50,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1)),
             ),
             child: Stack(
@@ -585,7 +585,7 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: activeColor,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(kSharpRadius),
                         boxShadow: [
                           BoxShadow(
                             color: activeColor.withValues(alpha: 0.3),
@@ -659,9 +659,9 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
             prefixText: '₱ ',
             prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             hintText: '0.00',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               borderSide: const BorderSide(color: Colors.green, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -680,7 +680,8 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: Colors.green.shade600,
-                    side: BorderSide(color: Colors.green.shade600.withValues(alpha: 0.3)),
+                    backgroundColor: Colors.green.shade600.withValues(alpha: 0.15),
+                    side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('+$amt'),
@@ -720,7 +721,7 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
             onPressed: _isSubmittingCashIn ? null : _handleCashIn,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.green.shade600,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             ),
             child: _isSubmittingCashIn
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -743,9 +744,9 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
             prefixText: '₱ ',
             prefixStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             hintText: '0.00',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -764,7 +765,8 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     foregroundColor: Colors.red.shade600,
-                    side: BorderSide(color: Colors.red.shade600.withValues(alpha: 0.3)),
+                    backgroundColor: Colors.red.shade600.withValues(alpha: 0.15),
+                    side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   child: Text('+${amt.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'),
@@ -823,9 +825,9 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
           decoration: InputDecoration(
             labelText: 'ACCOUNT NAME',
             labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -838,9 +840,9 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
           decoration: InputDecoration(
             labelText: 'ACCOUNT NUMBER',
             labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(kSharpRadius),
               borderSide: const BorderSide(color: Colors.red, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -854,7 +856,7 @@ class _SellerWalletScreenState extends State<SellerWalletScreen> {
             onPressed: _isSubmittingWithdraw ? null : _handleWithdraw,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade600,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             ),
             child: _isSubmittingWithdraw
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

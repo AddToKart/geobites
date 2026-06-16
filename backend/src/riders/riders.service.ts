@@ -9,6 +9,7 @@ import { DataSource, IsNull, Repository } from 'typeorm';
 import { Order } from '../entities/order.entity';
 import { RiderRating } from '../entities/rider-rating.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { WalletService } from '../wallet/wallet.service';
 import { QueryRiderDeliveriesDto } from './dto/query-rider-deliveries.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
 
@@ -20,6 +21,7 @@ export class RidersService {
     @InjectRepository(RiderRating)
     private readonly riderRatingRepository: Repository<RiderRating>,
     private readonly notificationsService: NotificationsService,
+    private readonly walletService: WalletService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -150,8 +152,24 @@ export class RidersService {
       throw new BadRequestException('Invalid status transition');
     }
 
+    if (updateStatusDto.status === 'delivered') {
+      order.paymentStatus = 'paid';
+    }
     order.status = updateStatusDto.status;
     const updatedOrder = await this.orderRepository.save(order);
+
+    if (updateStatusDto.status === 'delivered') {
+      try {
+        await this.walletService.handleOrderDeliveryPayout(updatedOrder.id);
+      } catch (payoutError) {
+        // Log error but don't fail the order status update itself
+        console.error(
+          `Failed to process delivery payout for order ${updatedOrder.id}:`,
+          payoutError,
+        );
+      }
+    }
+
     await this.enrichOrderDetails(updatedOrder);
     await this.notifyDeliveryStatusUpdate(order, updateStatusDto.status);
     return updatedOrder;

@@ -94,7 +94,11 @@ export class WalletController {
   ) {
     const vendorId = await this.findVendorId(userId);
     if (!vendorId) return { needsSetup: true };
-    return this.walletService.initiateVendorCashIn(vendorId, amount, paymentMethod);
+    return this.walletService.initiateVendorCashIn(
+      vendorId,
+      amount,
+      paymentMethod,
+    );
   }
 
   @Post('vendor/withdraw')

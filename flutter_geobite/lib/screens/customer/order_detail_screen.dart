@@ -138,7 +138,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               height: 250,
               width: double.infinity,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(kSharpRadius),
                 child: Mapcn(
                   initialCenter: orderLocation ?? const LatLng(14.8214, 120.9565), // Default to Santa Maria
                   initialZoom: 15,
@@ -180,8 +180,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('Store: ${_order!.vendor?.name ?? 'Local Merchant'}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-                  Text(isPickup ? 'Pick-up Address: ${_order!.deliveryAddress}' : 'Drop-off: ${_order!.deliveryAddress}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                    Text('Store: ${_order!.vendor?.name ?? 'Local Merchant'}',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1),
+                    Text(isPickup ? 'Pick-up Address: ${_order!.deliveryAddress}' : 'Drop-off: ${_order!.deliveryAddress}',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1),
                   if (_order!.paymentMethod != null)
                     Text('Payment: ${_order!.paymentMethod} • Status: ${_order!.paymentStatus ?? 'pending'}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                 ],
@@ -236,12 +242,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   _statusLabels[step] ?? step,
                                   style: TextStyle(
                                     fontWeight: isCurrent ? FontWeight.bold : (isCompleted ? FontWeight.w600 : FontWeight.normal),
-                                    color: isCurrent ? AppColors.primary : (isCompleted ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                                    color: isCurrent ? AppColors.primary : (isCompleted ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface),
                                   ),
                                 ),
                                 Text(
                                   isCurrent ? 'Active step' : (isCompleted ? 'Passed' : 'Pending'),
-                                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface),
                                 ),
                               ],
                             ),
@@ -267,6 +273,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     if (i < _order!.items.length - 1) Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1), height: 16),
                   ],
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1), height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Delivery Fee', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text('₱${(_order!.totalAmount - _order!.items.fold(0, (sum, i) => sum + i.price * i.quantity)).toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary)),
+                    ],
+                  ),
                   Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1), height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -301,7 +316,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   backgroundColor: Theme.of(context).colorScheme.surface,
                   foregroundColor: Theme.of(context).colorScheme.onSurface,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                   side: BorderSide(color: Colors.orange.withValues(alpha: 0.5), width: 2),
                 ),
               ),
@@ -339,7 +354,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
               border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             ),
             child: SingleChildScrollView(
@@ -383,7 +398,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         hintText: 'Tell us about your food...',
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -413,7 +428,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         hintText: 'Tell us about your delivery...',
                         filled: true,
                         fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -446,7 +461,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                       ),
                       child: isSubmitting 
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

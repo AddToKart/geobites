@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mapcn_flutter/mapcn_flutter.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 import '../theme/glass_theme.dart';
+import 'locate_me_button.dart';
 
 class LocationPickerDialog extends StatefulWidget {
   final LatLng initialLocation;
@@ -15,6 +17,7 @@ class LocationPickerDialog extends StatefulWidget {
 
 class _LocationPickerDialogState extends State<LocationPickerDialog> {
   late LatLng _currentLocation;
+  MapcnController? _mapController;
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
       body: Stack(
         children: [
           Mapcn(
+            controller: _mapController,
             initialCenter: _currentLocation,
             initialZoom: 16,
             style: Theme.of(context).brightness == Brightness.dark 
@@ -83,6 +87,17 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
               ),
             ),
           ),
+          // Locate Me Button
+          Positioned(
+            bottom: 110,
+            right: 16,
+            child: LocateMeButton(
+              mapController: _mapController,
+              onLocated: (pos) {
+                setState(() => _currentLocation = LatLng(pos.latitude, pos.longitude));
+              },
+            ),
+          ),
           // Confirm Button at the bottom
           Positioned(
             bottom: 32,
@@ -92,7 +107,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                 elevation: 10,
               ),
               onPressed: () => Navigator.pop(context, _currentLocation),

@@ -134,7 +134,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
                       color: Theme.of(context).brightness == Brightness.dark 
                           ? const Color(0xFF1A1A1A).withValues(alpha: 0.6)
                           : Colors.white.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.1),
@@ -149,7 +149,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
                       ),
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(kSharpRadius),
                       child: Theme(
                         data: Theme.of(context).copyWith(
                           splashColor: Colors.transparent,
@@ -194,7 +194,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(kSharpRadius),
         ),
         child: Icon(isSelected ? activeIcon : icon, size: 24),
       ),
@@ -202,7 +202,7 @@ class _SellerMainScreenState extends State<SellerMainScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.primary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(kSharpRadius),
         ),
         child: Icon(activeIcon, size: 24),
       ),

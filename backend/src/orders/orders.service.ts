@@ -258,7 +258,8 @@ export class OrdersService {
               balance: 0.0,
             });
           }
-          vendorWallet.balance = Number(vendorWallet.balance) + Number(totalAmount);
+          vendorWallet.balance =
+            Number(vendorWallet.balance) + Number(totalAmount);
           await walletRepo.save(vendorWallet);
 
           const vendorTxn = transactionRepo.create({
@@ -459,7 +460,10 @@ export class OrdersService {
       }
 
       const allowed = [...(sellerTransitions[currentStatus] ?? [])];
-      if (order.orderType === 'PICKUP' && currentStatus === 'ready_for_pickup') {
+      if (
+        order.orderType === 'PICKUP' &&
+        currentStatus === 'ready_for_pickup'
+      ) {
         allowed.push('delivered');
       }
       if (!allowed.includes(nextStatus)) {
@@ -498,8 +502,22 @@ export class OrdersService {
       }
     }
 
+    if (nextStatus === 'delivered') {
+      order.paymentStatus = 'paid';
+    }
     order.status = nextStatus;
     const updatedOrder = await this.orderRepository.save(order);
+
+    if (nextStatus === 'delivered') {
+      try {
+        await this.walletService.handleOrderDeliveryPayout(updatedOrder.id);
+      } catch (payoutError) {
+        this.logger.error(
+          `Failed to process delivery payout for order ${updatedOrder.id}:`,
+          payoutError,
+        );
+      }
+    }
 
     // Emit real-time order_status_updated to the order room and user rooms
     const statusPayload = {
@@ -542,10 +560,7 @@ export class OrdersService {
       }
     }
     // Notify seller and rider when customer cancels
-    if (
-      nextStatus === 'cancelled' &&
-      role === 'customer'
-    ) {
+    if (nextStatus === 'cancelled' && role === 'customer') {
       if (order.vendor?.userId) {
         await this.notificationsService.create({
           userId: order.vendor.userId,

@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                 border: Border(
                   top: BorderSide(
                     color: Theme.of(context).brightness == Brightness.dark 
@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
                   child: Column(
@@ -114,9 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           fillColor: Theme.of(context).brightness == Brightness.dark 
                               ? Colors.white.withValues(alpha: 0.05) 
                               : Colors.white.withValues(alpha: 0.6),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                           prefixIcon: const Padding(
                             padding: EdgeInsets.only(left: 16.0, right: 8.0),
                             child: Icon(Icons.person_outline),
@@ -135,9 +135,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           fillColor: Theme.of(context).brightness == Brightness.dark 
                               ? Colors.white.withValues(alpha: 0.05) 
                               : Colors.white.withValues(alpha: 0.6),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                           prefixIcon: const Padding(
                             padding: EdgeInsets.only(left: 16.0, right: 8.0),
                             child: Icon(Icons.lock_outline),
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 32),
                       Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(kSharpRadius),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.primary.withOpacity(0.3),
@@ -176,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 20),
                             backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                           ),
                           child: _isLoading 
                             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

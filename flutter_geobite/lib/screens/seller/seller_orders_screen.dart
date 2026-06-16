@@ -113,7 +113,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
             ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
               border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             ),
             child: SingleChildScrollView(
@@ -143,7 +143,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       hintText: 'Tell us about the rider\'s service...',
                       filled: true,
                       fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -169,7 +169,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                       ),
                       child: isSubmitting 
                         ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -238,7 +238,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: isPOS ? AppColors.primary.withValues(alpha: 0.1) : Colors.blue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(kSharpRadius),
                                   ),
                                   child: Icon(
                                     isPOS ? Icons.point_of_sale : Icons.delivery_dining,
@@ -276,7 +276,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> {
                                     backgroundColor: Colors.orange.withValues(alpha: 0.1),
                                     foregroundColor: Colors.orange,
                                     padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                                   ),
                                 ),
                               ],

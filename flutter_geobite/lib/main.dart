@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:permission_handler/permission_handler.dart';
 import 'theme/glass_theme.dart';
 import 'providers/auth_provider.dart';
 import 'screens/auth/login_screen.dart';
@@ -16,6 +18,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   
+  if (!kIsWeb) {
+    try {
+      await [
+        Permission.camera,
+        Permission.notification,
+      ].request();
+    } catch (e) {
+      debugPrint('Error requesting startup permissions: $e');
+    }
+  }
+
   runApp(
     MultiProvider(
       providers: [

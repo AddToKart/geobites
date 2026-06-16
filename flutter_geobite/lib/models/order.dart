@@ -68,6 +68,11 @@ class Order {
   final String createdAt;
   final String updatedAt;
   final String orderType; // 'DELIVERY' | 'PICKUP'
+  final String? customerName;
+  final String? customerPhone;
+  final String? riderName;
+  final String? riderPhone;
+  final String? vendorPhone;
 
   Order({
     required this.id,
@@ -93,12 +98,39 @@ class Order {
     required this.createdAt,
     required this.updatedAt,
     this.orderType = 'DELIVERY',
+    this.customerName,
+    this.customerPhone,
+    this.riderName,
+    this.riderPhone,
+    this.vendorPhone,
   });
 
   // Helper getter to check if the order has been rated
   bool get isRated => ratings.isNotEmpty;
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    final parsedCustomer = json['customer'] != null ? User.fromJson(json['customer']) : null;
+    final fallbackCustomer = parsedCustomer ?? (json['customerName'] != null
+        ? User(
+            id: json['customerId'] ?? '',
+            email: '',
+            name: json['customerName'],
+            role: 'customer',
+            phone: json['customerPhone'],
+          )
+        : null);
+
+    final parsedRider = json['rider'] != null ? User.fromJson(json['rider']) : null;
+    final fallbackRider = parsedRider ?? (json['riderName'] != null
+        ? User(
+            id: json['riderId'] ?? '',
+            email: '',
+            name: json['riderName'],
+            role: 'rider',
+            phone: json['riderPhone'],
+          )
+        : null);
+
     return Order(
       id: json['id'],
       customerId: json['customerId'],
@@ -115,8 +147,8 @@ class Order {
       paymentMethod: json['paymentMethod'],
       paymentStatus: json['paymentStatus'],
       vendor: json['vendor'] != null ? Vendor.fromJson(json['vendor']) : null,
-      customer: json['customer'] != null ? User.fromJson(json['customer']) : null,
-      rider: json['rider'] != null ? User.fromJson(json['rider']) : null,
+      customer: fallbackCustomer,
+      rider: fallbackRider,
       items: json['items'] != null
           ? (json['items'] as List).map((i) => OrderItem.fromJson(i)).toList()
           : [],
@@ -129,6 +161,11 @@ class Order {
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       orderType: json['orderType'] ?? 'DELIVERY',
+      customerName: json['customerName'],
+      customerPhone: json['customerPhone'],
+      riderName: json['riderName'],
+      riderPhone: json['riderPhone'],
+      vendorPhone: json['vendorPhone'],
     );
   }
 

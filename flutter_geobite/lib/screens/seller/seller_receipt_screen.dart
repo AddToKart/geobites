@@ -151,7 +151,7 @@ class _SellerReceiptScreenState extends State<SellerReceiptScreen> {
                           label: const Text('Download PDF'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                           ),
                         ),
                       ),
@@ -164,7 +164,7 @@ class _SellerReceiptScreenState extends State<SellerReceiptScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                           ),
                         ),
                       ),

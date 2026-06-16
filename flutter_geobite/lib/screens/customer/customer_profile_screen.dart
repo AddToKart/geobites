@@ -16,6 +16,8 @@ import 'map_selection_screen.dart';
 import '../../widgets/glass_toast.dart';
 import '../../services/upload_service.dart';
 
+import 'package:image_picker/image_picker.dart';
+
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({super.key});
 
@@ -94,6 +96,20 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
           'image': _existingImageUrl,
         });
 
+        if (_selectedTab == 1 && address.isNotEmpty) {
+          try {
+            await apiClient.dio.post('/addresses', data: {
+              'label': 'Home',
+              'street': address,
+              'deliveryLat': _defaultLocation.latitude,
+              'deliveryLng': _defaultLocation.longitude,
+              'isDefault': true,
+            });
+          } catch (addrErr) {
+            print('Error syncing default address to /addresses table: $addrErr');
+          }
+        }
+
         if (!mounted) return;
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.checkSession();
@@ -110,14 +126,59 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
   }
 
   Future<void> _pickProfileImage() async {
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+              title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.bold)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primary),
+              title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-        withData: kIsWeb,
-      );
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.single;
+      PlatformFile? file;
+
+      if (source == ImageSource.camera) {
+        final picker = ImagePicker();
+        final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+        if (photo != null) {
+          file = PlatformFile(
+            name: photo.name,
+            path: photo.path,
+            size: await photo.length(),
+            bytes: kIsWeb ? await photo.readAsBytes() : null,
+          );
+        }
+      } else {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          withData: kIsWeb,
+        );
+        if (result != null && result.files.isNotEmpty) {
+          file = result.files.single;
+        }
+      }
+
+      if (file != null) {
         setState(() {
           _isUploadingImage = true;
           _selectedImageFile = file;
@@ -313,7 +374,9 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
                 icon: const Icon(Icons.logout, color: Colors.red),
                 label: const Text('Sign Out', style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: Colors.red,
+                  backgroundColor: Colors.red.withValues(alpha: 0.15),
+                  side: BorderSide.none,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
                 onPressed: () async {
@@ -388,7 +451,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
             onPressed: _isSaving ? null : _saveProfile,
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             ),
             child: _isSaving 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -518,7 +581,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
             onPressed: _isSaving ? null : _saveProfile,
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
             ),
             child: _isSaving 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))

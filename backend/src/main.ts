@@ -16,7 +16,10 @@ function getLocalIpAddress(): string {
   const nets = networkInterfaces();
   for (const name of Object.keys(nets)) {
     for (const net of nets[name] ?? []) {
-      if ((net.family === 'IPv4' || (net.family as any) === 4) && !net.internal) {
+      if (
+        (net.family === 'IPv4' || (net.family as any) === 4) &&
+        !net.internal
+      ) {
         return net.address;
       }
     }
@@ -26,7 +29,6 @@ function getLocalIpAddress(): string {
 
 const detectedLanIp = getLocalIpAddress();
 const lanIp = process.env.LAN_IP || detectedLanIp;
-
 
 /**
  * Dynamic CORS origin resolver — allows:

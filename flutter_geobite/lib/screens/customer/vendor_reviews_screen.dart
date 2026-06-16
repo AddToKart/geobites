@@ -109,7 +109,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
             ),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(kSharpRadius)),
               border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
             ),
             child: Column(
@@ -138,7 +138,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                     hintText: 'Tell us about your experience...',
                     filled: true,
                     fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(kSharpRadius), borderSide: BorderSide.none),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -164,7 +164,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                     ),
                     child: isSubmitting 
                       ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
@@ -341,7 +341,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
               child: AnimatedTapCard(
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(kSharpRadius),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withValues(alpha: 0.4),
@@ -358,7 +358,7 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSharpRadius)),
                     ),
                   ),
                 ),
