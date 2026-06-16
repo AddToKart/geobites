@@ -250,7 +250,7 @@ class _RiderSettingsScreenState extends State<RiderSettingsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: Navigator.canPop(context),
         title: Row(
           children: [
             Container(

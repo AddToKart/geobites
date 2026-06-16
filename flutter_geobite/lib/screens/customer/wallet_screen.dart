@@ -312,7 +312,7 @@ class _WalletScreenState extends State<WalletScreen> {
           'GeoPay Wallet',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Theme.of(context).colorScheme.onSurface),
         ),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: Navigator.canPop(context),
       ),
       body: RefreshIndicator(
         onRefresh: _loadAllData,

@@ -238,7 +238,7 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> with Tick
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: Navigator.canPop(context),
         title: Row(
           children: [
             Container(
