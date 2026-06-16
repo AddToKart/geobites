@@ -27,6 +27,7 @@ export interface User {
   landmark?: string;
   deliveryLat?: string | number;
   deliveryLng?: string | number;
+  image?: string;
 }
 
 export interface OperatingHours {

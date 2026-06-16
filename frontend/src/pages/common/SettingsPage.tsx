@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/hooks/useAuth';
-import { Home, Mail, MapPin, Phone, Plus, Shield, Star, Trash2, User, X, Loader2, Save, Settings, Bell } from 'lucide-react';
+import { Home, Mail, MapPin, Phone, Plus, Shield, Star, Trash2, User, X, Loader2, Save, Settings, Bell, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,15 @@ import { getAddresses, createAddress, updateAddress, deleteAddress, SavedAddress
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { toast } from 'sonner';
 import { Stagger, StaggerItem } from '@/components/motion/Reveal';
+import api from '@/services/api';
+import { AUTH_BASE_URL } from '@/utils/constants';
 
 type SettingsTab = 'profile' | 'business' | 'addresses' | 'preferences';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Full name is required'),
   phone: z.string().optional(),
+  image: z.string().optional(),
 });
 
 const businessSchema = z.object({
@@ -62,7 +65,7 @@ export function SettingsPage() {
   // Profile form
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: user?.name || '', phone: user?.phone || '' },
+    defaultValues: { name: user?.name || '', phone: user?.phone || '', image: user?.image || '' },
   });
 
   // Business form
@@ -82,10 +85,22 @@ export function SettingsPage() {
     defaultValues: { orderAlerts: true, marketingEmails: true },
   });
 
+  const [isUploading, setIsUploading] = useState(false);
+
+  const profileImage = profileForm.watch('image');
+  const fullImageUrl = profileImage
+    ? profileImage.startsWith('http')
+      ? profileImage
+      : `${AUTH_BASE_URL}${profileImage}`
+    : '';
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
+
   // Initialize forms from user profile data
   useEffect(() => {
     if (user) {
-      profileForm.reset({ name: user.name || '', phone: user.phone || '' });
+      profileForm.reset({ name: user.name || '', phone: user.phone || '', image: user.image || '' });
       businessForm.reset({ storeName: user.storeName || '', businessPermit: user.businessPermit || '' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,13 +138,40 @@ export function SettingsPage() {
   const onSaveProfile = async (data: ProfileFormData) => {
     setIsSaving(true);
     try {
-      await updateProfile({ name: data.name.trim(), phone: data.phone?.trim() || undefined });
+      await updateProfile({
+        name: data.name.trim(),
+        phone: data.phone?.trim() || undefined,
+        image: data.image || undefined,
+      });
       await refreshSession();
       toast.success('Profile details updated successfully');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post<{ url: string }>('/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      profileForm.setValue('image', response.data.url, { shouldDirty: true });
+      toast.success('Image uploaded successfully');
+    } catch (err) {
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -253,7 +295,43 @@ export function SettingsPage() {
                   Profile Details
                 </h2>
 
-                <div className="grid gap-8 md:grid-cols-2">
+                  {/* Profile Picture Upload Section */}
+                  <div className="flex flex-col items-center gap-4 mb-10 p-6 border border-border bg-secondary/5 rounded-2xl max-w-sm mx-auto md:mx-0">
+                    <div className="relative group">
+                      <div className="h-28 w-28 rounded-full overflow-hidden border-4 border-muted/20 flex items-center justify-center bg-muted/10 relative">
+                        {isUploading && (
+                          <div className="absolute inset-0 bg-black/55 flex items-center justify-center z-10">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
+                        )}
+                        {fullImageUrl ? (
+                          <img
+                            src={fullImageUrl}
+                            alt="Profile picture"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-3xl font-bold text-muted-foreground">{initials}</span>
+                        )}
+                      </div>
+                      <label className="absolute bottom-1 right-1 h-9 w-9 bg-primary hover:opacity-90 text-white rounded-full flex items-center justify-center cursor-pointer border-2 border-background shadow-md transition-opacity">
+                        <Camera className="h-4 w-4" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Profile Picture</p>
+                      <p className="text-[10px] text-muted-foreground/60">Upload a square image, max 5MB</p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-8 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                       <User className="h-4 w-4" /> Full Name
@@ -318,7 +396,7 @@ export function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => profileForm.reset({ name: user?.name || '', phone: user?.phone || '' })}
+                    onClick={() => profileForm.reset({ name: user?.name || '', phone: user?.phone || '', image: user?.image || '' })}
                     className="h-14 px-8 border border-border hover:bg-secondary/20 font-bold uppercase tracking-widest text-xs transition-colors"
                   >
                     Discard Changes

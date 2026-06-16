@@ -35,6 +35,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { WalletModule } from './wallet/wallet.module';
 import { GeopayModule } from './geopay/geopay.module';
 import { VouchersModule } from './vouchers/vouchers.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { VouchersModule } from './vouchers/vouchers.module';
     GeopayModule,
     VouchersModule,
     AddressesModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

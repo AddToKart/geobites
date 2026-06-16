@@ -8,6 +8,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { GeopayModule } from '../geopay/geopay.module';
 import { VouchersModule } from '../vouchers/vouchers.module';
+import { EventsModule } from '../events/events.module';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 
@@ -18,9 +19,11 @@ import { OrdersService } from './orders.service';
     WalletModule,
     GeopayModule,
     VouchersModule,
+    EventsModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
+

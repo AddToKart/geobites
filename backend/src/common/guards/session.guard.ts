@@ -27,16 +27,28 @@ export interface RequestWithSession extends Request {
 export class SessionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithSession>();
+
+    // Build headers for Better Auth session lookup.
+    // Flutter mobile sends the session token as Authorization: Bearer <token>
+    // Web browser sends it as a cookie. We support both.
+    const authHeader = request.headers.authorization;
     const cookieHeader = request.headers.cookie;
+
+    const headersMap: Record<string, string> = {};
+
+    if (authHeader?.startsWith('Bearer ')) {
+      // Reconstruct cookie header from Bearer token so Better Auth can validate it
+      const token = authHeader.slice(7);
+      const existingCookie = cookieHeader ? `${cookieHeader}; ` : '';
+      headersMap['cookie'] = `${existingCookie}better-auth.session_token=${token}`;
+    } else if (cookieHeader) {
+      headersMap['cookie'] = cookieHeader;
+    }
 
     try {
       const response = await auth.api.getSession({
         headers: new Headers(
-          cookieHeader
-            ? {
-                cookie: cookieHeader,
-              }
-            : undefined,
+          Object.keys(headersMap).length > 0 ? headersMap : undefined,
         ),
       });
 

@@ -107,7 +107,7 @@ export function BrowseVendorsPagePremium() {
       setIsLoading(true);
 
       try {
-        const response = await getVendors({ page: 1, limit: 100 });
+        const response = await getVendors({ page: 1, limit: 200 });
         setLiveVendors(response.data);
       } catch {
         setLiveVendors([]);

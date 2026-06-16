@@ -63,6 +63,7 @@ export interface UpdateProfilePayload {
   deliveryLng?: string | number;
   storeName?: string;
   businessPermit?: string;
+  image?: string;
 }
 
 export async function updateProfile(payload: UpdateProfilePayload): Promise<User> {

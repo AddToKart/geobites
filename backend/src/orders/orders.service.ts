@@ -16,6 +16,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
 import { VouchersService } from '../vouchers/vouchers.service';
+import { EventsGateway } from '../events/events.gateway';
 import {
   haversineKm,
   calculateDeliveryFee,
@@ -54,6 +55,7 @@ export class OrdersService {
     private readonly walletService: WalletService,
     private readonly geopayService: GeopayService,
     private readonly vouchersService: VouchersService,
+    private readonly eventsGateway: EventsGateway,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -217,7 +219,7 @@ export class OrdersService {
       },
     );
 
-    // Notify seller about new order
+    // Notify seller about new order — REST notification + Socket.IO
     await this.notificationsService.create({
       userId: sellerUserId,
       title: 'New Order',
@@ -226,7 +228,19 @@ export class OrdersService {
       referenceId: savedOrderId,
     });
 
-    return this.findOneForUser(savedOrderId, customerId, 'customer');
+    const newOrder = await this.findOneForUser(savedOrderId, customerId, 'customer');
+
+    // Push real-time new_order event to the seller
+    this.eventsGateway.emitNewOrder(sellerUserId, newOrder);
+    // Push notification to seller
+    this.eventsGateway.emitNotification(sellerUserId, {
+      title: 'New Order',
+      message: 'You have received a new order',
+      type: 'order_update',
+      referenceId: savedOrderId,
+    });
+
+    return newOrder;
   }
 
   async findAllForUser(userId: string, role: UserRole, query: QueryOrdersDto) {
@@ -239,6 +253,7 @@ export class OrdersService {
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.vendor', 'vendor')
         .leftJoinAndSelect('order.items', 'items')
+        .leftJoinAndSelect('order.ratings', 'ratings')
         .orderBy('order.createdAt', 'DESC')
         .skip(skip)
         .take(limit);
@@ -295,6 +310,7 @@ export class OrdersService {
       relations: {
         items: true,
         vendor: true,
+        ratings: true,
       },
     });
 
@@ -412,6 +428,16 @@ export class OrdersService {
 
     order.status = nextStatus;
     const updatedOrder = await this.orderRepository.save(order);
+
+    // Emit real-time order_status_updated to the order room and user rooms
+    const statusPayload = {
+      orderId: updatedOrder.id,
+      status: nextStatus,
+      updatedAt: new Date().toISOString(),
+    };
+    // Broadcast to the order-specific room and to the customer's room
+    this.eventsGateway.emitOrderStatusUpdated(`order_${updatedOrder.id}`, statusPayload);
+    this.eventsGateway.emitOrderStatusUpdated(`customer_${updatedOrder.customerId}`, statusPayload);
 
     // If cancelled by customer and paid via GeoPay, refund the customer wallet
     if (

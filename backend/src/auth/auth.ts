@@ -4,27 +4,47 @@ import { Pool } from 'pg';
 
 type Role = 'customer' | 'seller' | 'rider';
 
-function parseTrustedOrigins(): string[] {
-  const defaultOrigins = [
-    'http://localhost:5173',
-    'http://localhost:8081',
-    'http://localhost:19006',
-    'http://192.168.100.116:5173',
-    'http://192.168.100.116:3000',
-  ];
-  const configuredOrigins = process.env.CORS_ORIGIN;
-  if (!configuredOrigins) {
-    return defaultOrigins;
-  }
+function buildTrustedOrigins(): string[] {
+  const lanIp = process.env.LAN_IP || '192.168.100.116';
 
-  const parsedOrigins = configuredOrigins
+  // Enumerate common Flutter Web / Vite / Expo / DevTools ports so Better Auth
+  // accepts requests from any of them. Flutter Web randomises its port on every run.
+  const commonPorts = [
+    3000, 5173, 8080, 8081, 8082, 8083, 8084, 8085,
+    19000, 19001, 19002, 19006,
+    // Flutter Web range — covers the most common random dev ports
+    ...Array.from({ length: 200 }, (_, i) => 49152 + i * 50),
+    // Additional common Flutter Web ports observed in practice
+    56000, 57000, 58000, 59000, 60000, 61000, 62000,
+    63000, 63856, 64000, 65000,
+  ];
+
+  const localhostOrigins = commonPorts.flatMap((p) => [
+    `http://localhost:${p}`,
+    `http://127.0.0.1:${p}`,
+  ]);
+
+  const baseOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    // Android emulator
+    'http://10.0.2.2:3000',
+    'http://10.0.2.2:5173',
+    // LAN IP for physical device testing
+    `http://${lanIp}:3000`,
+    `http://${lanIp}:5173`,
+    `http://${lanIp}:8081`,
+  ];
+
+  // Merge any additional origins from .env
+  const extraOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map((o) => o.trim())
     .filter(Boolean);
 
-  // Add the current machine IP to trusted origins automatically
-  return [...new Set([...parsedOrigins, ...defaultOrigins])];
+  return [...new Set([...baseOrigins, ...localhostOrigins, ...extraOrigins])];
 }
+
 
 const useSqlite = process.env.DB_TYPE === 'sqlite';
 
@@ -51,7 +71,7 @@ export const auth = betterAuth({
   appName: 'Geobites',
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: parseTrustedOrigins(),
+  trustedOrigins: buildTrustedOrigins(),
   database: databaseConfig,
   emailAndPassword: {
     enabled: true,

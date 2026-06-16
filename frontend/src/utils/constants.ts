@@ -1,5 +1,19 @@
-export const API_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
+  try {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        return envUrl
+          .replace('//localhost:', `//${hostname}:`)
+          .replace('//127.0.0.1:', `//${hostname}:`);
+      }
+    }
+  } catch (_) {}
+  return envUrl;
+};
+
+export const API_URL = getApiUrl();
 
 export const AUTH_BASE_URL = API_URL.replace(/\/api$/, '');
 
