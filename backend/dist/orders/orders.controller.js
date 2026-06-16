@@ -24,7 +24,6 @@ const query_orders_dto_1 = require("./dto/query-orders.dto");
 const update_order_status_dto_1 = require("./dto/update-order-status.dto");
 const orders_service_1 = require("./orders.service");
 let OrdersController = class OrdersController {
-    ordersService;
     constructor(ordersService) {
         this.ordersService = ordersService;
     }

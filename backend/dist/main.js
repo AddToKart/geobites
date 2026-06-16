@@ -63,9 +63,9 @@ function parseCorsOrigins() {
 }
 async function bootstrap() {
     await (0, create_db_1.ensureDatabaseExists)();
-    const { AppModule } = await import('./app.module.js');
-    const { auth } = await import('./auth/auth.js');
-    const { toNodeHandler } = await import('better-auth/node');
+    const { AppModule } = await Promise.resolve().then(() => __importStar(require('./app.module.js')));
+    const { auth } = await Promise.resolve().then(() => __importStar(require('./auth/auth.js')));
+    const { toNodeHandler } = await Promise.resolve().then(() => __importStar(require('better-auth/node')));
     const app = await core_1.NestFactory.create(AppModule);
     app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     app.use((0, cookie_parser_1.default)());

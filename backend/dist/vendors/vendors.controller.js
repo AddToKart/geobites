@@ -23,7 +23,6 @@ const query_vendors_dto_1 = require("./dto/query-vendors.dto");
 const update_vendor_dto_1 = require("./dto/update-vendor.dto");
 const vendors_service_1 = require("./vendors.service");
 let VendorsController = class VendorsController {
-    vendorsService;
     constructor(vendorsService) {
         this.vendorsService = vendorsService;
     }

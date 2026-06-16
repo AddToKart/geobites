@@ -22,7 +22,6 @@ const create_menu_item_dto_1 = require("./dto/create-menu-item.dto");
 const update_menu_item_dto_1 = require("./dto/update-menu-item.dto");
 const menu_service_1 = require("./menu.service");
 let MenuController = class MenuController {
-    menuService;
     constructor(menuService) {
         this.menuService = menuService;
     }

@@ -35,7 +35,7 @@ const defaultVendorForm: VendorFormState = {
   businessPermitExpiry: '',
   foodSafetyCert: '',
   foodSafetyCertExpiry: '',
-  commissionRate: '0.25',
+  commissionRate: '0.0',
   operatingHours: defaultOperatingHours,
   imageFile: null,
   imagePreview: null,
@@ -97,7 +97,7 @@ export function MenuManagementPage() {
       businessPermitExpiry: currentVendor.businessPermitExpiry || '',
       foodSafetyCert: currentVendor.foodSafetyCert || '',
       foodSafetyCertExpiry: currentVendor.foodSafetyCertExpiry || '',
-      commissionRate: String(currentVendor.commissionRate ?? 0.25),
+      commissionRate: String(currentVendor.commissionRate ?? 0.0),
       operatingHours,
       imageFile: null,
       imagePreview: null,
@@ -157,7 +157,7 @@ export function MenuManagementPage() {
       imageUrl: vendorForm.imageUrl || undefined,
       isActive: vendorForm.isActive,
       category: vendorForm.category || undefined,
-      commissionRate: Number(vendorForm.commissionRate) || 0.25,
+      commissionRate: 0.0,
       operatingHours: vendorForm.operatingHours,
       businessPermit: vendorForm.businessPermit || undefined,
       businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
@@ -192,7 +192,7 @@ export function MenuManagementPage() {
       businessPermitExpiry: vendorForm.businessPermitExpiry || undefined,
       foodSafetyCert: vendorForm.foodSafetyCert || undefined,
       foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
-      commissionRate: Number(vendorForm.commissionRate) || 0.25,
+      commissionRate: 0.0,
       category: vendorForm.category || undefined,
     });
 
@@ -236,7 +236,7 @@ export function MenuManagementPage() {
         businessPermitExpiry: vendorForm.businessPermitExpiry.trim() || undefined,
         foodSafetyCert: vendorForm.foodSafetyCert.trim() || undefined,
         foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry.trim() || undefined,
-        commissionRate: Number(vendorForm.commissionRate) || 0.25,
+        commissionRate: 0.0,
         category: vendorForm.category || undefined,
       };
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DollarSign, ArrowDownRight, Banknote, Percent, FileDown } from 'lucide-react';
+import { DollarSign, ArrowDownRight, Banknote, FileDown } from 'lucide-react';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { Order } from '@/types';
@@ -35,26 +35,11 @@ export function SellerPayouts() {
     const totalPlatformFees = completedOrders.reduce((s, o) => s + (o.platformFee ?? 0), 0);
     const netPayout = grossRevenue - totalPlatformFees;
 
-    const commissions = completedOrders
-      .filter((o) => o.vendor?.commissionRate != null)
-      .map((o) => ({
-        orderId: o.id,
-        gross: o.totalAmount,
-        commissionRate: o.vendor!.commissionRate!,
-        commissionAmount: o.totalAmount * o.vendor!.commissionRate!,
-        net: o.totalAmount - (o.totalAmount * o.vendor!.commissionRate!),
-      }));
-
-    const totalCommissionAmount = commissions.reduce((s, c) => s + c.commissionAmount, 0);
-    const netAfterCommission = grossRevenue - totalPlatformFees - totalCommissionAmount;
-
     return {
       grossRevenue,
       totalDeliveryFees,
       totalPlatformFees,
       netPayout,
-      totalCommissionAmount,
-      netAfterCommission,
       completedCount: completedOrders.length,
       pendingAmount: pendingOrders.reduce((s, o) => s + o.totalAmount, 0),
       pendingCount: pendingOrders.length,
@@ -78,7 +63,7 @@ export function SellerPayouts() {
             className="h-12 rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
             onClick={() => {
               const csv = [
-                ['Order ID', 'Gross', 'Delivery Fee', 'Platform Fee', 'Commission', 'Net'],
+                ['Order ID', 'Gross', 'Delivery Fee', 'Platform Fee', 'Net'],
                 ...orders
                   .filter((o) => o.status === 'delivered')
                   .map((o) => [
@@ -86,8 +71,7 @@ export function SellerPayouts() {
                     o.totalAmount.toFixed(2),
                     (o.deliveryFee ?? 0).toFixed(2),
                     (o.platformFee ?? 0).toFixed(2),
-                    (o.totalAmount * (o.vendor?.commissionRate ?? 0.25)).toFixed(2),
-                    (o.totalAmount - (o.platformFee ?? 0) - o.totalAmount * (o.vendor?.commissionRate ?? 0.25)).toFixed(2),
+                    (o.totalAmount - (o.platformFee ?? 0)).toFixed(2),
                   ]),
               ].map((row) => row.join(',')).join('\n');
               const blob = new Blob([csv], { type: 'text/csv' });
@@ -111,7 +95,7 @@ export function SellerPayouts() {
         ) : null}
 
         {/* Summary Cards */}
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4 mb-12">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-12">
           <div className="border border-border p-6 bg-background">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-4">
               <DollarSign className="h-4 w-4" />
@@ -136,22 +120,11 @@ export function SellerPayouts() {
 
           <div className="border border-border p-6 bg-background">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-4">
-              <Percent className="h-4 w-4 text-orange-500" />
-              Seller commission
-            </span>
-            <p className="text-3xl font-semibold tracking-tight text-foreground">
-              -{formatCurrency(payouts.totalCommissionAmount)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-2">Based on your commission rate</p>
-          </div>
-
-          <div className="border border-border p-6 bg-background">
-            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-4">
               <Banknote className="h-4 w-4 text-emerald-500" />
               Net payout
             </span>
             <p className="text-3xl font-semibold tracking-tight text-emerald-500">
-              {formatCurrency(payouts.netAfterCommission)}
+              {formatCurrency(payouts.netPayout)}
             </p>
             <p className="text-xs text-muted-foreground mt-2">Amount payable to you</p>
           </div>
@@ -167,7 +140,6 @@ export function SellerPayouts() {
               { label: 'Gross revenue from sales', value: payouts.grossRevenue, type: 'positive' as const },
               { label: 'Delivery fees collected', value: payouts.totalDeliveryFees, type: 'positive' as const },
               { label: 'Platform service fees', value: payouts.totalPlatformFees, type: 'negative' as const },
-              { label: 'Seller commission deductions', value: payouts.totalCommissionAmount, type: 'negative' as const },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between px-6 py-4">
                 <span className="text-sm text-muted-foreground">{row.label}</span>
@@ -181,7 +153,7 @@ export function SellerPayouts() {
             <div className="flex items-center justify-between px-6 py-4 bg-secondary/10">
               <span className="text-sm font-bold uppercase tracking-widest text-foreground">Net payout</span>
               <span className="text-lg font-bold text-emerald-500">
-                {formatCurrency(payouts.netAfterCommission)}
+                {formatCurrency(payouts.netPayout)}
               </span>
             </div>
           </div>

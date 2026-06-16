@@ -13,8 +13,6 @@ exports.CreateOrderDto = exports.CreateOrderItemDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class CreateOrderItemDto {
-    menuItemId;
-    quantity;
 }
 exports.CreateOrderItemDto = CreateOrderItemDto;
 __decorate([
@@ -28,20 +26,6 @@ __decorate([
     __metadata("design:type", Number)
 ], CreateOrderItemDto.prototype, "quantity", void 0);
 class CreateOrderDto {
-    vendorId;
-    deliveryAddress;
-    street;
-    barangay;
-    landmark;
-    floorOrGate;
-    paymentMethod;
-    paymentReference;
-    deliveryLat;
-    deliveryLng;
-    notes;
-    discountAmount;
-    voucherCode;
-    items;
 }
 exports.CreateOrderDto = CreateOrderDto;
 __decorate([

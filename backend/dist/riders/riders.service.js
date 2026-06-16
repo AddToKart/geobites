@@ -21,11 +21,6 @@ const rider_rating_entity_1 = require("../entities/rider-rating.entity");
 const notifications_service_1 = require("../notifications/notifications.service");
 const wallet_service_1 = require("../wallet/wallet.service");
 let RidersService = class RidersService {
-    orderRepository;
-    riderRatingRepository;
-    notificationsService;
-    walletService;
-    dataSource;
     constructor(orderRepository, riderRatingRepository, notificationsService, walletService, dataSource) {
         this.orderRepository = orderRepository;
         this.riderRatingRepository = riderRatingRepository;

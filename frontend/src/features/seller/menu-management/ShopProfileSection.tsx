@@ -1,5 +1,5 @@
 import { type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import { Camera, CheckCircle2, Save, ShieldCheck, Percent, X } from 'lucide-react';
+import { Camera, CheckCircle2, Save, ShieldCheck, X } from 'lucide-react';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { Button } from '@/components/ui/button';
@@ -198,57 +198,31 @@ export function ShopProfileSection({
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Latitude
-          </label>
-          <Input
-            type="number"
-            step="0.000001"
-            value={vendorForm.latitude}
-            onChange={(event) =>
-              setVendorForm((current) => ({ ...current, latitude: event.target.value }))
-            }
-            className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Longitude
-          </label>
-          <Input
-            type="number"
-            step="0.000001"
-            value={vendorForm.longitude}
-            onChange={(event) =>
-              setVendorForm((current) => ({ ...current, longitude: event.target.value }))
-            }
-            className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
-          />
-        </div>
-
         <div className="space-y-2 md:col-span-2">
-          <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            <Percent className="h-3.5 w-3.5" />
-            Platform commission rate
-          </label>
-          <Input
-            type="number"
-            min="0"
-            max="1"
-            step="0.01"
-            placeholder="0.25"
-            value={vendorForm.commissionRate}
-            onChange={(event) =>
-              setVendorForm((current) => ({ ...current, commissionRate: event.target.value }))
+          <LazyDeliveryLocationPicker
+            value={vendorCoordinates}
+            onChange={({ lat, lng }) =>
+              setVendorForm((current) => ({
+                ...current,
+                latitude: lat.toFixed(6),
+                longitude: lng.toFixed(6),
+              }))
             }
-            className="h-14 rounded-none border-border bg-transparent shadow-none focus-visible:ring-0 focus-visible:border-foreground"
+            title="Shop location pin"
+            description="Click or drag the marker so customers and riders see the exact pickup point for your shop."
+            actionLabel="Use my shop location"
+            markerLabel="Shop pin"
+            popupEyebrow="Pickup point"
+            popupTitle="Exact shop location"
+            popupDescription="This pin is what shows up on the customer, seller, and rider maps."
+            selectedText={(coords) =>
+              `Shop pin set at ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
+            }
+            emptyText="No shop pin selected yet."
+            initialCenter={santaMariaBulacanCenter}
           />
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Decimal value (e.g. 0.25 = 25%). This affects payout calculations.
-          </p>
         </div>
+
 
         <div className="flex flex-wrap gap-4 md:col-span-2 pt-4 border-t border-border">
           <Button
@@ -355,33 +329,6 @@ export function ShopProfileSection({
         </div>
       </div>
 
-      <div className="pt-6 border-t border-border">
-        <p className="text-sm font-bold uppercase tracking-widest border-b border-border pb-2 mb-6">
-          Shop pin location
-        </p>
-        <LazyDeliveryLocationPicker
-          value={vendorCoordinates}
-          onChange={({ lat, lng }) =>
-            setVendorForm((current) => ({
-              ...current,
-              latitude: lat.toFixed(6),
-              longitude: lng.toFixed(6),
-            }))
-          }
-          title="Shop map pin"
-          description="Click or drag the marker so customers and riders see the exact pickup point for your shop."
-          actionLabel="Use my shop location"
-          markerLabel="Shop pin"
-          popupEyebrow="Pickup point"
-          popupTitle="Exact shop location"
-          popupDescription="This pin is what shows up on the customer, seller, and rider maps."
-          selectedText={(coords) =>
-            `Shop pin set at ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`
-          }
-          emptyText="No shop pin selected yet."
-          initialCenter={santaMariaBulacanCenter}
-        />
-      </div>
     </div>
   );
 }

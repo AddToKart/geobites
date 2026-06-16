@@ -20,8 +20,6 @@ const typeorm_2 = require("typeorm");
 const menu_item_entity_1 = require("../entities/menu-item.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
 let MenuService = class MenuService {
-    menuRepository;
-    vendorRepository;
     constructor(menuRepository, vendorRepository) {
         this.menuRepository = menuRepository;
         this.vendorRepository = vendorRepository;

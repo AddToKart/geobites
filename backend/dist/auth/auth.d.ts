@@ -1,4 +1,4 @@
-export declare const auth: import("better-auth", { with: { "resolution-mode": "import" } }).Auth<{
+export declare const auth: import("better-auth").Auth<{
     appName: string;
     baseURL: string;
     secret: string;

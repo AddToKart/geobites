@@ -38,17 +38,6 @@ const riderTransitions = {
     delivering: ['delivered'],
 };
 let OrdersService = OrdersService_1 = class OrdersService {
-    orderRepository;
-    orderItemRepository;
-    menuItemRepository;
-    ratingRepository;
-    vendorRepository;
-    notificationsService;
-    walletService;
-    geopayService;
-    vouchersService;
-    dataSource;
-    logger = new common_1.Logger(OrdersService_1.name);
     constructor(orderRepository, orderItemRepository, menuItemRepository, ratingRepository, vendorRepository, notificationsService, walletService, geopayService, vouchersService, dataSource) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
@@ -60,6 +49,7 @@ let OrdersService = OrdersService_1 = class OrdersService {
         this.geopayService = geopayService;
         this.vouchersService = vouchersService;
         this.dataSource = dataSource;
+        this.logger = new common_1.Logger(OrdersService_1.name);
     }
     async create(createOrderDto, customerId) {
         const menuItemIds = createOrderDto.items.map((item) => item.menuItemId);

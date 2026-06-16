@@ -13,17 +13,6 @@ exports.UpdateVendorDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 class UpdateVendorDto {
-    name;
-    description;
-    address;
-    latitude;
-    longitude;
-    imageUrl;
-    isActive;
-    isTemporarilyClosed;
-    category;
-    operatingHours;
-    commissionRate;
 }
 exports.UpdateVendorDto = UpdateVendorDto;
 __decorate([

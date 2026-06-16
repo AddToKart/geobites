@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateDeliveryStatusDto = void 0;
 const class_validator_1 = require("class-validator");
 class UpdateDeliveryStatusDto {
-    status;
 }
 exports.UpdateDeliveryStatusDto = UpdateDeliveryStatusDto;
 __decorate([

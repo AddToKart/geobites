@@ -41,6 +41,7 @@ web-build/
 .expo/
 /ios
 /android
+backend/dist
 
 # Logs and debug files
 *.log
