@@ -12,6 +12,7 @@ import {
 import { decimalNumberTransformer } from '../database/decimal-number.transformer';
 import { OrderItem } from './order-item.entity';
 import { Rating } from './rating.entity';
+import { RiderRating } from './rider-rating.entity';
 import { Vendor } from './vendor.entity';
 
 @Entity('orders')
@@ -90,10 +91,10 @@ export class Order {
 
   @Column({
     type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
-    enum: ['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'],
+    enum: ['COD', 'GEOPAY'],
     default: 'COD',
   })
-  paymentMethod!: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+  paymentMethod!: 'COD' | 'GEOPAY';
 
   @Column({
     type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
@@ -176,6 +177,9 @@ export class Order {
 
   @OneToMany(() => Rating, (rating) => rating.order)
   ratings!: Rating[];
+
+  @OneToMany(() => RiderRating, (rating) => rating.order)
+  riderRatings!: RiderRating[];
 
   riderName?: string;
   riderPhone?: string;

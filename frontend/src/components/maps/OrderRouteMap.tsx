@@ -309,7 +309,7 @@ export function OrderRouteMap({
 
     void fetchRoute();
     return () => controller.abort();
-  }, [vendorPoint?.lat, vendorPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
+  }, [customerPoint, vendorPoint]);
 
   useEffect(() => {
     if (!riderPoint || !customerPoint) {
@@ -348,7 +348,7 @@ export function OrderRouteMap({
 
     void fetchRoute();
     return () => controller.abort();
-  }, [riderPoint?.lat, riderPoint?.lng, customerPoint?.lat, customerPoint?.lng]);
+  }, [customerPoint, riderPoint]);
 
   const initialCenter: [number, number] = points[0]
     ? [points[0].lng, points[0].lat]

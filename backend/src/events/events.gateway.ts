@@ -73,7 +73,7 @@ export class EventsGateway
     @MessageBody() room: string,
     @ConnectedSocket() client: Socket,
   ) {
-    client.join(room);
+    void client.join(room);
     this.logger.log(`${client.id} joined room: ${room}`);
   }
 
@@ -83,7 +83,7 @@ export class EventsGateway
     @MessageBody() room: string,
     @ConnectedSocket() client: Socket,
   ) {
-    client.leave(room);
+    void client.leave(room);
     this.logger.log(`${client.id} left room: ${room}`);
   }
 

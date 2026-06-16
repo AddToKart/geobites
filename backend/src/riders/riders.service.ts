@@ -20,6 +20,22 @@ export class RidersService {
     private readonly dataSource: DataSource,
   ) {}
 
+  async getRiderStats(riderId: string) {
+    const allDeliveries = await this.orderRepository.find({
+      where: { riderId },
+    });
+    const completed = allDeliveries.filter((o) => o.status === 'delivered');
+    const totalEarnings = completed.reduce(
+      (sum, o) => sum + Number(o.deliveryFee ?? 0),
+      0,
+    );
+    return {
+      totalDeliveries: allDeliveries.length,
+      completedDeliveries: completed.length,
+      totalEarnings,
+    };
+  }
+
   async findDeliveries(riderId: string, query: QueryRiderDeliveriesDto) {
     const type = query.type ?? 'available';
     let orders: Order[] = [];

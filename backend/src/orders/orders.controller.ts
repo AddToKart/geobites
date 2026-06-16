@@ -13,6 +13,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { SessionGuard } from '../common/guards/session.guard';
 import type { UserRole } from '../common/constants/roles';
+import { CompleteOrderDto } from './dto/complete-order.dto';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { QueryOrdersDto } from './dto/query-orders.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -71,6 +72,16 @@ export class OrdersController {
   @Roles('seller')
   getAvailableRiders() {
     return this.ordersService.getAvailableRiders();
+  }
+
+  @Post(':id/complete')
+  @Roles('customer')
+  completeOrder(
+    @Param('id') id: string,
+    @Body() completeOrderDto: CompleteOrderDto,
+    @CurrentUser('id') customerId: string,
+  ) {
+    return this.ordersService.completeOrder(id, completeOrderDto, customerId);
   }
 
   @Post(':id/assign-rider')

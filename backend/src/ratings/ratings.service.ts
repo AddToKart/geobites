@@ -56,7 +56,11 @@ export class RatingsService {
         });
 
         if (existingRating) {
-          throw new BadRequestException('Order already has a rating');
+          return {
+            savedRating: existingRating,
+            vendorUserId: null,
+            orderId: order.id,
+          };
         }
 
         const rating = ratingRepository.create({

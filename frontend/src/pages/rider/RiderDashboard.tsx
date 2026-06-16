@@ -2,13 +2,10 @@ import { useCallback, startTransition, useEffect, useMemo, useState } from 'reac
 import { Link } from 'react-router-dom';
 import {
   Bike,
-  Clock3,
   MapPin,
-  PackageCheck,
   Sparkles,
   CheckCircle2,
   Zap,
-  ShoppingBag,
   Store,
   AlertCircle,
   Wallet,

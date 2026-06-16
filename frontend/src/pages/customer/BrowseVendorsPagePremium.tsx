@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { List, MapIcon, Store, Plus, Search } from 'lucide-react';
+import { List, MapIcon, Store, Plus } from 'lucide-react';
 import { getVendorDistanceKm, isNearSantaMariaBulacan, santaMariaBulacanCenter } from '@/data/demoVendors';
 import { useAuth } from '@/hooks/useAuth';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
@@ -44,7 +44,7 @@ function toBrowseVendor(vendor: Vendor, coords: { lat: number; lng: number }): B
 const CATEGORIES = [
   'All',
   'Silog',
-  'Ihaw-Ihaw',
+  'Grilled',
   'Snacks',
   'Drinks',
 ];
@@ -89,12 +89,14 @@ export function BrowseVendorsPagePremium() {
   const allVendorsRef = useRef<BrowseVendor[]>([]);
 
   const allVendors = useMemo(() => {
-    const merged = liveVendors
+    return liveVendors
       .map((vendor) => toBrowseVendor(vendor, coords))
       .filter((vendor): vendor is BrowseVendor => Boolean(vendor));
-    allVendorsRef.current = merged;
-    return merged;
   }, [coords, liveVendors]);
+
+  useEffect(() => {
+    allVendorsRef.current = allVendors;
+  }, [allVendors]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -217,10 +219,12 @@ export function BrowseVendorsPagePremium() {
       // Category selection filter
       if (selectedCategory === 'All') return true;
 
+      if (vendor.category === selectedCategory) return true;
+
       const categoryLower = selectedCategory.toLowerCase();
       const keywords: Record<string, string[]> = {
         'silog': ['silog', 'breakfast', 'almusal', 'tapsi'],
-        'ihaw-ihaw': ['ihaw', 'grill', 'barbecue', 'bbq', 'liempo', 'inasal'],
+        'grilled': ['ihaw', 'grill', 'barbecue', 'bbq', 'liempo', 'inasal'],
         'pancit & noodles': ['pancit', 'noodles', 'bihon', 'canton', 'mami'],
         'desserts & sweet': ['dessert', 'sweet', 'halo-halo', 'ice cream', 'cake', 'flan', 'buko'],
         'burgers & fast food': ['burger', 'fries', 'chicken', 'fast food', 'pizza'],

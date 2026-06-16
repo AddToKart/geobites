@@ -29,7 +29,6 @@ import {
   loadSellerPayoutsPage,
   loadSellerKDSPage,
   loadSellerPOSPage,
-  loadSellerPromotionsPage,
   loadSellerVouchersPage,
   loadSellerRatingsPage,
   loadSellerWalletPage,
@@ -81,7 +80,6 @@ const SellerAnalytics = lazy(loadSellerAnalyticsPage);
 const SellerPayouts = lazy(loadSellerPayoutsPage);
 const SellerKDS = lazy(loadSellerKDSPage);
 const SellerPOS = lazy(loadSellerPOSPage);
-const SellerPromotions = lazy(loadSellerPromotionsPage);
 const SellerVouchers = lazy(loadSellerVouchersPage);
 const SellerRatings = lazy(loadSellerRatingsPage);
 const SellerWallet = lazy(loadSellerWalletPage);
@@ -185,7 +183,6 @@ function AppRoutes() {
               <Route path="/seller/payouts" element={<RouteGroup><SellerPayouts /></RouteGroup>} />
               <Route path="/seller/kds" element={<RouteGroup><SellerKDS /></RouteGroup>} />
               <Route path="/seller/pos" element={<RouteGroup><SellerPOS /></RouteGroup>} />
-              <Route path="/seller/promotions" element={<RouteGroup><SellerPromotions /></RouteGroup>} />
               <Route path="/seller/vouchers" element={<RouteGroup><SellerVouchers /></RouteGroup>} />
               <Route path="/seller/ratings" element={<RouteGroup><SellerRatings /></RouteGroup>} />
               <Route path="/seller/wallet" element={<RouteGroup><SellerWallet /></RouteGroup>} />

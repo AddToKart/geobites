@@ -38,15 +38,12 @@ const addressSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-const preferencesSchema = z.object({
-  orderAlerts: z.boolean(),
-  marketingEmails: z.boolean(),
-});
+
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 type BusinessFormData = z.infer<typeof businessSchema>;
 type AddressFormData = z.infer<typeof addressSchema>;
-type PreferencesFormData = z.infer<typeof preferencesSchema>;
+type PreferencesFormData = { orderAlerts: boolean; marketingEmails: boolean; };
 
 export function SettingsPage() {
   const { user, refreshSession } = useAuth();
@@ -130,7 +127,7 @@ export function SettingsPage() {
   const onSaveProfile = async (data: ProfileFormData) => {
     setIsSaving(true);
     try {
-      let payload: Parameters<typeof updateProfile>[0] = {
+      const payload: Parameters<typeof updateProfile>[0] = {
         name: data.name.trim(),
         phone: data.phone?.trim() || undefined,
       };
@@ -185,19 +182,6 @@ export function SettingsPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const onSaveBusiness = async (data: BusinessFormData) => {
-    setIsSaving(true);
-    try {
-      await updateProfile({ storeName: data.storeName.trim(), businessPermit: data.businessPermit?.trim() || undefined });
-      await refreshSession();
-      toast.success('Business details updated successfully');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update business details');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const onSaveAddress = async (data: AddressFormData) => {
     setAddressSaving(true);
     try {
@@ -245,7 +229,7 @@ export function SettingsPage() {
     } catch { toast.error('Failed to set default address'); }
   };
 
-  const onSavePreferences = (data: PreferencesFormData) => {
+  const onSavePreferences = () => {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);

@@ -1,5 +1,5 @@
 import { type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import { Camera, CheckCircle2, Save, Clock, ShieldCheck, Percent, X } from 'lucide-react';
+import { Camera, CheckCircle2, Save, ShieldCheck, Percent, X } from 'lucide-react';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
 import { LazyDeliveryLocationPicker } from '@/components/maps/LazyDeliveryLocationPicker';
 import { Button } from '@/components/ui/button';
@@ -159,6 +159,28 @@ export function ShopProfileSection({
               }))
             }
           />
+        </div>
+
+        <div className="space-y-2 md:col-span-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Shop category
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            {(["", "Silog", "Grilled", "Snacks", "Drinks"] as const).map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setVendorForm((current) => ({ ...current, category: cat }))}
+                className={`h-12 font-bold tracking-widest text-xs border transition-colors rounded-none ${
+                  vendorForm.category === cat
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-transparent text-foreground border-border hover:bg-secondary/20"
+                }`}
+              >
+                {cat || "None"}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2 md:col-span-2">

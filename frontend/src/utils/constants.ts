@@ -9,7 +9,7 @@ const getApiUrl = () => {
           .replace('//127.0.0.1:', `//${hostname}:`);
       }
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
   return envUrl;
 };
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { MapMouseEvent } from 'maplibre-gl';
 import { CheckCircle2, Loader2, LocateFixed, MapPinned } from 'lucide-react';
-import { santaMariaBulacanCenter } from '@/data/demoVendors';
+import { santaMariaBulacanCenter, santaMariaBulacanBounds } from '@/data/demoVendors';
 import {
   Map,
   MapControls,
@@ -367,6 +367,7 @@ export function DeliveryLocationPicker({
               zoom={15}
               className="h-[min(70vh,36rem)] w-full"
               styles={selectedStyle}
+              maxBounds={santaMariaBulacanBounds}
             >
               <DeliveryPickerInteractions
                 center={center}

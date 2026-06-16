@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock3, ExternalLink, TimerReset, CheckCheck, ChefHat, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Clock3, ExternalLink, TimerReset, ChefHat, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
@@ -54,10 +54,10 @@ export function SellerKDS() {
     }
   };
 
-  const orderAge = (createdAt: string) => {
+  const orderAge = useCallback((createdAt: string) => {
     const minutes = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
     return minutes;
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">

@@ -1,6 +1,6 @@
 import api from './api';
 import { getDemoVendorMenu, isDemoVendorId } from '../data/demoVendors';
-import { MenuItem, Vendor } from '../types';
+import { MenuItem } from '../types';
 
 export interface DishSearchResult {
   vendor: {

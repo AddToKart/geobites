@@ -14,6 +14,7 @@ import {
   useMap,
 } from '@/components/ui/map';
 import { cn } from '@/lib/utils';
+import { santaMariaBulacanBounds } from '@/data/demoVendors';
 
 type BrowseMapVendor = {
   id: string;
@@ -50,6 +51,7 @@ function BrowseMapViewport({
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleMapClick = (e: any) => {
       const target = e.originalEvent?.target as HTMLElement | null;
       if (target && (target.closest('.maplibregl-marker') || target.closest('.maplibregl-ctrl'))) {
@@ -307,6 +309,7 @@ export function BrowseVendorMapPanel({
         zoom={14.2}
         className="h-full w-full"
         styles={selectedStyle}
+        maxBounds={santaMariaBulacanBounds}
       >
         <BrowseMapViewport
           vendorPoints={vendors}

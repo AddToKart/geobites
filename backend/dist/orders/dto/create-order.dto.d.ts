@@ -9,7 +9,7 @@ export declare class CreateOrderDto {
     barangay?: string;
     landmark?: string;
     floorOrGate?: string;
-    paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+    paymentMethod?: 'COD' | 'GEOPAY';
     paymentReference?: string;
     deliveryLat?: number;
     deliveryLng?: number;

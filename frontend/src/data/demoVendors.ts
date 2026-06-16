@@ -5,6 +5,11 @@ export const santaMariaBulacanCenter = {
   lng: 120.9565,
 };
 
+export const santaMariaBulacanBounds: [[number, number], [number, number]] = [
+  [120.91, 14.77],
+  [121.01, 14.89],
+];
+
 const timestamp = '2026-03-21T08:00:00.000Z';
 
 export type DemoVendor = Vendor & {

@@ -7,7 +7,7 @@ export interface PlaceOrderPayload {
   street: string;
   barangay: string;
   landmark?: string;
-  paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+  paymentMethod: 'COD' | 'GEOPAY';
   paymentReference?: string;
   deliveryLat?: number;
   deliveryLng?: number;
@@ -93,5 +93,13 @@ export async function getAvailableRiders(): Promise<AvailableRider[]> {
 
 export async function assignRider(orderId: string, riderId: string): Promise<Order> {
   const response = await api.post<Order>(`/orders/${orderId}/assign-rider`, { riderId });
+  return response.data;
+}
+
+export async function completeOrder(
+  orderId: string,
+  payload: { score: number; feedback?: string },
+): Promise<Order> {
+  const response = await api.post<Order>(`/orders/${orderId}/complete`, payload);
   return response.data;
 }

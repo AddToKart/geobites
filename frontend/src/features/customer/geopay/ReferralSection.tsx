@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Users, Copy, Check, Share2, History, Gift } from "lucide-react";
 import { useReferralCode, useReferralHistory, useRegisterReferral } from "@/hooks/queries";
 import { useAuth } from "@/hooks/useAuth";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
+import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { toast } from "sonner";
 
 export function ReferralSection() {

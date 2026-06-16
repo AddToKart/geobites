@@ -4,7 +4,7 @@ import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { Order } from '@/types';
 import { formatCurrency } from '@/utils/helpers';
-import { StatusBadge } from '@/components/ui/status-badge';
+
 
 function StatCard({
   icon,
@@ -98,10 +98,7 @@ export function SellerAnalytics() {
     const todayStr = today.toDateString();
     const thisWeekStart = new Date(today);
     thisWeekStart.setDate(today.getDate() - today.getDay());
-    const thisWeekStr = thisWeekStart.toDateString();
-
     const todaysOrders = orders.filter((o) => new Date(o.createdAt).toDateString() === todayStr);
-    const thisWeekOrders = orders.filter((o) => new Date(o.createdAt) >= thisWeekStart);
 
     const completedOrders = orders.filter((o) => o.status === 'delivered');
     const todayCompleted = todaysOrders.filter((o) => o.status === 'delivered');

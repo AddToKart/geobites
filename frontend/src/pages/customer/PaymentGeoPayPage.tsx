@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Wallet, ShieldCheck } from "lucide-react";
 import { PaymentLayout, GEOPAY_BRAND } from "@/features/customer/payment/PaymentLayout";
 import { PaymentSuccess } from "@/features/customer/payment/PaymentSuccess";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 export function PaymentGeoPayPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const orderId = searchParams.get("orderId") || "";
   const amount = Number(searchParams.get("amount") || "0");
   const [step, setStep] = useState<"confirm" | "success">("confirm");
@@ -23,6 +25,7 @@ export function PaymentGeoPayPage() {
     setIsSubmitting(true);
     try {
       await initiatePayment(orderId);
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
       setStep("success");
       toast.success("Paid successfully using GeoPay Wallet!");
       setTimeout(() => navigate(`/receipt/${orderId}`), 2000);

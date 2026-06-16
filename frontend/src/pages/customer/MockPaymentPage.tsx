@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, ShieldCheck, Landmark, Smartphone, KeyRound, Receipt } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,7 @@ export function MockPaymentPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState("");
-  const qrRef = useRef(false);
- 
+  
   const isGcash = method === "GCASH";
   const isMaya = method === "MAYA";
   const isQr = method === "QRPH";
@@ -146,15 +144,11 @@ export function MockPaymentPage() {
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-foreground"></div>
 
                   <div className="w-64 h-64 border border-border bg-background p-4 relative flex items-center justify-center">
-                    {qrDataUrl ? (
-                      <div dangerouslySetInnerHTML={{ __html: qrDataUrl }} className="w-full h-full" />
-                    ) : (
-                      <div className="grid grid-cols-5 gap-2 w-full h-full">
-                        {Array.from({ length: 25 }).map((_, i) => (
-                          <div key={i} className={`${(i * 7 + 13) % 3 === 0 ? "bg-foreground" : "bg-transparent"}`} />
-                        ))}
-                      </div>
-                    )}
+                    <div className="grid grid-cols-5 gap-2 w-full h-full">
+                      {Array.from({ length: 25 }).map((_, i) => (
+                        <div key={i} className={`${(i * 7 + 13) % 3 === 0 ? "bg-foreground" : "bg-transparent"}`} />
+                      ))}
+                    </div>
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="bg-background border-4 border-foreground px-3 py-1.5 text-foreground font-bold tracking-tighter text-base">
                         QR PH

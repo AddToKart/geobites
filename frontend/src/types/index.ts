@@ -55,6 +55,7 @@ export interface Vendor {
   businessPermitExpiry?: string;
   foodSafetyCert?: string;
   foodSafetyCertExpiry?: string;
+  category?: string;
   commissionRate: number;
   createdAt: string;
   updatedAt: string;
@@ -111,7 +112,7 @@ export interface Order {
   riderLat?: number;
   riderLng?: number;
   notes?: string;
-  paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+  paymentMethod: 'COD' | 'GEOPAY';
   paymentStatus: 'pending' | 'paid' | 'failed';
   paymentSessionId?: string;
   items: OrderItem[];

@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const menu_item_entity_1 = require("../entities/menu-item.entity");
 const order_item_entity_1 = require("../entities/order-item.entity");
 const order_entity_1 = require("../entities/order.entity");
+const rating_entity_1 = require("../entities/rating.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
 const wallet_module_1 = require("../wallet/wallet.module");
@@ -25,7 +26,7 @@ exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order, order_item_entity_1.OrderItem, menu_item_entity_1.MenuItem, vendor_entity_1.Vendor]),
+            typeorm_1.TypeOrmModule.forFeature([order_entity_1.Order, order_item_entity_1.OrderItem, menu_item_entity_1.MenuItem, rating_entity_1.Rating, vendor_entity_1.Vendor]),
             notifications_module_1.NotificationsModule,
             wallet_module_1.WalletModule,
             geopay_module_1.GeopayModule,

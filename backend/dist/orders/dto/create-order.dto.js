@@ -74,7 +74,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "floorOrGate", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY']),
+    (0, class_validator_1.IsEnum)(['COD', 'GEOPAY']),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateOrderDto.prototype, "paymentMethod", void 0);

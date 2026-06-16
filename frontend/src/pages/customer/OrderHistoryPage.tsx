@@ -4,19 +4,29 @@ import {
   ArrowRight,
   Clock3,
   PackageCheck,
-  RefreshCw,
   Search,
   ShoppingBag,
   Sparkles,
+  Star,
+  Loader2,
 } from "lucide-react";
 import { LazyOrderRouteMap } from "@/components/maps/LazyOrderRouteMap";
 import { OrderCard } from "../../components/custom/OrderCard";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/useCart";
-import { getOrders } from "../../services/orderService";
+import { getOrders, completeOrder } from "../../services/orderService";
 import { getVendorMenu } from "../../services/menuService";
 import { Order } from "../../types";
 
@@ -31,6 +41,7 @@ const activeStatuses = [
   "delivering",
 ];
 const issueStatuses = ["cancelled", "rejected"];
+const deliverableStatuses = ["ready_for_pickup", "picked_up", "delivering"];
 
 export function OrderHistoryPage() {
   const navigate = useNavigate();
@@ -40,8 +51,11 @@ export function OrderHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [search, setSearch] = useState("");
-  const [reorderingId, setReorderingId] = useState<string | null>(null);
-
+  const [ratingOrderId, setRatingOrderId] = useState<string | null>(null);
+  const [ratingScore, setRatingScore] = useState(0);
+  const [ratingFeedback, setRatingFeedback] = useState("");
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [, setReorderingId] = useState<string | null>(null);
   useEffect(() => {
     void (async () => {
       setIsLoading(true);
@@ -139,10 +153,35 @@ export function OrderHistoryPage() {
       toast.success(`${addedCount} item(s) re-added to cart`, {
         action: { label: "View Cart", onClick: () => navigate('/cart') },
       });
-    } catch (err) {
+    } catch {
       toast.error("Failed to reorder. Please try again.");
     } finally {
       setReorderingId(null);
+    }
+  };
+
+  const handleStartRating = (orderId: string) => {
+    setRatingOrderId(orderId);
+    setRatingScore(0);
+    setRatingFeedback("");
+  };
+
+  const handleSubmitRating = async () => {
+    if (!ratingOrderId) return;
+    if (ratingScore < 1) { toast.error("Please select a rating"); return; }
+    setIsSubmittingRating(true);
+    try {
+      await completeOrder(ratingOrderId, { score: ratingScore, feedback: ratingFeedback || undefined });
+      toast.success("Order marked as delivered!");
+      setRatingOrderId(null);
+      setRatingScore(0);
+      setRatingFeedback("");
+      const response = await getOrders({ page: 1, limit: 20 });
+      setOrders(response.data);
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : "Failed to complete order");
+    } finally {
+      setIsSubmittingRating(false);
     }
   };
 
@@ -295,6 +334,11 @@ export function OrderHistoryPage() {
                           ? () => void handleReorder(order)
                           : undefined
                       }
+                      onDeliver={
+                        deliverableStatuses.includes(order.status)
+                          ? () => handleStartRating(order.id)
+                          : undefined
+                      }
                     />
                   ))}
                 </section>
@@ -359,6 +403,61 @@ export function OrderHistoryPage() {
             </div>
           </section>
         )}
+
+        <Dialog open={!!ratingOrderId} onOpenChange={(open) => { if (!open) setRatingOrderId(null); }}>
+          <DialogContent className="sm:max-w-md rounded-none">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-medium tracking-tighter">Rate your order</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                How was your experience? Tap a star to rate.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center gap-2 py-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRatingScore(star)}
+                  className="transition-all hover:scale-110"
+                >
+                  <Star
+                    className={`h-10 w-10 ${
+                      star <= ratingScore
+                        ? "fill-primary text-primary"
+                        : "text-muted-foreground/30"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Optional feedback..."
+              value={ratingFeedback}
+              onChange={(e) => setRatingFeedback(e.target.value)}
+              className="rounded-none min-h-[80px]"
+            />
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-none"
+                onClick={() => setRatingOrderId(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 rounded-none"
+                disabled={ratingScore < 1 || isSubmittingRating}
+                onClick={() => void handleSubmitRating()}
+              >
+                {isSubmittingRating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Submit rating"
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

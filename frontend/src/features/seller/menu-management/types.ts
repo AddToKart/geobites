@@ -14,6 +14,7 @@ export type VendorFormState = {
   longitude: string;
   isActive: boolean;
   isTemporarilyClosed: boolean;
+  category: string;
   businessPermit: string;
   businessPermitExpiry: string;
   foodSafetyCert: string;

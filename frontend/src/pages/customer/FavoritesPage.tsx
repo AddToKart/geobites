@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star, Trash2 } from "lucide-react";
 import { useFavorites, useRemoveFavorite } from "@/hooks/queries";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 
 export function FavoritesPage() {
   const { data: favorites, isLoading, error } = useFavorites();

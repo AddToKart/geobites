@@ -2,7 +2,7 @@ import { Clock } from 'lucide-react';
 import type { OperatingHoursFormState } from './types';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const FULL_DAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 
 export function OperatingHoursEditor({
   operatingHours,

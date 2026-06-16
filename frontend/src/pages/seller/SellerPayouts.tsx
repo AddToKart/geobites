@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DollarSign, ArrowUpRight, ArrowDownRight, Banknote, CreditCard, Percent, FileDown } from 'lucide-react';
+import { DollarSign, ArrowDownRight, Banknote, Percent, FileDown } from 'lucide-react';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { getOrders } from '@/services/orderService';
 import { Order } from '@/types';

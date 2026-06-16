@@ -38,6 +38,7 @@ let Vendor = class Vendor {
     commissionRate;
     isActive;
     isTemporarilyClosed;
+    category;
     createdAt;
     updatedAt;
     menuItems;
@@ -149,6 +150,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: false }),
     __metadata("design:type", Boolean)
 ], Vendor.prototype, "isTemporarilyClosed", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Vendor.prototype, "category", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

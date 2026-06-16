@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/utils/helpers";
 import { initiateCashIn } from "@/services/walletService";
 import { useAuth } from "@/hooks/useAuth";
-import { useWallet, useTransactions, useRequestCustomerWithdrawal, useCustomerWithdrawals } from "@/hooks/queries";
+import { useWallet, useTransactions, useRequestCustomerWithdrawal } from "@/hooks/queries";
 import { toast } from "sonner";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
 import { RewardsSection } from "@/features/customer/geopay/RewardsSection";

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LazyDeliveryLocationPicker } from "@/components/maps/LazyDeliveryLocationPicker";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
-import { useWallet, useVendor, useAddresses, useRewardsBalance } from "@/hooks/queries";
+import { useWallet, useVendor, useAddresses } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/helpers";
 import { VoucherDiscountSection } from "@/features/customer/VoucherDiscountSection";
 import { placeOrder } from "@/services/orderService";
@@ -22,17 +22,7 @@ const cartSchema = z.object({
   barangay: z.string().min(1, "Barangay is required"),
   landmark: z.string().optional(),
   notes: z.string().optional(),
-  paymentMethod: z.enum(["COD", "GCASH", "MAYA", "QRPH", "GEOPAY"]),
-  paymentRef: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (["GCASH", "MAYA", "QRPH"].includes(data.paymentMethod)) {
-    const ref = data.paymentRef ?? "";
-    if (!ref.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Reference number is required", path: ["paymentRef"] });
-    } else if (ref.trim().length < 4) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Reference number must be at least 4 digits", path: ["paymentRef"] });
-    }
-  }
+  paymentMethod: z.enum(["COD", "GEOPAY"]),
 });
 
 type CartFormData = z.infer<typeof cartSchema>;
@@ -48,7 +38,6 @@ export function CartPage() {
     handleSubmit,
     setValue,
     watch,
-    trigger,
     formState: { errors },
   } = useForm<CartFormData>({
     resolver: zodResolver(cartSchema),
@@ -58,12 +47,11 @@ export function CartPage() {
       landmark: user?.landmark || "",
       notes: "",
       paymentMethod: "COD",
-      paymentRef: "",
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const paymentMethod = watch("paymentMethod");
-  const paymentRefValue = watch("paymentRef") ?? "";
 
   const { data: wallet } = useWallet();
   const { data: vendor } = useVendor(vendorId ?? "");
@@ -157,14 +145,12 @@ export function CartPage() {
     setIsSubmitting(true);
 
     try {
-      const isDigital = ["GCASH", "MAYA", "QRPH"].includes(data.paymentMethod);
       const createdOrder = await placeOrder({
         vendorId,
         street: data.street.trim(),
         barangay: data.barangay.trim(),
         landmark: data.landmark?.trim() || undefined,
         paymentMethod: data.paymentMethod,
-        paymentReference: isDigital ? data.paymentRef?.trim() : undefined,
         deliveryLat: deliveryPin.lat,
         deliveryLng: deliveryPin.lng,
         notes: data.notes?.trim() || undefined,
@@ -180,16 +166,8 @@ export function CartPage() {
 
       clearCart();
 
-      const paymentRoutes: Record<string, string> = {
-        GCASH: `/payment/gcash?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
-        MAYA: `/payment/maya?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
-        QRPH: `/payment/qrph?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
-        GEOPAY: `/payment/geopay?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`,
-      };
-
-      const paymentRoute = paymentRoutes[data.paymentMethod];
-      if (paymentRoute) {
-        navigate(paymentRoute);
+      if (data.paymentMethod === "GEOPAY") {
+        navigate(`/payment/geopay?orderId=${createdOrder.id}&amount=${createdOrder.totalAmount}`);
       } else {
         navigate(`/receipt/${createdOrder.id}`);
       }
@@ -490,7 +468,7 @@ export function CartPage() {
                   Payment Method
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  {(["COD", "GCASH", "MAYA", "QRPH", "GEOPAY"] as const).map((method) => (
+                  {(["COD", "GEOPAY"] as const).map((method) => (
                     <button
                       key={method}
                       type="button"
@@ -501,55 +479,11 @@ export function CartPage() {
                           : "bg-transparent text-foreground border-border hover:bg-secondary/20"
                       }`}
                     >
-                      {method}
+                      {method === "COD" ? "Cash on Delivery" : "GeoPay"}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {["GCASH", "MAYA", "QRPH"].includes(paymentMethod) && (
-                <div className="space-y-6 bg-secondary/10 p-6 border border-border mb-12">
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                      Instructions
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      {paymentMethod === "GCASH" && (
-                        <>Send GCash payment to: <strong>0917 123 4567</strong></>
-                      )}
-                      {paymentMethod === "MAYA" && (
-                        <>Send Maya payment to: <strong>0917 123 4567</strong></>
-                      )}
-                      {paymentMethod === "QRPH" && (
-                        <>Scan the QR Code below with your app, then input the reference number.</>
-                      )}
-                    </p>
-                  </div>
-
-                  {paymentMethod === "QRPH" && (
-                    <div className="flex justify-center p-6 border border-border bg-background">
-                      <div className="h-32 w-32 border border-border flex items-center justify-center text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                        [ QR CODE ]
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                      Reference Number
-                    </label>
-                    <Input
-                      placeholder="e.g. 5013..."
-                      value={paymentRefValue}
-                      onChange={(e) => setValue("paymentRef", e.target.value.replace(/\D/g, ""), { shouldValidate: true })}
-                      onBlur={() => trigger("paymentRef")}
-                      className={`h-14 rounded-none border-border bg-background shadow-none focus-visible:ring-0 focus-visible:border-foreground ${errors.paymentRef ? 'border-red-500 bg-red-500/5' : ''}`}
-                      required
-                    />
-                    {errors.paymentRef && <p className="text-xs font-semibold text-red-500">{errors.paymentRef.message}</p>}
-                  </div>
-                </div>
-              )}
 
               {paymentMethod === "GEOPAY" && (
                 <div className="space-y-4 bg-secondary/10 p-6 border border-border mb-12">
@@ -561,9 +495,9 @@ export function CartPage() {
                       <p className="text-xl font-medium tracking-tighter">
                         Balance: <strong>{formatCurrency(wallet.balance)}</strong>
                       </p>
-                      {wallet.balance < total ? (
+                      {wallet.balance < orderTotal ? (
                         <p className="text-sm text-red-500 font-medium mt-2">
-                          Insufficient funds. Top up {formatCurrency(total - wallet.balance)} to proceed.
+                          Insufficient funds. Top up {formatCurrency(orderTotal - wallet.balance)} to proceed.
                         </p>
                       ) : (
                         <p className="text-sm text-green-600 font-medium mt-2">

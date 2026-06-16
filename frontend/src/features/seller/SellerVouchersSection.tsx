@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Gift, Plus, Percent, Tag, Trash2, Ban } from "lucide-react";
+import { Gift, Plus, Tag, Trash2, Ban } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyVouchers, createVoucher, deleteVoucher, updateVoucher } from "@/services/voucherService";
-import type { CreateVoucherPayload, Voucher } from "@/services/voucherService";
+import type { CreateVoucherPayload } from "@/services/voucherService";
 import { formatCurrency } from "@/utils/helpers";
 import { toast } from "sonner";
 
@@ -14,7 +14,7 @@ export function SellerVouchersSection() {
   });
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<CreateVoucherPayload>({
+  const [form, setForm] = useState<CreateVoucherPayload>(() => ({
     code: "",
     title: "",
     description: "",
@@ -25,7 +25,7 @@ export function SellerVouchersSection() {
     startsAt: new Date().toISOString().slice(0, 10),
     expiresAt: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     isActive: true,
-  });
+  }));
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateVoucherPayload) => createVoucher(payload),

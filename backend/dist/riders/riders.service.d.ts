@@ -8,6 +8,11 @@ export declare class RidersService {
     private readonly notificationsService;
     private readonly dataSource;
     constructor(orderRepository: Repository<Order>, notificationsService: NotificationsService, dataSource: DataSource);
+    getRiderStats(riderId: string): Promise<{
+        totalDeliveries: number;
+        completedDeliveries: number;
+        totalEarnings: number;
+    }>;
     findDeliveries(riderId: string, query: QueryRiderDeliveriesDto): Promise<Order[]>;
     acceptDelivery(orderId: string, riderId: string): Promise<Order>;
     updateDeliveryStatus(orderId: string, riderId: string, updateStatusDto: UpdateDeliveryStatusDto): Promise<Order>;

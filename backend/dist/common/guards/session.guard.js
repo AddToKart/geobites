@@ -12,14 +12,21 @@ const auth_1 = require("../../auth/auth");
 let SessionGuard = class SessionGuard {
     async canActivate(context) {
         const request = context.switchToHttp().getRequest();
+        const authHeader = request.headers.authorization;
         const cookieHeader = request.headers.cookie;
+        const headersMap = {};
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.slice(7);
+            const existingCookie = cookieHeader ? `${cookieHeader}; ` : '';
+            headersMap['cookie'] =
+                `${existingCookie}better-auth.session_token=${token}`;
+        }
+        else if (cookieHeader) {
+            headersMap['cookie'] = cookieHeader;
+        }
         try {
             const response = await auth_1.auth.api.getSession({
-                headers: new Headers(cookieHeader
-                    ? {
-                        cookie: cookieHeader,
-                    }
-                    : undefined),
+                headers: new Headers(Object.keys(headersMap).length > 0 ? headersMap : undefined),
             });
             const currentSession = response?.session;
             const currentUser = response?.user;

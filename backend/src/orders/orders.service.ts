@@ -11,6 +11,7 @@ import { UserRole } from '../common/constants/roles';
 import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
+import { Rating } from '../entities/rating.entity';
 import { Vendor } from '../entities/vendor.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
@@ -47,6 +48,8 @@ export class OrdersService {
     private readonly orderItemRepository: Repository<OrderItem>,
     @InjectRepository(MenuItem)
     private readonly menuItemRepository: Repository<MenuItem>,
+    @InjectRepository(Rating)
+    private readonly ratingRepository: Repository<Rating>,
     @InjectRepository(Vendor)
     private readonly vendorRepository: Repository<Vendor>,
     private readonly notificationsService: NotificationsService,
@@ -521,6 +524,130 @@ export class OrdersService {
     }
 
     return updatedOrder;
+  }
+
+  async completeOrder(
+    id: string,
+    dto: { score: number; feedback?: string },
+    customerId: string,
+  ): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id },
+      relations: { vendor: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.customerId !== customerId) {
+      throw new ForbiddenException('You can only complete your own orders');
+    }
+
+    const completableStatuses = ['delivering', 'ready_for_pickup', 'picked_up'];
+    if (
+      !completableStatuses.includes(order.status) &&
+      order.status !== 'delivered'
+    ) {
+      throw new BadRequestException(
+        'Order cannot be marked as delivered at this stage',
+      );
+    }
+
+    if (order.status === 'delivered') {
+      const existingRating = await this.ratingRepository.findOne({
+        where: { orderId: order.id },
+      });
+      if (existingRating) {
+        return order;
+      }
+    }
+
+    return await this.dataSource.transaction(async (manager) => {
+      const orderRepo = manager.getRepository(Order);
+      const ratingRepo = manager.getRepository(Rating);
+      const vendorRepo = manager.getRepository(Vendor);
+
+      order.status = 'delivered';
+      const savedOrder = await orderRepo.save(order);
+
+      const existingRating = await ratingRepo.findOne({
+        where: { orderId: order.id },
+      });
+
+      if (!existingRating) {
+        const rating = ratingRepo.create({
+          orderId: order.id,
+          customerId,
+          vendorId: order.vendorId,
+          score: dto.score,
+          feedback: dto.feedback,
+        });
+        await ratingRepo.save(rating);
+
+        const rawSummary = await ratingRepo
+          .createQueryBuilder('rating')
+          .select('COUNT(rating.id)', 'totalRatings')
+          .addSelect('AVG(rating.score)', 'averageScore')
+          .where('rating.vendorId = :vendorId', { vendorId: order.vendorId })
+          .getRawOne<{ totalRatings: string; averageScore: string | null }>();
+
+        const totalRatings = Number(rawSummary?.totalRatings ?? 0);
+        const average = Number(rawSummary?.averageScore ?? 0);
+
+        await vendorRepo.update(order.vendorId, {
+          rating: Number(average.toFixed(2)),
+          totalRatings,
+        });
+
+        // Notify seller about delivery and rating
+        if (order.vendor?.userId) {
+          await this.notificationsService.create({
+            userId: order.vendor.userId,
+            title: 'New Rating Received',
+            message: `Order #${order.id.slice(0, 8)} was marked as delivered. You received a ${dto.score}-star rating!`,
+            type: 'rating',
+            referenceId: order.id,
+          });
+        }
+      } else {
+        // Notify seller about delivery only
+        if (order.vendor?.userId) {
+          await this.notificationsService.create({
+            userId: order.vendor.userId,
+            title: 'Order Delivered',
+            message: `Order #${order.id.slice(0, 8)} was marked as delivered by the customer.`,
+            type: 'order_update',
+            referenceId: order.id,
+          });
+        }
+      }
+
+      // Award loyalty points
+      try {
+        await this.geopayService.awardPoints(
+          customerId,
+          Number(order.totalAmount),
+          order.id,
+        );
+      } catch (pointsError) {
+        this.logger.error(
+          `Failed to award points for order ${order.id}:`,
+          pointsError,
+        );
+      }
+
+      try {
+        await this.geopayService.rewardReferralOnFirstOrder(customerId);
+      } catch (refError) {
+        this.logger.error(
+          `Failed to reward referral for user ${customerId}:`,
+          refError,
+        );
+      }
+
+      return savedOrder;
+    });
   }
 
   async getAvailableRiders() {

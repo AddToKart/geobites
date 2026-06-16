@@ -20,6 +20,7 @@ const typeorm_2 = require("typeorm");
 const menu_item_entity_1 = require("../entities/menu-item.entity");
 const order_item_entity_1 = require("../entities/order-item.entity");
 const order_entity_1 = require("../entities/order.entity");
+const rating_entity_1 = require("../entities/rating.entity");
 const vendor_entity_1 = require("../entities/vendor.entity");
 const notifications_service_1 = require("../notifications/notifications.service");
 const wallet_service_1 = require("../wallet/wallet.service");
@@ -40,6 +41,7 @@ let OrdersService = OrdersService_1 = class OrdersService {
     orderRepository;
     orderItemRepository;
     menuItemRepository;
+    ratingRepository;
     vendorRepository;
     notificationsService;
     walletService;
@@ -47,10 +49,11 @@ let OrdersService = OrdersService_1 = class OrdersService {
     vouchersService;
     dataSource;
     logger = new common_1.Logger(OrdersService_1.name);
-    constructor(orderRepository, orderItemRepository, menuItemRepository, vendorRepository, notificationsService, walletService, geopayService, vouchersService, dataSource) {
+    constructor(orderRepository, orderItemRepository, menuItemRepository, ratingRepository, vendorRepository, notificationsService, walletService, geopayService, vouchersService, dataSource) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.menuItemRepository = menuItemRepository;
+        this.ratingRepository = ratingRepository;
         this.vendorRepository = vendorRepository;
         this.notificationsService = notificationsService;
         this.walletService = walletService;
@@ -397,6 +400,96 @@ let OrdersService = OrdersService_1 = class OrdersService {
         }
         return updatedOrder;
     }
+    async completeOrder(id, dto, customerId) {
+        const order = await this.orderRepository.findOne({
+            where: { id },
+            relations: { vendor: true },
+        });
+        if (!order) {
+            throw new common_1.NotFoundException('Order not found');
+        }
+        if (order.customerId !== customerId) {
+            throw new common_1.ForbiddenException('You can only complete your own orders');
+        }
+        const completableStatuses = ['delivering', 'ready_for_pickup', 'picked_up'];
+        if (!completableStatuses.includes(order.status) &&
+            order.status !== 'delivered') {
+            throw new common_1.BadRequestException('Order cannot be marked as delivered at this stage');
+        }
+        if (order.status === 'delivered') {
+            const existingRating = await this.ratingRepository.findOne({
+                where: { orderId: order.id },
+            });
+            if (existingRating) {
+                return order;
+            }
+        }
+        return await this.dataSource.transaction(async (manager) => {
+            const orderRepo = manager.getRepository(order_entity_1.Order);
+            const ratingRepo = manager.getRepository(rating_entity_1.Rating);
+            const vendorRepo = manager.getRepository(vendor_entity_1.Vendor);
+            order.status = 'delivered';
+            const savedOrder = await orderRepo.save(order);
+            const existingRating = await ratingRepo.findOne({
+                where: { orderId: order.id },
+            });
+            if (!existingRating) {
+                const rating = ratingRepo.create({
+                    orderId: order.id,
+                    customerId,
+                    vendorId: order.vendorId,
+                    score: dto.score,
+                    feedback: dto.feedback,
+                });
+                await ratingRepo.save(rating);
+                const rawSummary = await ratingRepo
+                    .createQueryBuilder('rating')
+                    .select('COUNT(rating.id)', 'totalRatings')
+                    .addSelect('AVG(rating.score)', 'averageScore')
+                    .where('rating.vendorId = :vendorId', { vendorId: order.vendorId })
+                    .getRawOne();
+                const totalRatings = Number(rawSummary?.totalRatings ?? 0);
+                const average = Number(rawSummary?.averageScore ?? 0);
+                await vendorRepo.update(order.vendorId, {
+                    rating: Number(average.toFixed(2)),
+                    totalRatings,
+                });
+                if (order.vendor?.userId) {
+                    await this.notificationsService.create({
+                        userId: order.vendor.userId,
+                        title: 'New Rating Received',
+                        message: `Order #${order.id.slice(0, 8)} was marked as delivered. You received a ${dto.score}-star rating!`,
+                        type: 'rating',
+                        referenceId: order.id,
+                    });
+                }
+            }
+            else {
+                if (order.vendor?.userId) {
+                    await this.notificationsService.create({
+                        userId: order.vendor.userId,
+                        title: 'Order Delivered',
+                        message: `Order #${order.id.slice(0, 8)} was marked as delivered by the customer.`,
+                        type: 'order_update',
+                        referenceId: order.id,
+                    });
+                }
+            }
+            try {
+                await this.geopayService.awardPoints(customerId, Number(order.totalAmount), order.id);
+            }
+            catch (pointsError) {
+                this.logger.error(`Failed to award points for order ${order.id}:`, pointsError);
+            }
+            try {
+                await this.geopayService.rewardReferralOnFirstOrder(customerId);
+            }
+            catch (refError) {
+                this.logger.error(`Failed to reward referral for user ${customerId}:`, refError);
+            }
+            return savedOrder;
+        });
+    }
     async getAvailableRiders() {
         const isSqlite = this.dataSource.options.type === 'better-sqlite3' ||
             this.dataSource.options.type === 'sqljs';
@@ -522,8 +615,10 @@ exports.OrdersService = OrdersService = OrdersService_1 = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
     __param(1, (0, typeorm_1.InjectRepository)(order_item_entity_1.OrderItem)),
     __param(2, (0, typeorm_1.InjectRepository)(menu_item_entity_1.MenuItem)),
-    __param(3, (0, typeorm_1.InjectRepository)(vendor_entity_1.Vendor)),
+    __param(3, (0, typeorm_1.InjectRepository)(rating_entity_1.Rating)),
+    __param(4, (0, typeorm_1.InjectRepository)(vendor_entity_1.Vendor)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -106,6 +106,9 @@ export class Vendor {
   @Column({ type: 'boolean', default: false })
   isTemporarilyClosed!: boolean;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  category?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 

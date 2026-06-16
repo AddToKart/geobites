@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BellRing, CheckCircle2, Filter, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { getNotifications, markNotificationAsRead } from '../../services/notificationService';
 import { Notification } from '../../types';
+import { useAuth } from '../../hooks/useAuth';
 import { formatDate } from '../../utils/helpers';
 import { Reveal, Stagger, StaggerItem } from '@/components/motion/Reveal';
 
@@ -16,6 +17,8 @@ const notificationTypeLabels: Record<Notification['type'], string> = {
 };
 
 export function NotificationsPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<NotificationFilter>('all');
 
@@ -59,6 +62,48 @@ export function NotificationsPage() {
     await Promise.all(visibleUnread.map((notification) => markNotificationAsRead(notification.id)));
     await loadNotifications();
     window.dispatchEvent(new CustomEvent('notification-status-changed'));
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.isRead) {
+      await markNotificationAsRead(notification.id);
+      await loadNotifications();
+      window.dispatchEvent(new CustomEvent('notification-status-changed'));
+    }
+
+    const role = user?.role;
+    const refId = notification.referenceId;
+
+    if (notification.type === 'order_update' && refId) {
+      if (role === 'customer') {
+        navigate(`/orders/${refId}`);
+        return;
+      }
+      if (role === 'seller') {
+        navigate('/seller/orders');
+        return;
+      }
+      if (role === 'rider') {
+        navigate('/rider');
+        return;
+      }
+    }
+
+    if (notification.type === 'delivery_request' && refId) {
+      navigate('/rider');
+      return;
+    }
+
+    if (notification.type === 'rating') {
+      if (role === 'seller') {
+        navigate('/seller/ratings');
+        return;
+      }
+      if (role === 'customer' && refId) {
+        navigate(`/orders/${refId}`);
+        return;
+      }
+    }
   };
 
   return (
@@ -168,9 +213,13 @@ export function NotificationsPage() {
             ) : (
               <Stagger className="space-y-4" delayChildren={0.05} stagger={0.05}>
                 {filteredNotifications.map((notification) => (
-                  <StaggerItem key={notification.id}>
+                    <StaggerItem key={notification.id}>
                     <div
-                      className={`flex flex-col md:flex-row md:items-start justify-between gap-6 p-8 border transition-colors ${
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => void handleNotificationClick(notification)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') void handleNotificationClick(notification); }}
+                      className={`flex flex-col md:flex-row md:items-start justify-between gap-6 p-8 border transition-colors cursor-pointer ${
                         notification.isRead
                           ? 'border-border bg-background hover:bg-secondary/5'
                           : 'border-primary/50 bg-primary/5 hover:bg-primary/10'
@@ -204,7 +253,7 @@ export function NotificationsPage() {
                       
                       {!notification.isRead && (
                         <button 
-                          onClick={() => void markAsRead(notification.id)}
+                          onClick={(e) => { e.stopPropagation(); void markAsRead(notification.id); }}
                           className="shrink-0 border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:self-center"
                         >
                           Mark as read

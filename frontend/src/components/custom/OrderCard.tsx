@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarDays, MapPin, Package2, RefreshCw } from 'lucide-react';
+import { ArrowRight, CalendarDays, MapPin, Package2, PackageCheck, RefreshCw } from 'lucide-react';
 import { Order } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/helpers';
 import { StatusBadge } from '../ui/status-badge';
 
-export const OrderCard = memo(function OrderCard({ order, onReorder }: { order: Order; onReorder?: () => void }) {
+export const OrderCard = memo(function OrderCard({ order, onReorder, onDeliver }: { order: Order; onReorder?: () => void; onDeliver?: () => void }) {
   const address = [order.street, order.barangay].filter(Boolean).join(', ') || order.deliveryAddress || 'No address specified';
 
   return (
@@ -56,9 +56,18 @@ export const OrderCard = memo(function OrderCard({ order, onReorder }: { order: 
               Reorder
             </button>
           )}
+          {onDeliver && (
+            <button
+              onClick={(e) => { e.preventDefault(); onDeliver(); }}
+              className="text-xs font-bold uppercase tracking-widest flex-1 flex items-center justify-center gap-2 border border-border py-3.5 bg-background hover:bg-green-600 hover:text-white hover:border-green-600 transition-colors"
+            >
+              <PackageCheck className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Mark delivered
+            </button>
+          )}
           <Link
             to={`/orders/${order.id}`}
-            className={`text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 border border-border py-3.5 bg-background hover:bg-secondary/10 ${onReorder ? '' : 'w-full'}`}
+            className={`text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors flex items-center justify-center gap-2 border border-border py-3.5 bg-background hover:bg-secondary/10 ${onReorder || onDeliver ? '' : 'w-full'}`}
           >
             View details
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" strokeWidth={2.5} />

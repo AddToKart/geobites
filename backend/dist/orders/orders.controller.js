@@ -18,6 +18,7 @@ const current_user_decorator_1 = require("../common/decorators/current-user.deco
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const session_guard_1 = require("../common/guards/session.guard");
+const complete_order_dto_1 = require("./dto/complete-order.dto");
 const create_order_dto_1 = require("./dto/create-order.dto");
 const query_orders_dto_1 = require("./dto/query-orders.dto");
 const update_order_status_dto_1 = require("./dto/update-order-status.dto");
@@ -47,6 +48,9 @@ let OrdersController = class OrdersController {
     }
     getAvailableRiders() {
         return this.ordersService.getAvailableRiders();
+    }
+    completeOrder(id, completeOrderDto, customerId) {
+        return this.ordersService.completeOrder(id, completeOrderDto, customerId);
     }
     assignRider(id, riderId, sellerId) {
         return this.ordersService.assignRider(id, riderId, sellerId);
@@ -99,6 +103,16 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], OrdersController.prototype, "getAvailableRiders", null);
+__decorate([
+    (0, common_1.Post)(':id/complete'),
+    (0, roles_decorator_1.Roles)('customer'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, complete_order_dto_1.CompleteOrderDto, String]),
+    __metadata("design:returntype", void 0)
+], OrdersController.prototype, "completeOrder", null);
 __decorate([
     (0, common_1.Post)(':id/assign-rider'),
     (0, roles_decorator_1.Roles)('seller'),

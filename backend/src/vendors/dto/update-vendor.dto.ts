@@ -52,6 +52,10 @@ export class UpdateVendorDto {
   @IsOptional()
   isTemporarilyClosed?: boolean;
 
+  @IsString()
+  @IsOptional()
+  category?: string;
+
   @IsOptional()
   @IsArray()
   operatingHours?: Array<{

@@ -1,6 +1,6 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, CheckCircle2, ChefHat, Clock3, DollarSign, MapPin, Megaphone, MessageSquare, PackageCheck, ShoppingBag, Sparkles, Wallet, XCircle } from 'lucide-react';
+import { BarChart3, CheckCircle2, ChefHat, Clock3, DollarSign, MapPin, MessageSquare, PackageCheck, ShoppingBag, Sparkles, Wallet, XCircle } from 'lucide-react';
 import { LazyOrderRouteMap } from '@/components/maps/LazyOrderRouteMap';
 import { Button } from '@/components/ui/button';
 import { Order, OrderStatus } from '@/types';
@@ -189,14 +189,6 @@ export function SellerDashboard() {
             <ShoppingBag className="h-5 w-5 text-primary mb-3" />
             <p className="text-sm font-bold uppercase tracking-widest">Order Lanes</p>
             <p className="text-xs text-muted-foreground mt-1">Kanban management</p>
-          </button>
-          <button
-            onClick={() => navigate('/seller/promotions')}
-            className="border border-border p-5 bg-background hover:bg-secondary/5 transition-colors text-left"
-          >
-            <Megaphone className="h-5 w-5 text-primary mb-3" />
-            <p className="text-sm font-bold uppercase tracking-widest">Promotions</p>
-            <p className="text-xs text-muted-foreground mt-1">Discounts & offers</p>
           </button>
           <button
             onClick={() => navigate('/seller/ratings')}

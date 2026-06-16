@@ -3,7 +3,6 @@ import {
   MapPin,
   Star,
   ShoppingBag,
-  Info,
   TrendingUp,
 } from "lucide-react";
 import type { DemoVendor } from "@/data/demoVendors";

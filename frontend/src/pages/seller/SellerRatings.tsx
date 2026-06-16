@@ -31,7 +31,7 @@ export function SellerRatings() {
   const [averageScore, setAverageScore] = useState(0);
   const [totalRatings, setTotalRatings] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [trend, setTrend] = useState<'up' | 'down' | 'stable'>('stable');
+
 
   const loadData = useCallback(async () => {
     if (!user) return;

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Gift, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SellerVouchersSection } from "@/features/seller/SellerVouchersSection";

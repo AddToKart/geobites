@@ -14,6 +14,7 @@ const typeorm_1 = require("typeorm");
 const decimal_number_transformer_1 = require("../database/decimal-number.transformer");
 const order_item_entity_1 = require("./order-item.entity");
 const rating_entity_1 = require("./rating.entity");
+const rider_rating_entity_1 = require("./rider-rating.entity");
 const vendor_entity_1 = require("./vendor.entity");
 let Order = class Order {
     id;
@@ -44,6 +45,7 @@ let Order = class Order {
     vendor;
     items;
     ratings;
+    riderRatings;
     riderName;
     riderPhone;
     customerName;
@@ -123,7 +125,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: process.env.DB_TYPE === 'sqlite' ? 'simple-enum' : 'enum',
-        enum: ['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'],
+        enum: ['COD', 'GEOPAY'],
         default: 'COD',
     }),
     __metadata("design:type", String)
@@ -226,6 +228,10 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => rating_entity_1.Rating, (rating) => rating.order),
     __metadata("design:type", Array)
 ], Order.prototype, "ratings", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => rider_rating_entity_1.RiderRating, (rating) => rating.order),
+    __metadata("design:type", Array)
+], Order.prototype, "riderRatings", void 0);
 exports.Order = Order = __decorate([
     (0, typeorm_1.Entity)('orders'),
     (0, typeorm_1.Index)(['customerId']),

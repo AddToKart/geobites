@@ -1,5 +1,6 @@
 import { OrderItem } from './order-item.entity';
 import { Rating } from './rating.entity';
+import { RiderRating } from './rider-rating.entity';
 import { Vendor } from './vendor.entity';
 export declare class Order {
     id: string;
@@ -13,7 +14,7 @@ export declare class Order {
     barangay?: string;
     landmark?: string;
     floorOrGate?: string;
-    paymentMethod: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+    paymentMethod: 'COD' | 'GEOPAY';
     paymentStatus: 'pending' | 'paid' | 'failed';
     paymentSessionId?: string;
     cancellationReason?: string;
@@ -30,6 +31,7 @@ export declare class Order {
     vendor: Vendor;
     items: OrderItem[];
     ratings: Rating[];
+    riderRatings: RiderRating[];
     riderName?: string;
     riderPhone?: string;
     customerName?: string;

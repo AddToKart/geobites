@@ -7,6 +7,7 @@ export declare class UpdateVendorDto {
     imageUrl?: string;
     isActive?: boolean;
     isTemporarilyClosed?: boolean;
+    category?: string;
     operatingHours?: Array<{
         dayOfWeek: number;
         openTime: string;

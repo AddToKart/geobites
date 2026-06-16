@@ -12,7 +12,11 @@ import { extname, join } from 'path';
 import { SessionGuard } from '../common/guards/session.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
-function imageFileFilter(_req: any, file: Express.Multer.File, callback: (error: Error | null, acceptFile: boolean) => void) {
+function imageFileFilter(
+  _req: any,
+  file: Express.Multer.File,
+  callback: (error: Error | null, acceptFile: boolean) => void,
+) {
   if (!file.mimetype.match(/^image\/(png|jpe?g|webp)$/)) {
     callback(new Error('Only PNG, JPG, and WEBP images are allowed'), false);
     return;
@@ -20,7 +24,11 @@ function imageFileFilter(_req: any, file: Express.Multer.File, callback: (error:
   callback(null, true);
 }
 
-function uniqueFilename(_req: any, file: Express.Multer.File, callback: (error: Error | null, filename: string) => void) {
+function uniqueFilename(
+  _req: any,
+  file: Express.Multer.File,
+  callback: (error: Error | null, filename: string) => void,
+) {
   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
   const ext = extname(file.originalname);
   callback(null, `${uniqueSuffix}${ext}`);
@@ -42,7 +50,7 @@ export class UploadController {
   )
   uploadProfile(
     @UploadedFile() file: Express.Multer.File,
-    @CurrentUser('id') userId: string,
+    @CurrentUser('id') _userId: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -61,9 +69,7 @@ export class UploadController {
       fileFilter: imageFileFilter,
     }),
   )
-  uploadMenu(
-    @UploadedFile() file: Express.Multer.File,
-  ) {
+  uploadMenu(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('File is required');
     }

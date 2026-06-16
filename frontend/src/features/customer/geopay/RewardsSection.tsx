@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Gift, Sparkles, ArrowRight, History, Tag } from "lucide-react";
 import { useRewardsBalance, useRewardHistory, useRedeemPoints } from "@/hooks/queries";
 import { formatCurrency } from "@/utils/helpers";
-import { Reveal, Stagger, StaggerItem } from "@/components/motion/Reveal";
+import { Stagger, StaggerItem } from "@/components/motion/Reveal";
 
 export function RewardsSection() {
   const { data: rewards, isLoading: balanceLoading } = useRewardsBalance();

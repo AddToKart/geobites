@@ -47,9 +47,9 @@ export class CreateOrderDto {
   @IsOptional()
   floorOrGate?: string;
 
-  @IsEnum(['COD', 'GCASH', 'MAYA', 'QRPH', 'GEOPAY'])
+  @IsEnum(['COD', 'GEOPAY'])
   @IsOptional()
-  paymentMethod?: 'COD' | 'GCASH' | 'MAYA' | 'QRPH' | 'GEOPAY';
+  paymentMethod?: 'COD' | 'GEOPAY';
 
   @IsString()
   @IsOptional()

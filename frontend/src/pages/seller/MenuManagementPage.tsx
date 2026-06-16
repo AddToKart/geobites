@@ -1,11 +1,10 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/api';
 import { createMenuItem, deleteMenuItem, getVendorMenu, updateMenuItem } from '@/services/menuService';
-import { createVendor, deleteVendor, getVendors, updateVendor } from '@/services/vendorService';
+import { createVendor, getVendors, updateVendor } from '@/services/vendorService';
 import { santaMariaBulacanCenter } from '@/data/demoVendors';
-import { MenuItem, Vendor, OperatingHours } from '@/types';
+import { MenuItem, Vendor } from '@/types';
 import { toast } from 'sonner';
 import { MenuItemsSection } from '@/features/seller/menu-management/MenuItemsSection';
 import { ShopPreviewCard } from '@/features/seller/menu-management/ShopPreviewCard';
@@ -31,6 +30,7 @@ const defaultVendorForm: VendorFormState = {
   longitude: santaMariaBulacanCenter.lng.toFixed(6),
   isActive: true,
   isTemporarilyClosed: false,
+  category: '',
   businessPermit: '',
   businessPermitExpiry: '',
   foodSafetyCert: '',
@@ -43,7 +43,6 @@ const defaultVendorForm: VendorFormState = {
 
 export function MenuManagementPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [newItem, setNewItem] = useState<NewMenuItemFormState>({
@@ -56,15 +55,14 @@ export function MenuManagementPage() {
     imageFile: null,
     imagePreview: null,
   });
-  const itemImageInputRef = useRef<HTMLInputElement>(null);
   const [vendorForm, setVendorForm] = useState<VendorFormState>(defaultVendorForm);
   const [error, setError] = useState<string | null>(null);
   const shopImagePreviewRef = useRef<string | null>(null);
-  shopImagePreviewRef.current = vendorForm.imagePreview;
 
   useEffect(() => {
+    const preview = shopImagePreviewRef.current;
     return () => {
-      if (shopImagePreviewRef.current) URL.revokeObjectURL(shopImagePreviewRef.current);
+      if (preview) URL.revokeObjectURL(preview);
     };
   }, []);
   const [isSavingVendor, setIsSavingVendor] = useState(false);
@@ -94,6 +92,7 @@ export function MenuManagementPage() {
       longitude: Number(currentVendor.longitude ?? 0).toFixed(6),
       isActive: currentVendor.isActive,
       isTemporarilyClosed: currentVendor.isTemporarilyClosed ?? false,
+      category: currentVendor.category || '',
       businessPermit: currentVendor.businessPermit || '',
       businessPermitExpiry: currentVendor.businessPermitExpiry || '',
       foodSafetyCert: currentVendor.foodSafetyCert || '',
@@ -157,6 +156,7 @@ export function MenuManagementPage() {
       totalRatings: vendor?.totalRatings ?? 42,
       imageUrl: vendorForm.imageUrl || undefined,
       isActive: vendorForm.isActive,
+      category: vendorForm.category || undefined,
       commissionRate: Number(vendorForm.commissionRate) || 0.25,
       operatingHours: vendorForm.operatingHours,
       businessPermit: vendorForm.businessPermit || undefined,
@@ -193,6 +193,7 @@ export function MenuManagementPage() {
       foodSafetyCert: vendorForm.foodSafetyCert || undefined,
       foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry || undefined,
       commissionRate: Number(vendorForm.commissionRate) || 0.25,
+      category: vendorForm.category || undefined,
     });
 
     setVendor(createdVendor);
@@ -236,6 +237,7 @@ export function MenuManagementPage() {
         foodSafetyCert: vendorForm.foodSafetyCert.trim() || undefined,
         foodSafetyCertExpiry: vendorForm.foodSafetyCertExpiry.trim() || undefined,
         commissionRate: Number(vendorForm.commissionRate) || 0.25,
+        category: vendorForm.category || undefined,
       };
 
       const savedVendor = vendor
