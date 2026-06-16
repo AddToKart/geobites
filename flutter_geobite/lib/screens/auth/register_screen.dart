@@ -80,8 +80,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    if (password.length < 6) {
-      GlassToast.error(context, 'Password must be at least 6 characters long');
+    if (password.length < 8) {
+      GlassToast.error(context, 'Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!password.contains(RegExp(r'[A-Z]'))) {
+      GlassToast.error(context, 'Password must contain at least one capital letter');
+      return;
+    }
+
+    if (!password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>\-_=+\\\/\[\]]'))) {
+      GlassToast.error(context, 'Password must contain at least one symbol/special character');
       return;
     }
 
