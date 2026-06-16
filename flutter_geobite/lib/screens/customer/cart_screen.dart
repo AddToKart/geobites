@@ -389,7 +389,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final method in ['COD', 'GCASH', 'MAYA', 'QRPH'])
+                  for (final method in ['COD', 'GEOPAY'])
                     ChoiceChip(
                       label: Text(method),
                       selected: _paymentMethod == method,

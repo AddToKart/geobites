@@ -12,6 +12,8 @@ import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
+import { Wallet } from '../entities/wallet.entity';
+import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
@@ -213,6 +215,65 @@ export class OrdersService {
         );
 
         await orderItemRepository.save(snapshots);
+
+        if (createOrderDto.paymentMethod === 'GEOPAY') {
+          const walletRepo = manager.getRepository(Wallet);
+          const transactionRepo = manager.getRepository(WalletTransaction);
+
+          let wallet = await walletRepo.findOne({
+            where: { customerId },
+          });
+
+          if (!wallet) {
+            wallet = walletRepo.create({ customerId, balance: 0.0 });
+            wallet = await walletRepo.save(wallet);
+          }
+
+          if (Number(wallet.balance) < Number(totalAmount)) {
+            throw new BadRequestException(
+              `Insufficient GeoPay wallet balance (Total: ₱${totalAmount.toFixed(2)}, Wallet: ₱${Number(wallet.balance).toFixed(2)})`,
+            );
+          }
+
+          wallet.balance = Number(wallet.balance) - Number(totalAmount);
+          await walletRepo.save(wallet);
+
+          const txn = transactionRepo.create({
+            walletId: wallet.id,
+            amount: -totalAmount,
+            type: 'payment',
+            status: 'success',
+            referenceId: savedOrder.id,
+            paymentMethod: 'GEOPAY',
+          });
+          await transactionRepo.save(txn);
+
+          // Credit vendor wallet
+          let vendorWallet = await walletRepo.findOne({
+            where: { vendorId: vendor.id },
+          });
+          if (!vendorWallet) {
+            vendorWallet = walletRepo.create({
+              vendorId: vendor.id,
+              balance: 0.0,
+            });
+          }
+          vendorWallet.balance = Number(vendorWallet.balance) + Number(totalAmount);
+          await walletRepo.save(vendorWallet);
+
+          const vendorTxn = transactionRepo.create({
+            walletId: vendorWallet.id,
+            amount: totalAmount,
+            type: 'vendor_credit',
+            status: 'success',
+            referenceId: savedOrder.id,
+            paymentMethod: 'GEOPAY',
+          });
+          await transactionRepo.save(vendorTxn);
+
+          savedOrder.paymentStatus = 'paid';
+          await orderRepository.save(savedOrder);
+        }
 
         return {
           savedOrderId: savedOrder.id,

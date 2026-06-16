@@ -6,6 +6,8 @@ import { MenuItem } from '../entities/menu-item.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 import { Vendor } from '../entities/vendor.entity';
+import { Wallet } from '../entities/wallet.entity';
+import { WalletTransaction } from '../entities/wallet-transaction.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WalletService } from '../wallet/wallet.service';
 import { GeopayService } from '../geopay/geopay.service';
@@ -64,6 +66,15 @@ describe('OrdersService', () => {
     create: jest.fn((data) => data),
     save: jest.fn(),
   };
+  const transactionWalletRepository = {
+    findOne: jest.fn(),
+    create: jest.fn((data) => data),
+    save: jest.fn((data) => data),
+  };
+  const transactionWalletTransactionRepository = {
+    create: jest.fn((data) => data),
+    save: jest.fn((data) => data),
+  };
   const dataSource = {
     options: {
       type: 'postgres',
@@ -83,6 +94,12 @@ describe('OrdersService', () => {
           }
           if (entity === OrderItem) {
             return transactionOrderItemRepository;
+          }
+          if (entity === Wallet) {
+            return transactionWalletRepository;
+          }
+          if (entity === WalletTransaction) {
+            return transactionWalletTransactionRepository;
           }
 
           throw new Error('Unexpected repository request');
