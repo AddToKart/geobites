@@ -46,6 +46,10 @@ export class CreateVendorDto {
   @IsOptional()
   isActive?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  isTemporarilyClosed?: boolean;
+
   @IsOptional()
   @IsArray()
   operatingHours?: Array<{

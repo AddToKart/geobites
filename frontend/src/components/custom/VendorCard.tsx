@@ -17,8 +17,8 @@ export function VendorCard({ vendor }: { vendor: Vendor }) {
               <span>{vendor.address}</span>
             </div>
           </div>
-          <Badge variant={vendor.isActive ? 'success' : 'warning'}>
-            {vendor.isActive ? 'Open' : 'Closed'}
+          <Badge variant={vendor.isTemporarilyClosed ? 'warning' : vendor.isActive ? 'success' : 'warning'}>
+            {vendor.isTemporarilyClosed ? 'Temporarily Closed' : vendor.isActive ? 'Open' : 'Closed'}
           </Badge>
         </div>
       </CardHeader>

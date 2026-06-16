@@ -37,6 +37,7 @@ let Vendor = class Vendor {
     operatingHours;
     commissionRate;
     isActive;
+    isTemporarilyClosed;
     createdAt;
     updatedAt;
     menuItems;
@@ -144,6 +145,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], Vendor.prototype, "isActive", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Vendor.prototype, "isTemporarilyClosed", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

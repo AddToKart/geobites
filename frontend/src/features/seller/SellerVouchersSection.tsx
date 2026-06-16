@@ -142,8 +142,11 @@ export function SellerVouchersSection() {
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">Value</label>
               <input
                 type="number"
-                value={form.discountValue}
-                onChange={(e) => setForm({ ...form, discountValue: Number(e.target.value) })}
+                value={Number.isFinite(form.discountValue) ? form.discountValue : 0}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setForm({ ...form, discountValue: Number.isFinite(val) ? val : 0 });
+                }}
                 className="w-full h-10 border border-border bg-transparent px-3 text-sm focus:outline-none focus:border-foreground"
                 min={1}
               />
@@ -152,8 +155,11 @@ export function SellerVouchersSection() {
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground block mb-1">Min Order</label>
               <input
                 type="number"
-                value={form.minOrderAmount || 0}
-                onChange={(e) => setForm({ ...form, minOrderAmount: Number(e.target.value) })}
+                value={Number.isFinite(form.minOrderAmount) ? form.minOrderAmount : 0}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setForm({ ...form, minOrderAmount: Number.isFinite(val) ? val : 0 });
+                }}
                 className="w-full h-10 border border-border bg-transparent px-3 text-sm focus:outline-none focus:border-foreground"
                 min={0}
               />

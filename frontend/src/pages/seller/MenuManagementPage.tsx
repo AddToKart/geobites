@@ -30,6 +30,7 @@ const defaultVendorForm: VendorFormState = {
   latitude: santaMariaBulacanCenter.lat.toFixed(6),
   longitude: santaMariaBulacanCenter.lng.toFixed(6),
   isActive: true,
+  isTemporarilyClosed: false,
   businessPermit: '',
   businessPermitExpiry: '',
   foodSafetyCert: '',
@@ -89,9 +90,10 @@ export function MenuManagementPage() {
       description: currentVendor.description || '',
       address: currentVendor.address,
       imageUrl: currentVendor.imageUrl || '',
-      latitude: Number(currentVendor.latitude).toFixed(6),
-      longitude: Number(currentVendor.longitude).toFixed(6),
+      latitude: Number(currentVendor.latitude ?? 0).toFixed(6),
+      longitude: Number(currentVendor.longitude ?? 0).toFixed(6),
       isActive: currentVendor.isActive,
+      isTemporarilyClosed: currentVendor.isTemporarilyClosed ?? false,
       businessPermit: currentVendor.businessPermit || '',
       businessPermitExpiry: currentVendor.businessPermitExpiry || '',
       foodSafetyCert: currentVendor.foodSafetyCert || '',
@@ -222,6 +224,7 @@ export function MenuManagementPage() {
         latitude: vendorCoordinates.lat,
         longitude: vendorCoordinates.lng,
         isActive: vendorForm.isActive,
+        isTemporarilyClosed: vendorForm.isTemporarilyClosed,
         operatingHours: vendorForm.operatingHours.map((oh) => ({
           dayOfWeek: oh.dayOfWeek,
           openTime: oh.openTime,
@@ -259,9 +262,13 @@ export function MenuManagementPage() {
     if (!vendor) return;
     setIsClosing(true);
     try {
-      await deleteVendor(vendor.id);
+      const updated = await updateVendor(vendor.id, {
+        isActive: false,
+        isTemporarilyClosed: false,
+      });
+      setVendor(updated);
+      syncVendorForm(updated);
       toast.success("Shop closed successfully");
-      navigate("/seller");
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : "Failed to close shop";
       toast.error(message);
@@ -406,12 +413,12 @@ export function MenuManagementPage() {
           </section>
         )}
 
-        {activeWorkspaceTab === 'profile' && vendor && (
+        {activeWorkspaceTab === 'profile' && vendor && vendor.isActive && (
           <div className="border-t border-red-500/30 pt-12 mt-12">
             <div className="max-w-xl">
               <h3 className="text-lg font-bold tracking-tight text-red-500 mb-2">Danger Zone</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Closing your shop will permanently delete your vendor profile, menu items, and promotions. This action cannot be undone.
+                Closing your shop will hide it from customers. Your menu and data will be preserved so you can reopen anytime.
               </p>
               <button
                 onClick={() => setShowCloseConfirm(true)}
@@ -428,7 +435,7 @@ export function MenuManagementPage() {
             <div className="w-full max-w-md bg-background border border-border p-8 mx-4">
               <h3 className="text-2xl font-bold tracking-tight text-red-500 mb-4">Close shop?</h3>
               <p className="text-muted-foreground mb-8">
-                This will permanently delete your vendor profile, all menu items, and promotions. Customers will no longer find your shop.
+                Your shop will be hidden from customers. All menu items and data are preserved so you can reopen anytime.
               </p>
               <div className="flex gap-4">
                 <button

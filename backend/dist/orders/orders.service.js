@@ -74,7 +74,7 @@ let OrdersService = OrdersService_1 = class OrdersService {
             if (!vendor) {
                 throw new common_1.NotFoundException('Vendor not found');
             }
-            if (!vendor.isActive) {
+            if (!vendor.isActive || vendor.isTemporarilyClosed) {
                 throw new common_1.BadRequestException('Vendor is not accepting orders right now');
             }
             const menuItems = await menuItemRepository.find({

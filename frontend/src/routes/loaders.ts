@@ -90,6 +90,30 @@ export const loadSearchResultsPage = memoizeRouteLoader(() =>
   })),
 );
 
+export const loadAboutPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/AboutPage').then((module) => ({
+    default: module.AboutPage,
+  })),
+);
+
+export const loadContactPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/ContactPage').then((module) => ({
+    default: module.ContactPage,
+  })),
+);
+
+export const loadTermsPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/TermsPage').then((module) => ({
+    default: module.TermsPage,
+  })),
+);
+
+export const loadPrivacyPage = memoizeRouteLoader(() =>
+  import('@/pages/landing/PrivacyPage').then((module) => ({
+    default: module.PrivacyPage,
+  })),
+);
+
 export const loadPaymentReceiptPage = memoizeRouteLoader(() =>
   import('@/pages/customer/PaymentReceiptPage').then((module) => ({
     default: module.PaymentReceiptPage,
@@ -226,6 +250,10 @@ const exactRouteLoaders: Record<string, RouteLoader> = {
   '/wallet': loadWalletPage,
   '/favorites': loadFavoritesPage,
   '/search': loadSearchResultsPage,
+  '/about': loadAboutPage,
+  '/contact': loadContactPage,
+  '/terms': loadTermsPage,
+  '/privacy': loadPrivacyPage,
   '/receipt/:orderId': loadPaymentReceiptPage,
   '/payment/gcash': loadPaymentGcashPage,
   '/payment/maya': loadPaymentMayaPage,
@@ -295,7 +323,7 @@ export function getWarmupLoadersForRole(role: UserRole | null) {
   const commonLoaders = [loadNotificationsPage, loadSettingsPage];
 
   if (!role) {
-    return [loadLandingPage, loadLoginPage, loadRegisterPage];
+    return [loadLandingPage, loadAboutPage, loadContactPage, loadTermsPage, loadPrivacyPage, loadLoginPage, loadRegisterPage];
   }
 
   switch (role) {

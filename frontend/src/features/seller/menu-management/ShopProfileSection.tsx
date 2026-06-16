@@ -34,17 +34,32 @@ export function ShopProfileSection({
             This is the seller-side setup for how your shop appears in browse, list, and map views.
           </p>
         </div>
-        <Button
-          type="button"
-          variant={vendorForm.isActive ? 'default' : 'outline'}
-          className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
-          onClick={() =>
-            setVendorForm((current) => ({ ...current, isActive: !current.isActive }))
-          }
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          {vendorForm.isActive ? 'Shop is open' : 'Mark as open'}
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          {vendorForm.isActive ? (
+            <Button
+              type="button"
+              variant="default"
+              className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
+              onClick={() =>
+                setVendorForm((current) => ({ ...current, isActive: true, isTemporarilyClosed: false }))
+              }
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Shop is open
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-none border border-foreground font-bold uppercase tracking-widest text-xs"
+              onClick={() =>
+                setVendorForm((current) => ({ ...current, isActive: true, isTemporarilyClosed: false }))
+              }
+            >
+              Reopen shop
+            </Button>
+          )}
+        </div>
       </div>
 
       <form className="grid gap-8 md:grid-cols-2" onSubmit={onSubmit}>

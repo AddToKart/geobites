@@ -24,7 +24,12 @@ export function VendorStorefrontHero({
       <div className="flex flex-col md:flex-row gap-12 justify-between items-start mb-16">
         <div className="flex-1 max-w-3xl">
           <div className="flex flex-wrap items-center gap-4 mb-6">
-            {vendor.isActive ? (
+            {vendor.isTemporarilyClosed ? (
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-500 flex items-center gap-1.5 border border-amber-500 px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Temporarily Closed
+              </span>
+            ) : vendor.isActive ? (
               <span className="text-xs font-bold uppercase tracking-widest text-primary flex items-center gap-1.5 border border-primary px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 Taking Orders

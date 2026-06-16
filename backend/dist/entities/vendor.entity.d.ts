@@ -28,6 +28,7 @@ export declare class Vendor {
     }>;
     commissionRate: number;
     isActive: boolean;
+    isTemporarilyClosed: boolean;
     createdAt: Date;
     updatedAt: Date;
     menuItems: MenuItem[];

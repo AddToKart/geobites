@@ -20,6 +20,7 @@ class CreateVendorDto {
     longitude;
     imageUrl;
     isActive;
+    isTemporarilyClosed;
     operatingHours;
     commissionRate;
 }
@@ -65,6 +66,11 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateVendorDto.prototype, "isActive", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateVendorDto.prototype, "isTemporarilyClosed", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),

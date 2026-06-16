@@ -82,7 +82,7 @@ export class OrdersService {
           throw new NotFoundException('Vendor not found');
         }
 
-        if (!vendor.isActive) {
+        if (!vendor.isActive || vendor.isTemporarilyClosed) {
           throw new BadRequestException(
             'Vendor is not accepting orders right now',
           );

@@ -39,6 +39,10 @@ import {
   loadFavoritesPage,
   loadSearchResultsPage,
   loadPaymentReceiptPage,
+  loadAboutPage,
+  loadContactPage,
+  loadTermsPage,
+  loadPrivacyPage,
   loadPaymentGcashPage,
   loadPaymentMayaPage,
   loadPaymentQrphPage,
@@ -46,6 +50,10 @@ import {
 } from '@/routes/loaders';
 
 const LandingPage = lazy(loadLandingPage);
+const AboutPage = lazy(loadAboutPage);
+const ContactPage = lazy(loadContactPage);
+const TermsPage = lazy(loadTermsPage);
+const PrivacyPage = lazy(loadPrivacyPage);
 const LoginPage = lazy(loadLoginPage);
 const RegisterPage = lazy(loadRegisterPage);
 const NotificationsPage = lazy(loadNotificationsPage);
@@ -139,6 +147,10 @@ function AppRoutes() {
           <Routes location={location}>
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/landing" element={<RouteGroup><LandingPage /></RouteGroup>} />
+            <Route path="/about" element={<RouteGroup><AboutPage /></RouteGroup>} />
+            <Route path="/contact" element={<RouteGroup><ContactPage /></RouteGroup>} />
+            <Route path="/terms" element={<RouteGroup><TermsPage /></RouteGroup>} />
+            <Route path="/privacy" element={<RouteGroup><PrivacyPage /></RouteGroup>} />
             <Route path="/login" element={<RouteGroup><LoginPage /></RouteGroup>} />
             <Route path="/register" element={<RouteGroup><RegisterPage /></RouteGroup>} />
 

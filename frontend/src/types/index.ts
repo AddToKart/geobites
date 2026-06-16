@@ -49,6 +49,7 @@ export interface Vendor {
   totalRatings: number;
   imageUrl?: string;
   isActive: boolean;
+  isTemporarilyClosed?: boolean;
   operatingHours?: OperatingHours[];
   businessPermit?: string;
   businessPermitExpiry?: string;
