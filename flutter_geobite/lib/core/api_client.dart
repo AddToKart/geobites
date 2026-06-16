@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -17,7 +18,16 @@ class ApiClient {
     if (kIsWeb) {
       return dotenv.env['API_URL_WEB'] ?? 'http://localhost:3000/api';
     }
-    return dotenv.env['API_URL'] ?? 'http://10.0.2.2:3000/api';
+    final envUrl = dotenv.env['API_URL'];
+    if (envUrl != null) {
+      return envUrl;
+    }
+    try {
+      if (Platform.isIOS) {
+        return 'http://localhost:3000/api';
+      }
+    } catch (_) {}
+    return 'http://10.0.2.2:3000/api';
   }
 
   /// WebSocket server URL — strip the /api suffix

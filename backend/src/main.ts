@@ -10,8 +10,23 @@ import { ensureDatabaseExists } from './database/create-db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import * as express from 'express';
 import { join } from 'path';
+import { networkInterfaces } from 'os';
 
-const lanIp = process.env.LAN_IP || '192.168.100.116';
+function getLocalIpAddress(): string {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] ?? []) {
+      if ((net.family === 'IPv4' || (net.family as any) === 4) && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+const detectedLanIp = getLocalIpAddress();
+const lanIp = process.env.LAN_IP || detectedLanIp;
+
 
 /**
  * Dynamic CORS origin resolver — allows:
@@ -123,7 +138,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   const server = await app.listen(port, '0.0.0.0');
   console.log(`Backend server running on http://localhost:${port}/api`);
-  console.log(`Local network access: http://192.168.100.116:${port}/api`);
+  console.log(`Local network access: http://${lanIp}:${port}/api`);
 
   // Seed demo data
   const { DataSource } = await import('typeorm');
