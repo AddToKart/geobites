@@ -35,8 +35,8 @@ class VendorService {
 
   Future<Vendor> updateVendor(String id, Map<String, dynamic> payload) async {
     try {
-      // NestJS might use PATCH instead of PUT
-      final response = await apiClient.dio.patch('/vendors/$id', data: payload);
+      // NestJS uses PUT
+      final response = await apiClient.dio.put('/vendors/$id', data: payload);
       return Vendor.fromJson(response.data);
     } catch (e) {
       throw Exception('Failed to update vendor: $e');
