@@ -18,14 +18,15 @@ class ApiClient {
     if (kIsWeb) {
       return dotenv.env['API_URL_WEB'] ?? 'http://localhost:3000/api';
     }
-    var envUrl = dotenv.env['API_URL'];
+    final envUrl = dotenv.env['API_URL'];
     if (envUrl != null) {
+      String resolvedUrl = envUrl;
       try {
-        if (Platform.isAndroid && envUrl.contains('localhost')) {
-          envUrl = envUrl.replaceAll('localhost', '10.0.2.2');
+        if (Platform.isAndroid && resolvedUrl.contains('localhost')) {
+          resolvedUrl = resolvedUrl.replaceAll('localhost', '10.0.2.2');
         }
       } catch (_) {}
-      return envUrl;
+      return resolvedUrl;
     }
     try {
       if (Platform.isIOS) {
