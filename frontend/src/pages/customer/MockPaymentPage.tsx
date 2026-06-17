@@ -15,6 +15,7 @@ export function MockPaymentPage() {
   const amount = Number(searchParams.get("amount") || "0");
   const rawMethod = searchParams.get("method") || "GCASH";
   const method = (rawMethod.toUpperCase() as "GCASH" | "MAYA" | "QRPH");
+  const token = searchParams.get("token") || "";
  
   const [step, setStep] = useState<"phone" | "otp" | "confirm" | "success">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -74,16 +75,20 @@ export function MockPaymentPage() {
         await api.post(`/wallet/cash-in/${cashInId}/simulate-success`);
         setStep("success");
         toast.success("Wallet cash-in authorized successfully");
-        setTimeout(() => {
-          navigate(`/wallet`);
-        }, 2000);
+        if (!token) {
+          setTimeout(() => {
+            navigate(`/wallet`);
+          }, 2000);
+        }
       } else {
         await api.post(`/payments/${orderId}/simulate-success`);
         setStep("success");
         toast.success("Payment authorized successfully");
-        setTimeout(() => {
-          navigate(`/receipt/${orderId}`);
-        }, 2000);
+        if (!token) {
+          setTimeout(() => {
+            navigate(`/receipt/${orderId}`);
+          }, 2000);
+        }
       }
     } catch (caughtError) {
       toast.error(
@@ -174,7 +179,9 @@ export function MockPaymentPage() {
                   </div>
                 </div>
                 <h2 className="text-4xl font-medium tracking-tighter text-foreground">Transaction complete.</h2>
-                <p className="text-xl text-muted-foreground">Redirecting to Geobites...</p>
+                <p className="text-xl text-muted-foreground">
+                  {token ? "You may now close this window." : "Redirecting to Geobites..."}
+                </p>
               </div>
             )}
           </div>
@@ -345,7 +352,9 @@ export function MockPaymentPage() {
                 </div>
               </div>
               <h2 className="text-4xl font-medium tracking-tighter text-foreground">Transaction complete.</h2>
-              <p className="text-xl text-muted-foreground">Redirecting to Geobites...</p>
+              <p className="text-xl text-muted-foreground">
+                {token ? "You may now close this window." : "Redirecting to Geobites..."}
+              </p>
             </div>
           )}
         </div>

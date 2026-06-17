@@ -151,6 +151,7 @@ function AppRoutes() {
             <Route path="/privacy" element={<RouteGroup><PrivacyPage /></RouteGroup>} />
             <Route path="/login" element={<RouteGroup><LoginPage /></RouteGroup>} />
             <Route path="/register" element={<RouteGroup><RegisterPage /></RouteGroup>} />
+            <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
 
             <Route element={<ProtectedRoute allowedRoles={['customer']} />}>
               <Route path="/browse" element={<RouteGroup><BrowseVendorsPagePremium /></RouteGroup>} />
@@ -158,7 +159,6 @@ function AppRoutes() {
               <Route path="/cart" element={<RouteGroup><CartPage /></RouteGroup>} />
               <Route path="/orders" element={<RouteGroup><OrderHistoryPage /></RouteGroup>} />
               <Route path="/orders/:id" element={<RouteGroup><OrderTrackingPage /></RouteGroup>} />
-              <Route path="/mock-payment" element={<RouteGroup><MockPaymentPage /></RouteGroup>} />
               <Route path="/favorites" element={<RouteGroup><FavoritesPage /></RouteGroup>} />
               <Route path="/search" element={<RouteGroup><SearchResultsPage /></RouteGroup>} />
             </Route>
